@@ -1,0 +1,1639 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>وَظِيف - لوحة تحكم الأدمن</title>
+  <link rel="icon" type="image/png" href="/uploads/wazef.png">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    ::-webkit-scrollbar{width:6px;height:6px}
+    ::-webkit-scrollbar-track{background:rgba(255,255,255,0.02);border-radius:10px}
+    ::-webkit-scrollbar-thumb{background:rgba(212,168,83,0.2);border-radius:10px;transition:background .3s}
+    ::-webkit-scrollbar-thumb:hover{background:rgba(212,168,83,0.35)}
+    body{scrollbar-width:thin;scrollbar-color:rgba(212,168,83,0.2) rgba(255,255,255,0.02)}
+    body {
+      font-family: 'Tajawal', sans-serif;
+      min-height: 100vh;
+      background: #0a0a0a;
+      color: #f5f0e8;
+      overflow-x: hidden;
+    }
+    canvas#bg-canvas {
+      position: fixed; top: 0; left: 0;
+      width: 100%; height: 100%; z-index: 0;
+    }
+
+    .navbar {
+      position: relative; z-index: 10;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 20px 44px;
+      background: transparent;
+      border-bottom: none;
+    }
+    .navbar .brand { display: flex; align-items: center; gap: 12px; }
+    .navbar .brand-logo { height: 80px; width: auto; border-radius: 8px; }
+    .navbar h1 {
+      font-size: 26px; font-weight: 800;
+      background: linear-gradient(135deg, #f0d78c, #b8860b);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .navbar .user-info { display: flex; align-items: center; gap: 16px; }
+    .navbar .user-info span { color: #888; font-size: 14px; }
+    .btn-logout {
+      padding: 9px 22px; background: transparent;
+      border: none;
+      color: #e57373; border-radius: 12px; cursor: pointer;
+      font-family: 'Tajawal', sans-serif; font-size: 14px; font-weight: 600;
+      transition: all 0.3s;
+    }
+    .btn-logout:hover { background: rgba(220,50,50,0.1); }
+
+    .container { position: relative; z-index: 10; max-width: 1200px; margin: 35px auto; padding: 0 30px; }
+
+    .glass {
+      background: linear-gradient(145deg, rgba(20,20,20,0.8), rgba(12,12,12,0.85));
+      backdrop-filter: blur(40px);
+      border: 1px solid rgba(212,168,83,0.06);
+      border-radius: 26px;
+      box-shadow: 0 25px 70px rgba(0,0,0,0.5);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 16px; margin-bottom: 28px;
+    }
+    .stat-card {
+      padding: 24px 20px; text-align: center;
+      transition: all 0.35s cubic-bezier(0.16,1,0.3,1);
+      cursor: default;
+    }
+    .stat-card:hover { transform: translateY(-4px); }
+    .stat-card .num { font-size: 36px; font-weight: 900; margin-bottom: 5px; }
+    .stat-card .label { font-size: 13px; color: #666; font-weight: 500; }
+    .stat-card.c1 .num { color: #d4a853; }
+    .stat-card.c2 .num { color: #d4a853; }
+    .stat-card.c3 .num { color: #66bb6a; }
+    .stat-card.c4 .num { color: #e57373; }
+    .stat-card.c5 .num { color: #b8860b; }
+    .stat-card.c6 .num { color: #d4a853; }
+
+    .tabs { display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; }
+    .tab-btn {
+      padding: 11px 28px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 14px;
+      color: #666;
+      cursor: pointer;
+      font-family: 'Tajawal', sans-serif; font-size: 14px; font-weight: 600;
+      transition: all 0.35s cubic-bezier(0.16,1,0.3,1);
+    }
+    .tab-btn.active {
+      background: rgba(212,168,83,0.1);
+      border-color: rgba(212,168,83,0.2);
+      color: #d4a853;
+      box-shadow: 0 4px 20px rgba(212,168,83,0.08);
+    }
+    .tab-btn:hover:not(.active) { color: #888; border-color: rgba(255,255,255,0.08); }
+
+    .section { display: none; }
+    .section.active { display: block; animation: fadeUp 0.4s ease; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+    .table-container { overflow: hidden; }
+    .table-header {
+      padding: 24px 30px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 16px;
+    }
+    .table-header h3 { font-size: 19px; font-weight: 800; }
+
+    .filter-group {
+      display: flex; gap: 10px; flex-wrap: wrap;
+    }
+    .filter-input {
+      padding: 10px 16px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+      color: #e2e8f0;
+      font-family: 'Tajawal', sans-serif;
+      font-size: 14px;
+      transition: all 0.3s;
+      outline: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      color-scheme: dark;
+    }
+    .filter-input:focus { border-color: rgba(212,168,83,0.4); box-shadow: 0 0 0 3px rgba(212,168,83,0.06); }
+    .filter-input::placeholder { color: #555; }
+    .filter-input option { background: #111; color: #f5f0e8; }
+
+    .app-card {
+      padding: 20px 24px;
+      border-bottom: 1px solid rgba(212,168,83,0.06);
+      display: grid;
+      grid-template-columns: minmax(220px, 1.6fr) minmax(130px, .9fr) 100px 130px 140px minmax(170px, 1.4fr) auto;
+      align-items: center; gap: 16px;
+      transition: all .2s ease;
+      background: transparent;
+    }
+    .app-card:hover { background: rgba(212,168,83,0.03); }
+    .app-card:last-child { border-bottom: none; }
+
+    .app-identity {
+      display: flex; align-items: center; gap: 14px;
+      cursor: pointer;
+    }
+    .app-avatar {
+      width: 42px; height: 42px; border-radius: 12px;
+      background: linear-gradient(135deg, rgba(212,168,83,0.12), rgba(212,168,83,0.04));
+      border: 1px solid rgba(212,168,83,0.15);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 700; color: #d4a853;
+      flex-shrink: 0; transition: all .2s ease;
+    }
+    .app-card:hover .app-avatar { background: linear-gradient(135deg, rgba(212,168,83,0.18), rgba(212,168,83,0.08)); }
+    .app-identity .app-name { font-weight: 700; font-size: 15px; color: #f0d78c; line-height: 1.3; }
+    .app-identity .app-email { color: #94a3b8; font-size: 12px; direction: ltr; text-align: left; }
+    .app-identity .app-copy-hint { font-size: 10px; color: #64748b; margin-top: 2px; }
+
+    .app-meta { font-size: 13px; color: #94a3b8; line-height: 1.6; }
+    .app-meta .app-date { font-weight: 600; color: #cbd5e1; }
+    .app-meta .app-phone { font-size: 12px; color: #94a3b8; direction: ltr; text-align: left; }
+
+    .app-lang {
+      padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
+      background: rgba(212,168,83,0.06); color: #b8860b; border: 1px solid rgba(212,168,83,0.1);
+      display: inline-flex; align-items: center; gap: 4px;
+    }
+
+    .app-status {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    }
+    .app-status .status-dot {
+      width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+    }
+    .app-status.pending { background: rgba(245,158,11,0.06); color: #b45309; border: 1px solid rgba(245,158,11,0.12); }
+    .app-status.pending .status-dot { background: #f59e0b; }
+    .app-status.approved { background: rgba(16,185,129,0.06); color: #047857; border: 1px solid rgba(16,185,129,0.12); }
+    .app-status.approved .status-dot { background: #10b981; }
+    .app-status.rejected { background: rgba(244,63,94,0.06); color: #be123c; border: 1px solid rgba(244,63,94,0.12); }
+    .app-status.rejected .status-dot { background: #f43f5e; }
+
+    .app-audio-btn {
+      padding: 8px 16px; border-radius: 10px; font-size: 12px; font-weight: 600;
+      background: rgba(212,168,83,0.06); border: 1px solid rgba(212,168,83,0.12);
+      color: #b8860b; cursor: pointer; transition: all .2s ease;
+      font-family: 'Tajawal', sans-serif; display: inline-flex; align-items: center; gap: 6px;
+    }
+    .app-audio-btn:hover { background: rgba(212,168,83,0.12); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(212,168,83,0.15); }
+    .app-audio-btn svg { width: 13px; height: 13px; stroke: #b8860b; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .app-audio-btn.no-audio { background: rgba(100,116,139,0.05); border-color: rgba(100,116,139,0.1); color: #94a3b8; cursor: default; }
+    .app-audio-btn.no-audio:hover { transform: none; box-shadow: none; }
+
+    .app-agent { line-height: 1.5; display: flex; flex-direction: column; gap: 3px; }
+    .app-agent .agent-row { display: flex; align-items: center; gap: 6px; }
+    .app-agent .agent-icon { width: 18px; height: 18px; border-radius: 5px; background: rgba(212,168,83,0.1); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .app-agent .agent-icon svg { width: 11px; height: 11px; stroke: #d4a853; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .app-agent .agent-name { font-size: 13px; font-weight: 700; color: #d4a853; }
+    .app-agent .agent-phone { font-size: 11px; color: #94a3b8; direction: ltr; text-align: left; }
+    .app-agent .agent-code { font-size: 10px; color: #64748b; font-family: 'Courier New', monospace; direction: ltr; text-align: left; }
+    .app-agent .agent-direct { color: #94a3b8; font-size: 12px; }
+
+    .app-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .app-action-btn {
+      padding: 8px 18px; border-radius: 10px;
+      font-family: 'Tajawal', sans-serif; font-size: 12px; font-weight: 600;
+      cursor: pointer; transition: all .2s ease; border: 1px solid transparent;
+    }
+    .app-action-btn.primary { background: rgba(212,168,83,0.08); color: #b8860b; border-color: rgba(212,168,83,0.15); }
+    .app-action-btn.primary:hover { background: rgba(212,168,83,0.15); transform: translateY(-1px); }
+    .app-action-btn.success { background: rgba(16,185,129,0.08); color: #047857; border-color: rgba(16,185,129,0.15); }
+    .app-action-btn.success:hover { background: rgba(16,185,129,0.15); transform: translateY(-1px); }
+    .app-action-btn.danger { background: rgba(244,63,94,0.08); color: #be123c; border-color: rgba(244,63,94,0.15); }
+    .app-action-btn.danger:hover { background: rgba(244,63,94,0.15); transform: translateY(-1px); }
+    .app-action-btn.muted { opacity: 0.5; cursor: default; }
+    .app-action-btn.gold { background: rgba(212,168,83,0.08); color: #b8860b; border-color: rgba(212,168,83,0.15); }
+
+    .app-jobs-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 11px; font-weight: 600; color: #047857;
+      background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.12);
+      padding: 5px 12px; border-radius: 8px;
+    }
+    .app-jobs-badge svg { width: 12px; height: 12px; stroke: #10b981; fill: none; stroke-width: 2; }
+
+    .app-reject-reason {
+      font-size: 11px; color: #64748b; line-height: 1.5;
+      background: rgba(244,63,94,0.04); border: 1px solid rgba(244,63,94,0.08);
+      border-radius: 8px; padding: 8px 10px; margin-top: 4px;
+    }
+
+    .action-popup-overlay {
+      display: none; position: fixed; top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6); backdrop-filter: blur(6px);
+      z-index: 150; align-items: center; justify-content: center;
+    }
+    .action-popup-overlay.show { display: flex; }
+    .action-popup {
+      background: #111; border: 1px solid rgba(212,168,83,0.1);
+      border-radius: 20px; padding: 28px; width: 320px;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+      animation: modalIn 0.25s cubic-bezier(0.16,1,0.3,1);
+    }
+    .action-popup h3 { font-size: 16px; font-weight: 700; margin-bottom: 18px; text-align: center; color: #f0d78c; }
+    .action-popup .popup-options { display: flex; flex-direction: column; gap: 10px; }
+    .action-popup .popup-opt {
+      padding: 14px 18px; border-radius: 14px; font-family: 'Tajawal', sans-serif;
+      font-size: 14px; font-weight: 600; cursor: pointer; border: none;
+      transition: all 0.3s; text-align: right; display: flex; align-items: center; gap: 10px;
+    }
+    .action-popup .popup-opt svg { width: 18px; height: 18px; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+    .action-popup .popup-opt.approve-opt {
+      background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.12); color: #34d399;
+    }
+    .action-popup .popup-opt.approve-opt:hover { background: rgba(16,185,129,0.12); }
+    .action-popup .popup-opt.approve-opt svg { stroke: #34d399; }
+    .action-popup .popup-opt.reject-opt {
+      background: rgba(244,63,94,0.06); border: 1px solid rgba(244,63,94,0.12); color: #fb7185;
+    }
+    .action-popup .popup-opt.reject-opt:hover { background: rgba(244,63,94,0.12); }
+    .action-popup .popup-opt.reject-opt svg { stroke: #fb7185; }
+    .action-popup .popup-opt.rerecord-opt {
+      background: rgba(212,168,83,0.06); border: 1px solid rgba(212,168,83,0.12); color: #d4a853;
+    }
+    .action-popup .popup-opt.rerecord-opt:hover { background: rgba(212,168,83,0.12); }
+    .action-popup .popup-opt.rerecord-opt svg { stroke: #d4a853; }
+    .action-popup .popup-opt.disabled-opt { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+    .action-popup .popup-cancel {
+      margin-top: 10px; padding: 10px; border-radius: 10px; font-family: 'Tajawal', sans-serif;
+      font-size: 13px; font-weight: 600; cursor: pointer; border: none; width: 100%;
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);
+      color: #888; transition: all 0.3s;
+    }
+    .action-popup .popup-cancel:hover { background: rgba(255,255,255,0.08); color: #ccc; }
+
+    .audio-modal {
+      display: none; position: fixed; top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.8); backdrop-filter: blur(12px);
+      z-index: 200; align-items: center; justify-content: center;
+    }
+    .audio-modal.show { display: flex; }
+    .audio-modal-box {
+      background: #111; border: 1px solid rgba(212,168,83,0.1);
+      border-radius: 24px; padding: 36px; width: 440px; max-width: 90vw;
+      box-shadow: 0 40px 100px rgba(0,0,0,0.7);
+      animation: modalIn 0.3s cubic-bezier(0.16,1,0.3,1);
+    }
+    .audio-modal-box h3 { font-size: 18px; font-weight: 700; margin-bottom: 6px; color: #f0d78c; }
+    .audio-modal-box .audio-user { font-size: 13px; color: #888; margin-bottom: 20px; }
+    .audio-modal-box audio {
+      width: 100%; height: 44px; border-radius: 12px; margin-bottom: 16px;
+      background: rgba(255,255,255,0.04);
+    }
+    .audio-modal-box audio::-webkit-media-controls-panel {
+      background: rgba(212,168,83,0.06); border-radius: 12px;
+    }
+    .audio-modal-actions { display: flex; gap: 10px; }
+    .audio-modal-actions button {
+      flex: 1; padding: 12px; border-radius: 12px; font-family: 'Tajawal', sans-serif;
+      font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .audio-modal-actions .btn-dl {
+      background: linear-gradient(135deg, #b8860b, #d4a853); border: none;
+      color: #0a0a0a;
+    }
+    .audio-modal-actions .btn-dl:hover { transform: translateY(-2px); }
+    .audio-modal-actions .btn-dl svg { width: 16px; height: 16px; stroke: #0a0a0a; fill: none; stroke-width: 2; }
+    .audio-modal-actions .btn-close-audio {
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+      color: #888;
+    }
+    .audio-modal-actions .btn-close-audio:hover { background: rgba(255,255,255,0.08); color: #ccc; }
+
+    .modal-overlay {
+      display: none; position: fixed; top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+      z-index: 100; align-items: center; justify-content: center;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal {
+      background: #111;
+      border: 1px solid rgba(212,168,83,0.1);
+      border-radius: 28px; padding: 42px; width: 520px;
+      max-height: 80vh; overflow-y: auto;
+      box-shadow: 0 40px 100px rgba(0,0,0,0.6);
+      animation: modalIn 0.35s cubic-bezier(0.16,1,0.3,1);
+    }
+    @keyframes modalIn { from { opacity:0; transform:scale(0.95) translateY(16px); } }
+    .modal h2 { font-size: 22px; margin-bottom: 28px; font-weight: 800; }
+    .modal .form-group { margin-bottom: 20px; }
+    .modal .form-group label {
+      display: block; color: #94a3b8;
+      margin-bottom: 8px; font-size: 14px; font-weight: 600;
+    }
+    .modal .form-group input, .modal .form-group textarea {
+      width: 100%; padding: 14px 18px;
+      background: rgba(255,255,255,0.04);
+      border: 1.5px solid rgba(255,255,255,0.06);
+      border-radius: 14px; color: #e2e8f0;
+      font-family: 'Tajawal', sans-serif; font-size: 15px; transition: all 0.3s;
+    }
+    .modal .form-group textarea { resize: vertical; min-height: 85px; }
+    .modal .form-group input:focus, .modal .form-group textarea:focus {
+      outline: none; border-color: rgba(212,168,83,0.5);
+      box-shadow: 0 0 0 4px rgba(212,168,83,0.06);
+    }
+    .modal .form-group input::placeholder, .modal .form-group textarea::placeholder { color: #475569; }
+    .modal .btn-row { display: flex; gap: 12px; margin-top: 24px; }
+    .modal .btn-submit {
+      flex: 1; padding: 14px;
+      background: linear-gradient(135deg, #b8860b, #d4a853);
+      border: none; border-radius: 14px;
+      color: #0a0a0a; font-family: 'Tajawal', sans-serif;
+      font-size: 15px; font-weight: 700; cursor: pointer;
+      box-shadow: 0 8px 25px rgba(212,168,83,0.25); transition: all 0.3s;
+    }
+    .modal .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 14px 40px rgba(212,168,83,0.35); }
+    .modal .btn-cancel {
+      flex: 1; padding: 14px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 14px; color: #64748b;
+      font-family: 'Tajawal', sans-serif; font-size: 15px; font-weight: 600;
+      cursor: pointer; transition: all 0.3s;
+    }
+    .modal .btn-cancel:hover { background: rgba(255,255,255,0.06); color: #94a3b8; }
+
+    .selection-row {
+      padding: 20px 30px;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      display: grid;
+      grid-template-columns: 1.5fr 1.5fr 1.3fr 1.5fr 1fr 1.2fr 1.5fr 2.5fr;
+      align-items: center; gap: 12px; font-size: 14px;
+    }
+    .selection-row:last-child { border-bottom: none; }
+    .selection-row:hover { background: rgba(212,168,83,0.02); }
+
+    .hired-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .hired-actions .amount-group { display: flex; flex-direction: column; gap: 4px; }
+    .hired-actions .amount-label { font-size: 11px; color: #888; font-weight: 600; }
+    .hired-actions input {
+      width: 100px; padding: 8px 14px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 10px; color: #f5f0e8;
+      font-family: 'Tajawal', sans-serif; font-size: 13px;
+      outline: none;
+    }
+    .hired-actions input:focus { border-color: rgba(212,168,83,0.4); }
+    .hired-actions .btn-confirm {
+      padding: 8px 18px;
+      background: rgba(100,200,100,0.08); border: 1px solid rgba(100,200,100,0.15);
+      color: #66bb6a; border-radius: 10px;
+      font-family: 'Tajawal', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer;
+      transition: all 0.3s;
+    }
+    .hired-actions .btn-confirm:hover { background: rgba(100,200,100,0.15); }
+    .hired-actions .btn-cancel-sel {
+      padding: 8px 18px;
+      background: rgba(220,50,50,0.08); border: 1px solid rgba(220,50,50,0.15);
+      color: #e57373; border-radius: 10px;
+      font-family: 'Tajawal', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer;
+      transition: all 0.3s;
+    }
+    .hired-actions .btn-cancel-sel:hover { background: rgba(220,50,50,0.15); }
+
+    .jobs-added .job-item {
+      background: rgba(212,168,83,0.04);
+      border: 1px solid rgba(212,168,83,0.08);
+      border-radius: 14px; padding: 16px 20px; margin-bottom: 10px;
+      display: flex; justify-content: space-between; align-items: center; font-size: 14px;
+    }
+    .jobs-added .job-item .info { display: flex; gap: 16px; }
+
+    .section-title {
+      font-size: 22px; font-weight: 800; margin-bottom: 22px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .section-title .dot {
+      width: 8px; height: 8px;
+      background: linear-gradient(135deg, #b8860b, #d4a853); border-radius: 50%;
+      box-shadow: 0 0 12px rgba(212,168,83,0.4);
+    }
+
+    .ud-item{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:10px;}
+    .ud-label{font-size:11px;color:#555;font-weight:600;}
+    .ud-value{font-size:13px;color:#d4a853;font-weight:600;text-align:left;direction:rtl;}
+    .ud-section{font-size:10px;color:#444;font-weight:700;letter-spacing:1px;margin-top:8px;padding-bottom:4px;border-bottom:1px solid rgba(255,255,255,0.03);}
+
+    .agents-table{border-radius:20px;overflow:hidden}
+    .agents-header{display:grid;grid-template-columns:1.3fr 2fr 1.5fr .7fr .7fr .7fr 1.7fr;align-items:center;gap:14px;padding:16px 28px;background:rgba(212,168,83,0.04);border-bottom:1px solid rgba(212,168,83,0.06)}
+    .agents-header>div{font-size:12px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+    .agent-row{display:grid;grid-template-columns:1.3fr 2fr 1.5fr .7fr .7fr .7fr 1.7fr;align-items:center;gap:14px;padding:18px 28px;border-bottom:1px solid rgba(255,255,255,0.03);transition:all .2s ease}
+    .agent-row:last-child{border-bottom:none}
+    .agent-row:hover{background:rgba(212,168,83,0.02);border-color:rgba(212,168,83,0.08);transform:translateY(-1px);box-shadow:0 4px 20px rgba(0,0,0,0.15)}
+    .agent-identity{display:flex;align-items:center;gap:12px}
+    .agent-avatar{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,rgba(212,168,83,0.12),rgba(212,168,83,0.04));border:1px solid rgba(212,168,83,0.15);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#d4a853;flex-shrink:0;transition:all .2s ease}
+    .agent-row:hover .agent-avatar{background:linear-gradient(135deg,rgba(212,168,83,0.18),rgba(212,168,83,0.08))}
+    .agent-name{font-size:15px;font-weight:700;color:#f0d78c;line-height:1.3}
+    .agent-email{font-size:12px;color:#94a3b8;direction:ltr;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px}
+    .agent-code{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:8px;font-family:'Courier New',monospace;font-size:12px;font-weight:600;color:#e2e8f0;direction:ltr;letter-spacing:.5px;transition:all .2s ease}
+    .agent-code:hover{background:rgba(212,168,83,0.06);border-color:rgba(212,168,83,0.12)}
+    .agent-stat{text-align:center}
+    .agent-stat-val{font-size:18px;font-weight:800;line-height:1}
+    .agent-stat-val.gold{color:#d4a853}
+    .agent-stat-val.amber{color:#fbbf24}
+    .agent-stat-val.green{color:#34d399}
+    .agent-stat-label{font-size:10px;color:#64748b;font-weight:600;margin-top:3px;text-transform:uppercase;letter-spacing:.3px}
+    .agent-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .agent-btn{padding:8px 16px;border-radius:10px;font-family:'Tajawal',sans-serif;font-size:12px;font-weight:600;cursor:pointer;border:1px solid transparent;transition:all .2s ease;display:inline-flex;align-items:center;gap:5px}
+    .agent-btn svg{width:13px;height:13px;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+    .agent-btn.disable{background:rgba(244,63,94,0.06);border-color:rgba(244,63,94,0.12);color:#fb7185}
+    .agent-btn.disable:hover{background:rgba(244,63,94,0.12);transform:translateY(-1px)}
+    .agent-btn.disable svg{stroke:#fb7185}
+    .agent-btn.enable{background:rgba(16,185,129,0.06);border-color:rgba(16,185,129,0.12);color:#34d399}
+    .agent-btn.enable:hover{background:rgba(16,185,129,0.12);transform:translateY(-1px)}
+    .agent-btn.enable svg{stroke:#34d399}
+    .agent-btn.copy{background:rgba(212,168,83,0.06);border-color:rgba(212,168,83,0.12);color:#d4a853}
+    .agent-btn.copy:hover{background:rgba(212,168,83,0.12);transform:translateY(-1px)}
+    .agent-btn.copy svg{stroke:#d4a853}
+
+
+    @media(max-width:768px){
+      .navbar{padding:12px 16px;flex-wrap:wrap;gap:8px;background:transparent;border-bottom:none}
+      .navbar h1{font-size:20px}
+      .navbar .brand-logo{height:56px}
+      .navbar .user-info{gap:10px}
+      .navbar .user-info span{font-size:12px}
+      .btn-logout{padding:7px 14px;font-size:12px}
+      .container{padding:0 14px;margin:16px auto}
+      .glass{border-radius:18px}
+      .stats-grid{grid-template-columns:repeat(2,1fr);gap:10px}
+      .stat-card{padding:16px 12px}
+      .stat-card .num{font-size:26px}
+      .stat-card .label{font-size:11px}
+      .tabs{gap:6px;margin-bottom:16px}
+      .tab-btn{padding:9px 16px;font-size:13px;border-radius:12px}
+      .table-header{padding:16px 18px;flex-direction:column;align-items:stretch;gap:12px}
+      .filter-group{flex-direction:column}
+      .filter-input{width:100%}
+      .app-card {
+        grid-template-columns: 1fr;
+        gap: 0; padding: 0;
+        background: rgba(15,15,15,0.8); border-radius: 16px;
+        border: 1px solid rgba(212,168,83,0.08);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+        margin-bottom: 12px; overflow: hidden;
+      }
+      .app-card > div { padding: 12px 16px; }
+      .app-card > div:not(:last-child) { border-bottom: 1px solid rgba(212,168,83,0.06); }
+      .app-card .app-identity { padding: 16px; gap: 12px; }
+      .app-card .app-avatar { width: 44px; height: 44px; font-size: 15px; }
+      .app-card .app-name { font-size: 15px; color: #f0d78c; }
+      .app-card .app-email { font-size: 12px; color: #94a3b8; }
+      .app-card .app-actions { padding: 14px 16px; justify-content: stretch; }
+      .app-card .app-action-btn { flex: 1; text-align: center; justify-content: center; min-height: 40px; }
+      .app-card .app-meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+      .app-card .app-meta .app-date { margin: 0; }
+      .app-card .app-meta .app-phone { direction: ltr; text-align: left; }
+      .app-card .app-agent { gap: 6px; }
+      .app-card .app-agent .agent-row { display: flex; align-items: center; gap: 8px; }
+      .app-card .app-agent .agent-name { font-size: 14px; }
+      .app-card .app-agent .agent-phone { font-size: 12px; color: #94a3b8; direction: ltr; text-align: left; }
+      .app-card .app-agent .agent-code { font-size: 11px; color: #64748b; font-family: 'Courier New', monospace; direction: ltr; text-align: left; }
+      .app-card .app-lang,
+      .app-card .app-status { margin-top: 4px; }
+      .action-btns{flex-wrap:wrap;gap:6px}
+      .action-btn{padding:7px 14px;font-size:12px}
+      .selection-row{
+        grid-template-columns:1fr!important;gap:0;padding:0;
+        background:rgba(15,15,15,0.8);border:1px solid rgba(212,168,83,0.08);
+        border-radius:16px;margin-bottom:10px;overflow:hidden;
+      }
+      .selection-row>div{padding:10px 16px;border-bottom:1px solid rgba(212,168,83,0.05)}
+      .selection-row>div:last-child{border-bottom:none}
+      .selection-row>div::before{font-size:10px;color:#666;font-weight:600;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+      .selection-row>div:nth-child(1)::before{content:'العضو'}
+      .selection-row>div:nth-child(2)::before{content:'الشركة'}
+      .selection-row>div:nth-child(3)::before{content:'الوظيفة'}
+      .selection-row>div:nth-child(4)::before{content:'المرتب'}
+      .selection-row>div:nth-child(5)::before{content:'المندوب'}
+      .selection-row>div:nth-child(6)::before{content:'الحالة'}
+      .selection-row>div:nth-child(7)::before{content:'المبلغ'}
+      .selection-row>div:nth-child(8)::before{content:'الإجراءات'}
+      .hired-actions{flex-direction:column;align-items:stretch}
+      .hired-actions input{width:100%}
+      .agents-header{display:none}
+      .agents-header>div{grid-template-columns:1fr!important}
+      .agents-header>div>div{padding:4px 0}
+      .agent-row{
+        grid-template-columns:1fr!important;gap:0;padding:0;
+        background:rgba(15,15,15,0.8);border:1px solid rgba(212,168,83,0.08);
+        border-radius:16px;margin-bottom:10px;overflow:hidden;
+      }
+      .agent-row>div{padding:10px 16px;border-bottom:1px solid rgba(212,168,83,0.05)}
+      .agent-row>div:last-child{border-bottom:none}
+      .agent-row>div::before{font-size:10px;color:#666;font-weight:600;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+      .agent-row>div:nth-child(1)::before{content:'المندوب'}
+      .agent-row>div:nth-child(2)::before{content:'كود الإحالة'}
+      .agent-row>div:nth-child(3)::before{content:'الاعضاء'}
+      .agent-row>div:nth-child(4)::before{content:'الطلبات'}
+      .agent-row>div:nth-child(5)::before{content:'التوظيف'}
+      .agent-row>div:nth-child(6)::before{content:'الاجراءات'}
+      .agent-row .agent-actions{flex-direction:column;gap:6px}
+      .agent-row .agent-btn{width:100%}
+      #agent-earnings-list .app-row{
+        grid-template-columns:1fr!important;gap:0;padding:0;
+        background:rgba(15,15,15,0.8);border:1px solid rgba(212,168,83,0.08);
+        border-radius:16px;margin-bottom:10px;overflow:hidden;
+      }
+      #agent-earnings-list .app-row>div{padding:10px 16px;border-bottom:1px solid rgba(212,168,83,0.05)}
+      #agent-earnings-list .app-row>div:last-child{border-bottom:none}
+      .audio-modal-box{width:90vw;padding:24px;border-radius:18px}
+      .modal{width:90vw;padding:28px;border-radius:22px}
+      .modal h2{font-size:18px;margin-bottom:20px}
+      .modal .form-group input,.modal .form-group textarea{padding:12px 14px;font-size:14px}
+      .action-popup{width:280px;padding:20px;border-radius:16px}
+      .action-popup h3{font-size:15px}
+      .section-title{font-size:18px;margin-bottom:16px}
+      .jobs-added .job-item{flex-direction:column;gap:10px;align-items:flex-start}
+      .table-container{overflow-x:auto}
+      .finance-tooltip{display:none!important}
+      .notif-popup{width:calc(100vw - 32px)}
+    }
+    @media(max-width:380px){
+      .stats-grid{grid-template-columns:1fr 1fr;gap:8px}
+      .stat-card .num{font-size:22px}
+      .tabs{flex-wrap:wrap}
+      .tab-btn{padding:8px 12px;font-size:12px;flex:1;text-align:center}
+    }
+  </style>
+</head>
+<body>
+  <canvas id="bg-canvas"></canvas>
+
+  <nav class="navbar">
+    <div class="brand"><img src="/uploads/wazef.png" alt="وَظِيف" class="brand-logo"></div>
+    <div class="user-info">
+      <span id="user-name"></span>
+      <button class="btn-logout" onclick="logout()">خروج</button>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="stats-grid" id="stats-grid"></div>
+    <div class="tabs">
+      <div class="tab-btn active" onclick="switchSection('applications', this)">الطلبات</div>
+      <div class="tab-btn" onclick="switchSection('selections', this)">الاختيارات</div>
+      <div class="tab-btn" onclick="switchSection('finance', this)">المالية</div>
+      <div class="tab-btn" onclick="switchSection('agents', this)">المندوبين</div>
+    </div>
+
+    <div id="applications-section" class="section active">
+      <div class="table-container glass">
+        <div class="table-header">
+          <h3>طلبات التوظيف</h3>
+          <div class="filter-group">
+            <input id="search-input" type="search" class="filter-input" placeholder="بحث بالاسم..." oninput="applyFilters()" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')">
+            <select id="status-filter" class="filter-input" onchange="applyFilters()">
+              <option value="">جميع الحالات</option>
+              <option value="pending">قيد المراجعة</option>
+              <option value="approved">تمت الموافقة</option>
+              <option value="rejected">مرفوض</option>
+            </select>
+            <select id="sort-filter" class="filter-input" onchange="applyFilters()">
+              <option value="newest">الأحدث أولاً</option>
+              <option value="oldest">الأقدم أولاً</option>
+            </select>
+            <select id="agent-filter" class="filter-input" onchange="applyFilters()">
+              <option value="">الكل - جميع المندوبين</option>
+              <option value="direct">التسجيل المباشر</option>
+            </select>
+          </div>
+        </div>
+        <div id="apps-list"></div>
+      </div>
+    </div>
+
+    <div id="selections-section" class="section">
+      <div class="table-container glass">
+        <div class="table-header"><h3>الاختيارات والتثبيت</h3></div>
+        <div style="padding:14px 20px;border-bottom:1px solid rgba(255,255,255,0.04);">
+          <div class="filter-group">
+            <input type="text" id="sel-search" class="filter-input" placeholder="بحث بالاسم أو الشركة..." oninput="filterSelections()" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')">
+            <select id="sel-status-filter" class="filter-input" onchange="filterSelections()">
+              <option value="">كل الحالات</option>
+              <option value="confirmed">تم التثبيت</option>
+              <option value="cancelled">ملغي</option>
+              <option value="frozen">متجمد</option>
+              <option value="unfrozen">تم فك التجميد</option>
+            </select>
+            <select id="sel-agent-filter" class="filter-input" onchange="filterSelections()">
+              <option value="">كل المندوبين</option>
+              <option value="direct">التسجيل المباشر</option>
+            </select>
+          </div>
+        </div>
+        <div id="selections-list"></div>
+      </div>
+    </div>
+
+    <div id="finance-section" class="section">
+      <div class="stats-grid" id="finance-stats"></div>
+      <div class="table-container glass">
+        <div class="table-header"><h3>تفاصيل المعاملات</h3></div>
+        <div id="finance-list"></div>
+      </div>
+      <div id="finance-tooltip" style="display:none;position:fixed;z-index:200;background:rgba(15,15,15,0.97);border:1px solid rgba(212,168,83,0.15);border-radius:16px;padding:20px 24px;min-width:280px;box-shadow:0 20px 60px rgba(0,0,0,0.7);pointer-events:none;backdrop-filter:blur(20px);">
+      <div id="finance-tooltip-content"></div>
+    </div>
+
+    <div class="section-title"><div class="dot"></div>تفاصيل أرباح المندوبين</div>
+    <div id="agent-earnings-list"></div>
+  </div>
+
+    <div id="agents-section" class="section">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;">
+        <div class="section-title" style="margin-bottom:0;"><div class="dot"></div>المندوبين</div>
+        <button onclick="openAgentModal()" style="padding:10px 24px;font-size:14px;font-weight:700;font-family:'Tajawal',sans-serif;background:linear-gradient(135deg,#b8860b,#d4a853);color:#0a0a0a;border:none;border-radius:12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .2s ease;box-shadow:0 2px 12px rgba(212,168,83,0.15);">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          إضافة مندوب
+        </button>
+      </div>
+      <div class="table-container glass">
+        <div id="agents-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="job-modal">
+    <div class="modal">
+      <h2>إضافة وظائف</h2>
+      <input type="hidden" id="modal-app-id">
+      <input type="hidden" id="modal-user-id">
+      <div class="form-group"><label>اسم الشركة</label><input type="text" id="job-company" placeholder="اسم الشركة" autocomplete="off"></div>
+      <div class="form-group"><label>اسم الوظيفة</label><input type="text" id="job-position" placeholder="مثال: مطور ويب" autocomplete="off"></div>
+      <div class="form-group"><label>وقت المقابلة</label><input type="text" id="job-time" placeholder="مثال: السبت 2 م" autocomplete="off"></div>
+      <div class="form-group"><label>المرتب (جنيه) - اختياري</label>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <input type="number" id="job-salary-min" placeholder="الحد الأدنى" autocomplete="off" style="flex:1;">
+          <span style="color:#555;font-size:14px;">-</span>
+          <input type="number" id="job-salary-max" placeholder="الحد الأقصى" autocomplete="off" style="flex:1;">
+        </div>
+      </div>
+      <div class="form-group"><label>وصف إضافي</label><textarea id="job-desc" placeholder="تفاصيل إضافية" autocomplete="off"></textarea></div>
+      <div class="form-group"><label>جيميل الشركة (اختياري - لإرسال بيانات المتقدم)</label><input type="email" id="job-company-email" placeholder="example@company.com" autocomplete="off" style="direction:ltr;text-align:left;"></div>
+      <div class="btn-row" style="margin-top:0;margin-bottom:20px;">
+        <button class="btn-submit" onclick="addJobToList()" style="flex:1;">+ إضافة وظيفة للقائمة</button>
+      </div>
+      <div id="jobs-added-modal"></div>
+      <div class="btn-row">
+        <button class="btn-cancel" onclick="closeModal()">إلغاء</button>
+        <button class="btn-submit" onclick="confirmAllJobs()" id="btn-confirm-all" style="background:linear-gradient(135deg,#16a34a,#22c55e);display:none;">تأكيد وإرسال الكل</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="agent-modal">
+    <div class="modal">
+      <h2>إضافة مندوب جديد</h2>
+      <div class="form-group"><label>اسم المندوب</label><input type="text" id="agent-name" placeholder="اسم المندوب" autocomplete="off"></div>
+      <div class="form-group"><label>البريد الإلكتروني</label><input type="email" id="agent-email" placeholder="example@email.com" autocomplete="off"></div>
+      <div class="form-group"><label>رقم الهاتف</label><input type="text" id="agent-phone" placeholder="01xxxxxxxxx" autocomplete="off"></div>
+      <div class="form-group"><label>كلمة المرور</label><input type="password" id="agent-password" placeholder="••••••••" autocomplete="new-password"></div>
+      <div class="btn-row">
+        <button class="btn-cancel" onclick="closeAgentModal()">إلغاء</button>
+        <button class="btn-submit" onclick="addAgent()">إضافة المندوب</button>
+      </div>
+      <div id="agent-link-box" style="display:none;margin-top:22px;padding:18px;background:rgba(212,168,83,0.06);border:1px solid rgba(212,168,83,0.12);border-radius:14px;">
+        <p style="color:#666;font-size:13px;margin-bottom:10px;">رابط التسجيل للمندوب:</p>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <input type="text" id="agent-link" readonly style="flex:1;padding:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(212,168,83,0.12);border-radius:10px;color:#d4a853;font-family:monospace;font-size:14px;outline:none;">
+          <button class="action-btn add-job" onclick="copyAgentLink()" style="padding:12px 18px;">نسخ</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="confirm-modal">
+    <div class="modal">
+      <h2>تأكيد التثبيت</h2>
+      <input type="hidden" id="confirm-sel-id">
+      <div class="form-group"><label>مبلغ الشركة (جنيه)</label><input type="number" id="confirm-amount" placeholder="0" autocomplete="off"></div>
+      <div class="form-group"><label>عمولة المندوب (جنيه)</label><input type="number" id="confirm-agent-amount" placeholder="0" autocomplete="off"></div>
+      <div class="btn-row">
+        <button class="btn-cancel" onclick="closeConfirmModal()">إلغاء</button>
+        <button class="btn-submit" onclick="submitConfirmSelection()">تأكيد التثبيت</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="audio-modal" id="audio-modal">
+    <div class="audio-modal-box">
+      <h3 id="audio-modal-title">تسجيل صوتي</h3>
+      <div class="audio-user" id="audio-modal-user"></div>
+      <audio controls id="audio-modal-player"></audio>
+      <div class="audio-modal-actions">
+        <button class="btn-dl" id="audio-modal-download">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          تحميل التسجيل
+        </button>
+        <button class="btn-close-audio" onclick="closeAudioModal()">إغلاق</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="action-popup-overlay" id="action-popup-overlay" onclick="if(event.target===this)closeActionPopup()">
+    <div class="action-popup">
+      <h3>اختر إجراء</h3>
+      <input type="hidden" id="popup-app-id">
+      <div class="popup-options">
+        <button class="popup-opt approve-opt" onclick="popupApprove()">
+          <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          موافقة
+        </button>
+        <button class="popup-opt reject-opt" onclick="openRejectModal()">
+          <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          رفض
+        </button>
+        <button class="popup-opt rerecord-opt" onclick="popupRerecord()">
+          <svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+          طلب إعادة التسجيل
+        </button>
+      </div>
+      <button class="popup-cancel" onclick="closeActionPopup()">إلغاء</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="reject-modal">
+    <div class="modal" style="width:440px;">
+      <h2 style="color:#fb7185;">رفض الطلب</h2>
+      <p style="color:#888;font-size:14px;margin-bottom:20px;">اكتب سبب الرفض (سيتم إرساله للمستخدم عبر البريد الإلكتروني)</p>
+      <div class="form-group"><label>سبب الرفض</label><textarea id="reject-reason" placeholder="مثال: مستوى اللغة غير كافٍ، يحتاج تحسين النطق..." style="width:100%;padding:14px 18px;background:rgba(255,255,255,0.04);border:1.5px solid rgba(255,255,255,0.06);border-radius:14px;color:#e2e8f0;font-family:'Tajawal',sans-serif;font-size:15px;min-height:100px;resize:vertical;outline:none;" onfocus="this.style.borderColor='rgba(244,63,94,0.5)';this.style.boxShadow='0 0 0 4px rgba(244,63,94,0.06)'" onblur="this.style.borderColor='rgba(255,255,255,0.06)';this.style.boxShadow='none'" autocomplete="off"></textarea></div>
+      <div class="btn-row">
+        <button class="btn-cancel" onclick="closeRejectModal()">إلغاء</button>
+        <button class="btn-submit" style="background:linear-gradient(135deg,#dc3545,#c62828);" onclick="confirmReject()">رفض الطلب</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="reapply-modal">
+    <div class="modal" style="width:440px;">
+      <h2 style="color:#34d399;">السماح بالتقديم مجدداً</h2>
+      <p style="color:#888;font-size:14px;margin-bottom:20px;">اكتب ملاحظات للمستخدم (سيتم إرسالها عبر البريد الإلكتروني)</p>
+      <div class="form-group"><label>ملاحظات (اختياري)</label><textarea id="reapply-reason" placeholder="مثال: يمكنك المحاولة مرة أخرى بعد التدريب على النطق..." style="width:100%;padding:14px 18px;background:rgba(255,255,255,0.04);border:1.5px solid rgba(255,255,255,0.06);border-radius:14px;color:#e2e8f0;font-family:'Tajawal',sans-serif;font-size:15px;min-height:100px;resize:vertical;outline:none;" onfocus="this.style.borderColor='rgba(34,211,238,0.5)';this.style.boxShadow='0 0 0 4px rgba(34,211,238,0.06)'" onblur="this.style.borderColor='rgba(255,255,255,0.06)';this.style.boxShadow='none'" autocomplete="off"></textarea></div>
+      <div class="btn-row">
+        <button class="btn-cancel" onclick="closeReapplyModal()">إلغاء</button>
+        <button class="btn-submit" style="background:linear-gradient(135deg,#16a34a,#22c55e);" onclick="confirmReapply()">السماح بالتقديم</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="user-detail-modal" onclick="if(event.target===this)closeUserDetail()">
+    <div class="modal" style="width:520px;max-height:85vh;overflow-y:auto;">
+      <h2 style="color:#d4a853;margin-bottom:6px;">بيانات المتقدم</h2>
+      <p id="user-detail-subtitle" style="color:#666;font-size:13px;margin-bottom:18px;"></p>
+      <div id="user-detail-content" style="display:grid;gap:10px;"></div>
+      <div class="btn-row" style="margin-top:18px;">
+        <button class="btn-cancel" onclick="closeUserDetail()">إغلاق</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="apologize-modal" onclick="if(event.target===this)closeApologizeModal()">
+    <div class="modal" style="width:440px;">
+      <h2 style="color:#e57373;">إعتذار عن الصفقة</h2>
+      <p style="color:#888;font-size:14px;margin-bottom:20px;">سيتم إلغاء المبالغ من الشركة والمندوب. اكتب سبب الإعتذار.</p>
+      <div class="form-group"><label>سبب الإعتذار</label><textarea id="apologize-reason" placeholder="مثال: العميل تراجع عن الصفقة..." style="width:100%;padding:14px 18px;background:rgba(255,255,255,0.04);border:1.5px solid rgba(255,255,255,0.06);border-radius:14px;color:#e2e8f0;font-family:'Tajawal',sans-serif;font-size:15px;min-height:100px;resize:vertical;outline:none;" onfocus="this.style.borderColor='rgba(220,50,50,0.5)';this.style.boxShadow='0 0 0 4px rgba(220,50,50,0.06)'" onblur="this.style.borderColor='rgba(255,255,255,0.06)';this.style.boxShadow='none'" autocomplete="off"></textarea></div>
+      <div class="btn-row">
+        <button class="btn-cancel" onclick="closeApologizeModal()">إلغاء</button>
+        <button class="btn-submit" style="background:linear-gradient(135deg,#dc3545,#c62828);" onclick="confirmApologize()">تأكيد الإعتذار</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('bg-canvas');
+    const ctx = canvas.getContext('2d');
+    let W, H, particles = [], time = 0;
+    function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; initParticles(); }
+    function initParticles() { particles = []; const c = Math.min(80, Math.floor(W * H / 15000)); for (let i = 0; i < c; i++) particles.push({ x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - 0.5) * 0.4, vy: (Math.random() - 0.5) * 0.4, r: Math.random() * 2 + 0.8, alpha: Math.random() * 0.5 + 0.2, pulse: Math.random() * Math.PI * 2 }); }
+    resize();
+    window.addEventListener('resize', resize);
+    function animate() {
+      ctx.clearRect(0, 0, W, H);
+      const bg = ctx.createRadialGradient(W * 0.5, H * 0.3, 0, W * 0.5, H * 0.3, W * 0.8);
+      bg.addColorStop(0, '#12100a'); bg.addColorStop(0.4, '#0e0c08'); bg.addColorStop(1, '#0a0a0a');
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i]; p.x += p.vx; p.y += p.vy;
+        if (p.x < 0) p.x = W; if (p.x > W) p.x = 0; if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+        p.pulse += 0.02; const gl = p.alpha + Math.sin(p.pulse) * 0.15;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fillStyle = `rgba(212,168,83,${gl})`; ctx.fill();
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r * 3, 0, Math.PI * 2);
+        const rg = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 3); rg.addColorStop(0, `rgba(212,168,83,${gl * 0.15})`); rg.addColorStop(1, 'rgba(212,168,83,0)'); ctx.fillStyle = rg; ctx.fill();
+        for (let j = i + 1; j < particles.length; j++) { const q = particles[j]; const dx = p.x - q.x, dy = p.y - q.y, dist = Math.sqrt(dx * dx + dy * dy); if (dist < 150) { ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.strokeStyle = `rgba(212,168,83,${(1 - dist / 150) * 0.08})`; ctx.lineWidth = 0.5; ctx.stroke(); } }
+      }
+      for (let i = 0; i < 5; i++) { const bx = (i * W / 4 + time * 20) % W, by = H * 0.3 + Math.sin(time * 0.5 + i * 1.2) * H * 0.15, br = 80 + Math.sin(time + i) * 20; const bg2 = ctx.createRadialGradient(bx, by, 0, bx, by, br); bg2.addColorStop(0, `rgba(184,134,11,${0.02 + Math.sin(time * 0.3 + i) * 0.01})`); bg2.addColorStop(1, 'rgba(184,134,11,0)'); ctx.fillStyle = bg2; ctx.beginPath(); ctx.arc(bx, by, br, 0, Math.PI * 2); ctx.fill(); }
+      time += 0.008; requestAnimationFrame(animate);
+    }
+    animate();
+
+    const token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    if (!token || !user || user.role !== 'admin') { window.location.href = '/'; }
+    document.getElementById('user-name').textContent = user?.name || '';
+    function logout() { localStorage.removeItem('token'); localStorage.removeItem('user'); window.location.href = '/'; }
+
+    function switchSection(name, el) {
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+      document.getElementById(name + '-section').classList.add('active');
+      el.classList.add('active');
+    }
+
+    async function loadStats() {
+      try {
+        const res = await fetch('/api/admin/stats', { headers: { 'Authorization': `Bearer ${token}` } });
+        const s = await res.json();
+        document.getElementById('stats-grid').innerHTML = `
+          <div class="stat-card glass c1"><div class="num">${s.totalApps}</div><div class="label">إجمالي الطلبات</div></div>
+          <div class="stat-card glass c2"><div class="num">${s.pending}</div><div class="label">قيد المراجعة</div></div>
+          <div class="stat-card glass c3"><div class="num">${s.approved}</div><div class="label">تمت الموافقة</div></div>
+          <div class="stat-card glass c4"><div class="num">${s.rejected}</div><div class="label">مرفوض</div></div>
+          <div class="stat-card glass c5"><div class="num">${s.totalJobs}</div><div class="label">الوظائف</div></div>
+          <div class="stat-card glass c6"><div class="num">${s.totalUsers}</div><div class="label">المستخدمين</div></div>`;
+        return s;
+      } catch (e) { return {}; }
+    }
+
+    let allApps = [];
+    async function loadApplications() {
+      try {
+        const res = await fetch('/api/admin/applications', { headers: { 'Authorization': `Bearer ${token}` } });
+        allApps = await res.json();
+        applyFilters();
+      } catch (e) {}
+    }
+
+    function applyFilters() {
+      let filtered = [...allApps].filter(a => !a.jobs_count || a.jobs_count === 0);
+      const agentVal = document.getElementById('agent-filter').value;
+      const statusVal = document.getElementById('status-filter').value;
+      const sortVal = document.getElementById('sort-filter').value;
+      const searchVal = document.getElementById('search-input').value.trim().toLowerCase();
+
+      if (agentVal === 'direct') filtered = filtered.filter(a => !a.referred_by);
+      else if (agentVal) filtered = filtered.filter(a => String(a.referred_by) === agentVal);
+      if (statusVal) filtered = filtered.filter(a => a.status === statusVal);
+      if (searchVal) filtered = filtered.filter(a => (a.user_name || '').toLowerCase().includes(searchVal) || (a.user_email || '').toLowerCase().includes(searchVal));
+
+      if (sortVal === 'newest') filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      else filtered.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+      const list = document.getElementById('apps-list');
+      if (filtered.length === 0) { list.innerHTML = '<p style="text-align:center;padding:50px;color:#94a3b8;">لا توجد طلبات بعد</p>'; return; }
+      list.innerHTML = filtered.map(a => {
+        const initials = (a.user_name || '??').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+        const statusText = a.status==='pending'?'قيد المراجعة':a.status==='approved'?'تمت الموافقة':'مرفوض';
+        return `
+          <div class="app-card">
+            <div class="app-identity" onclick="copyAppData(${a.id}, this)" title="اضغط لنسخ بيانات المستخدم">
+              <div class="app-avatar">${initials}</div>
+              <div>
+                <div class="app-name">${a.user_name}</div>
+                <div class="app-email">${a.user_email}</div>
+                <div class="app-copy-hint">اضغط للنسخ</div>
+              </div>
+            </div>
+            <div class="app-meta">
+              <div class="app-date">${new Date(a.created_at).toLocaleDateString('ar-EG')}</div>
+              <div class="app-phone">${a.user_phone || 'لا يوجد هاتف'}</div>
+            </div>
+            <div><span class="app-lang">${getLangName(a.language)}</span></div>
+            <div><span class="app-status ${a.status}"><span class="status-dot"></span>${statusText}</span></div>
+            <div>
+              ${a.audio_file ? `
+                <button class="app-audio-btn" onclick="openAudioModal('${a.audio_file}', '${a.user_name}')">
+                  <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                  استماع
+                </button>
+              ` : '<button class="app-audio-btn no-audio" disabled>بدون صوت</button>'}
+            </div>
+            <div class="app-agent">
+              ${a.agent_name ? `
+                <div class="agent-row"><div class="agent-icon"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><span class="agent-name">${a.agent_name}</span></div>
+                <div class="agent-phone">${a.agent_phone || ''}</div>
+                <div class="agent-code">${a.agent_code}</div>
+              ` : '<span class="agent-direct">مباشر</span>'}
+            </div>
+            <div class="app-actions">
+              ${a.status==='pending' && !a.rerecord_request ? `<button class="app-action-btn primary" onclick="openActionPopup(${a.id})">إجراء</button>` : ''}
+              ${a.status==='pending' && a.rerecord_request ? `<button class="app-action-btn muted" disabled>تم طلب إعادة التسجيل</button>` : ''}
+              ${a.status==='approved' ? `
+                ${a.jobs_count > 0 ? `<span class="app-jobs-badge"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> تم إرسال ${a.jobs_count} وظيفة</span>` : `<button class="app-action-btn gold" onclick="openJobModal(${a.id},${a.user_id})">إضافة وظيفة</button>`}
+              ` : ''}
+              ${a.status==='rejected' ? `
+                <div style="width:100%;">
+                  <div style="font-size:12px;color:#be123c;font-weight:600;margin-bottom:4px;">تم الرفض</div>
+                  ${a.rejection_reason ? `<div class="app-reject-reason">${a.rejection_reason}</div>` : ''}
+                  <button class="app-action-btn success" onclick="openReapplyModal(${a.id})" style="margin-top:6px;width:100%;text-align:center;justify-content:center;display:flex;">السماح بالتقديم مجدداً</button>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function getLangName(code) {
+      const langs = {
+        'ar': 'العربية', 'en': 'English', 'de': 'Deutsch', 'ja': '日本語',
+        'pt': 'Português', 'fr': 'Français', 'es': 'Español', 'tr': 'Türkçe',
+        'ko': '한국어', 'zh': '中文', 'ru': 'Русский', 'it': 'Italiano',
+        'hi': 'हिन्दी', 'nl': 'Nederlands', 'sv': 'Svenska'
+      };
+      return langs[code] || code || 'غير محدد';
+    }
+
+    async function approveApp(id) {
+      await fetch(`/api/admin/applications/${id}/approve`, { method:'PUT', headers:{'Authorization':`Bearer ${token}`} });
+      loadApplications(); loadStats();
+    }
+    async function rejectApp(id) {
+      await fetch(`/api/admin/applications/${id}/reject`, { method:'PUT', headers:{'Authorization':`Bearer ${token}`} });
+      loadApplications(); loadStats();
+    }
+    async function requestRerecord(id) {
+      await fetch(`/api/admin/applications/${id}/rerecord`, { method:'PUT', headers:{'Authorization':`Bearer ${token}`} });
+      loadApplications(); loadStats();
+    }
+
+    function openActionPopup(id) {
+      document.getElementById('popup-app-id').value = id;
+      document.getElementById('action-popup-overlay').classList.add('show');
+    }
+    function closeActionPopup() {
+      document.getElementById('action-popup-overlay').classList.remove('show');
+    }
+    async function popupApprove() {
+      const id = document.getElementById('popup-app-id').value;
+      closeActionPopup();
+      await fetch(`/api/admin/applications/${id}/approve`, { method:'PUT', headers:{'Authorization':`Bearer ${token}`} });
+      loadApplications(); loadStats();
+    }
+    function openRejectModal() {
+      const id = document.getElementById('popup-app-id').value;
+      closeActionPopup();
+      document.getElementById('reject-reason').value = '';
+      document.getElementById('reject-modal').classList.add('show');
+      document.getElementById('reject-modal').dataset.appId = id;
+    }
+    function closeRejectModal() { document.getElementById('reject-modal').classList.remove('show'); }
+    async function confirmReject() {
+      const id = document.getElementById('reject-modal').dataset.appId;
+      const reason = document.getElementById('reject-reason').value;
+      closeRejectModal();
+      await fetch(`/api/admin/applications/${id}/reject`, { method:'PUT', headers:{'Authorization':`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({reason}) });
+      loadApplications(); loadStats();
+    }
+    function popupReject() { openRejectModal(); }
+    async function popupRerecord() {
+      const id = document.getElementById('popup-app-id').value;
+      closeActionPopup();
+      await fetch(`/api/admin/applications/${id}/rerecord`, { method:'PUT', headers:{'Authorization':`Bearer ${token}`} });
+      loadApplications(); loadStats();
+    }
+    function openReapplyModal(id) {
+      document.getElementById('reapply-reason').value = '';
+      document.getElementById('reapply-modal').classList.add('show');
+      document.getElementById('reapply-modal').dataset.appId = id;
+    }
+    function closeReapplyModal() { document.getElementById('reapply-modal').classList.remove('show'); }
+    async function confirmReapply() {
+      const id = document.getElementById('reapply-modal').dataset.appId;
+      const reason = document.getElementById('reapply-reason').value;
+      closeReapplyModal();
+      await fetch(`/api/admin/applications/${id}/allow-reapply`, { method:'PUT', headers:{'Authorization':`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({reason}) });
+      loadApplications(); loadStats();
+    }
+
+    let apologizeSelId = null;
+    function openApologizeModal(id) {
+      apologizeSelId = id;
+      document.getElementById('apologize-reason').value = '';
+      document.getElementById('apologize-modal').classList.add('show');
+    }
+    function closeApologizeModal() { document.getElementById('apologize-modal').classList.remove('show'); apologizeSelId = null; }
+    async function confirmApologize() {
+      const reason = document.getElementById('apologize-reason').value || 'لم يحدد سبب';
+      const id = apologizeSelId;
+      closeApologizeModal();
+      await fetch(`/api/admin/selections/${id}/apologize`, { method:'PUT', headers:{'Authorization':`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({reason}) });
+      cachedEarnings = null;
+      loadSelections(); loadStats(); loadFinance();
+    }
+    function updateCountdowns() {
+      document.querySelectorAll('.countdown-text[data-deadline]').forEach(el => {
+        const deadline = new Date(el.dataset.deadline);
+        const now = new Date();
+        const diff = deadline - now;
+        if (diff <= 0) { el.textContent = 'انتهت المدة!'; el.style.color = '#e57373'; return; }
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        el.textContent = `متبقي ${days} يوم ${hours} ساعة`;
+      });
+    }
+    setInterval(updateCountdowns, 60000);
+
+    let pendingJobs = [];
+
+    function openJobModal(appId, userId) {
+      document.getElementById('modal-app-id').value = appId;
+      document.getElementById('modal-user-id').value = userId;
+      document.getElementById('job-modal').classList.add('show');
+      pendingJobs = [];
+      renderPendingJobs();
+      loadJobsInModal(appId);
+    }
+    function closeModal() {
+      document.getElementById('job-modal').classList.remove('show');
+      pendingJobs = [];
+      ['job-company','job-position','job-time','job-salary-min','job-salary-max','job-desc','job-company-email'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = ''; });
+    }
+
+    async function loadJobsInModal(appId) {
+      try {
+        const res = await fetch(`/api/admin/jobs/${appId}`, { headers:{'Authorization':`Bearer ${token}`} });
+        const jobs = await res.json();
+        const c = document.getElementById('jobs-added-modal');
+        if (jobs.length === 0 && pendingJobs.length === 0) { c.innerHTML = ''; return; }
+        let html = '';
+        if (jobs.length > 0) {
+          html += '<h4 style="margin-bottom:12px;color:#64748b;font-size:14px;">الوظائف المضافة مسبقاً:</h4>' +
+            jobs.map(j => `<div class="job-item"><div class="info"><span>${j.position}</span><span style="color:#d4a853;">${j.company_name}</span><span>${(j.salary_min||j.salary_max)?(j.salary_min&&j.salary_max?j.salary_min+' - '+j.salary_max+' ج':j.salary_min?'من '+j.salary_min+' ج':'حتى '+j.salary_max+' ج'):''}</span></div></div>`).join('');
+        }
+        c.innerHTML = html;
+      } catch (e) {}
+    }
+
+    function addJobToList() {
+      const company = document.getElementById('job-company').value;
+      const position = document.getElementById('job-position').value;
+      const time = document.getElementById('job-time').value;
+      const salaryMin = document.getElementById('job-salary-min').value;
+      const salaryMax = document.getElementById('job-salary-max').value;
+      const desc = document.getElementById('job-desc').value;
+      const companyEmail = document.getElementById('job-company-email').value;
+      if (!company || !position) return alert('من فضلك أكمل البيانات (اسم الشركة + اسم الوظيفة)');
+      pendingJobs.push({ company_name: company, position, interview_time: time, salary_min: salaryMin ? parseFloat(salaryMin) : 0, salary_max: salaryMax ? parseFloat(salaryMax) : 0, description: desc, company_email: companyEmail || '' });
+      ['job-company','job-position','job-time','job-salary-min','job-salary-max','job-desc','job-company-email'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+      renderPendingJobs();
+    }
+
+    function removeJobFromList(index) {
+      pendingJobs.splice(index, 1);
+      renderPendingJobs();
+    }
+
+    function renderPendingJobs() {
+      const c = document.getElementById('jobs-added-modal');
+      const btn = document.getElementById('btn-confirm-all');
+      if (pendingJobs.length === 0) {
+        btn.style.display = 'none';
+        loadJobsInModal(document.getElementById('modal-app-id').value);
+        return;
+      }
+      btn.style.display = 'inline-block';
+      let html = '<h4 style="margin-bottom:12px;color:#d4a853;font-size:14px;">الوظائف جاهزة للإرسال (' + pendingJobs.length + '):</h4>';
+      html += pendingJobs.map((j, i) => `
+        <div class="job-item" style="background:rgba(34,197,94,0.04);border-color:rgba(34,197,94,0.12);">
+          <div class="info">
+            <span>${j.position}</span>
+            <span style="color:#d4a853;">${j.company_name}</span>
+            <span>${j.salary_min || j.salary_max ? (j.salary_min && j.salary_max ? j.salary_min + ' - ' + j.salary_max + ' ج' : j.salary_min ? 'من ' + j.salary_min + ' ج' : 'حتى ' + j.salary_max + ' ج') : ''}</span>
+            ${j.interview_time ? '<span style="color:#888;">' + j.interview_time + '</span>' : ''}
+          </div>
+          <button onclick="removeJobFromList(${i})" style="background:rgba(220,50,50,0.08);border:1px solid rgba(220,50,50,0.15);color:#e57373;border-radius:8px;padding:4px 12px;cursor:pointer;font-size:12px;font-family:'Tajawal',sans-serif;">حذف</button>
+        </div>
+      `).join('');
+      c.innerHTML = html;
+    }
+
+    async function confirmAllJobs() {
+      if (pendingJobs.length === 0) return;
+      const appId = document.getElementById('modal-app-id').value;
+      const userId = document.getElementById('modal-user-id').value;
+      const btn = document.getElementById('btn-confirm-all');
+      btn.disabled = true;
+      btn.textContent = 'جاري الإرسال...';
+      try {
+        const res = await fetch('/api/admin/jobs/batch', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ application_id: parseInt(appId), user_id: parseInt(userId), jobs: pendingJobs })
+        });
+        const data = await res.json();
+        if (data.error) { alert(data.error); return; }
+        pendingJobs = [];
+        closeModal();
+        loadApplications();
+        loadStats();
+        alert('تم إرسال جميع الوظائف بنجاح! سيتم إرسال إشعارات بالبريد الإلكتروني.');
+      } catch (e) {
+        alert('حدث خطأ أثناء الإرسال');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'تأكيد وإرسال الكل';
+      }
+    }
+
+    async function loadSelections() {
+      try {
+        const res = await fetch('/api/admin/stats', { headers:{'Authorization':`Bearer ${token}`} });
+        const s = await res.json();
+        cachedSelections = s.selections;
+        const agents = [...new Set(s.selections.filter(x=>x.agent_name).map(x=>x.agent_name))];
+        const agentSelect = document.getElementById('sel-agent-filter');
+        if (agentSelect && agentSelect.options.length <= 1) {
+          agents.forEach(a => { const o = document.createElement('option'); o.value = a; o.textContent = a; agentSelect.appendChild(o); });
+        }
+        filterSelections();
+      } catch (e) {}
+    }
+
+    function filterSelections() {
+      if (!cachedSelections) return;
+      const search = (document.getElementById('sel-search')?.value || '').trim().toLowerCase();
+      const statusVal = document.getElementById('sel-status-filter')?.value || '';
+      const agentVal = document.getElementById('sel-agent-filter')?.value || '';
+      let filtered = [...cachedSelections];
+      if (search) filtered = filtered.filter(s => (s.user_name||'').toLowerCase().includes(search) || (s.company_name||'').toLowerCase().includes(search));
+      if (agentVal === 'direct') filtered = filtered.filter(s => !s.agent_name);
+      else if (agentVal) filtered = filtered.filter(s => s.agent_name === agentVal);
+      if (statusVal === 'frozen') filtered = filtered.filter(s => s.is_frozen === 1 && s.status === 'confirmed');
+      else if (statusVal === 'unfrozen') filtered = filtered.filter(s => s.is_frozen === 0 && s.status === 'confirmed' && !s.apology);
+      else if (statusVal) filtered = filtered.filter(s => s.status === statusVal);
+      renderSelections(filtered);
+    }
+
+    function renderSelections(selections) {
+      const list = document.getElementById('selections-list');
+      if (selections.length===0) { list.innerHTML='<p style="text-align:center;padding:50px;color:#94a3b8;">لا توجد نتائج</p>'; return; }
+      list.innerHTML = selections.map(sel => {
+        let countdownHTML = '';
+        if (sel.is_frozen===1 && sel.frozen_deadline) {
+          const diff = new Date(sel.frozen_deadline) - new Date();
+          if (diff > 0) {
+            const days = Math.floor(diff / (1000*60*60*24));
+            const hours = Math.floor((diff % (1000*60*60*24)) / (1000*60*60));
+            countdownHTML = `<span class="countdown-text" data-deadline="${sel.frozen_deadline}" style="font-size:11px;color:#fbbf24;font-weight:600;">متبقي ${days} يوم ${hours} ساعة</span>`;
+          } else {
+            countdownHTML = `<span style="font-size:11px;color:#e57373;font-weight:600;">انتهت المدة!</span>`;
+          }
+        }
+        return `
+          <div class="selection-row" style="${sel.is_frozen===1?'border:1px solid rgba(251,191,36,0.15);background:rgba(251,191,36,0.02);':''}">
+            <div style="cursor:pointer;" onclick="copyUserData(${sel.id}, this)" title="اضغط لنسخ بيانات المستخدم"><strong style="color:#f0d78c;">${sel.user_name}</strong><div style="font-size:10px;color:#94a3b8;margin-top:2px;">اضغط للنسخ</div></div>
+            <div style="color:#e2e8f0;">${sel.company_name}</div>
+            <div style="color:#e2e8f0;">${sel.position}</div>
+            <div style="color:#e2e8f0;">${(sel.salary_min||sel.salary_max)?(sel.salary_min&&sel.salary_max?sel.salary_min+' - '+sel.salary_max+' ج':sel.salary_min?'من '+sel.salary_min+' ج':'حتى '+sel.salary_max+' ج'):'-'}</div>
+            <div>
+              ${sel.agent_name
+                ? `<div style="font-size:13px;color:#d4a853;font-weight:700;">${sel.agent_name}</div><div style="font-size:11px;color:#94a3b8;">${sel.agent_phone || ''}</div>`
+                : '<span style="color:#94a3b8;font-size:12px;">مباشر</span>'}
+            </div>
+            <div><span class="status-badge ${sel.status==='selected'?'pending':sel.status==='confirmed'?'approved':'rejected'}">${sel.status==='selected'?'في الانتظار':sel.status==='confirmed'?'تم التثبيت':'ملغي'}</span></div>
+            <div style="font-weight:700;color:${sel.status==='cancelled'?'#e57373':'#66bb6a'}">${sel.amount?sel.amount+' ج':'-'}</div>
+            <div class="hired-actions">
+              ${sel.status==='selected'?`
+                <button class="btn-confirm" onclick="openConfirmModal(${sel.id}, ${sel.amount||0}, ${sel.agent_amount||0})">إضافة مبلغ</button>
+                <button class="btn-cancel-sel" onclick="cancelSelection(${sel.id})">إلغاء</button>
+              `:sel.status==='confirmed'?`
+                <div style="font-size:13px;">
+                  <div style="color:#66bb6a;">الشركة: ${(sel.amount||0)} ج</div>
+                  <div style="color:#d4a853;">المندوب: ${(sel.agent_amount||0)} ج</div>
+                </div>
+                ${sel.is_frozen===1?`
+                  <div style="margin-top:8px;padding:8px 12px;background:rgba(251,191,36,0.05);border:1px solid rgba(251,191,36,0.12);border-radius:10px;">
+                    <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+                      <span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.15);padding:4px 10px;border-radius:8px;">
+                        <svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:#fbbf24;fill:none;stroke-width:2;"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        متجمد
+                      </span>
+                      ${countdownHTML}
+                    </div>
+                    <div style="font-size:11px;color:#888;margin-bottom:6px;">سيتم الإرسال خلال أسبوع إلى 3 أسابيع</div>
+                    <div style="display:flex;gap:6px;">
+                      <button onclick="unfreezeAmount(${sel.id})" style="font-size:11px;padding:4px 10px;border-radius:8px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.15);color:#22c55e;cursor:pointer;font-family:'Tajawal',sans-serif;font-weight:600;">فك التجميد</button>
+                      <button onclick="openApologizeModal(${sel.id})" style="font-size:11px;padding:4px 10px;border-radius:8px;background:rgba(220,50,50,0.08);border:1px solid rgba(220,50,50,0.15);color:#e57373;cursor:pointer;font-family:'Tajawal',sans-serif;font-weight:600;">إعتذار عن الصفقة</button>
+                    </div>
+                  </div>
+                `:sel.apology?`
+                  <div style="margin-top:6px;padding:6px 10px;background:rgba(220,50,50,0.05);border:1px solid rgba(220,50,50,0.1);border-radius:8px;">
+                    <div style="font-size:11px;color:#e57373;font-weight:600;">تم الإعتذار عن الصفقة</div>
+                    <div style="font-size:10px;color:#888;margin-top:2px;">${sel.apology}</div>
+                  </div>
+                `:`
+                  <div style="margin-top:6px;display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#22c55e;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.15);padding:4px 10px;border-radius:8px;">
+                    <svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:#22c55e;fill:none;stroke-width:2;"><polyline points="20 6 9 17 4 12"/></svg>
+                    تم فك التجميد
+                  </div>
+                `}
+              `:`<div style="display:flex;flex-direction:column;gap:6px;"><span style="color:#e57373;font-size:13px;">ملغي</span><button onclick="allowReapply(${sel.id})" style="font-size:11px;padding:5px 12px;border-radius:8px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.15);color:#22c55e;cursor:pointer;font-family:'Tajawal',sans-serif;font-weight:600;">السماح بالتقديم مجدداً</button></div>`}
+            </div>
+          </div>
+        `;
+      }).join('');
+      updateCountdowns();
+    }
+
+    function openConfirmModal(id, amount, agentAmount) {
+      document.getElementById('confirm-sel-id').value = id;
+      document.getElementById('confirm-amount').value = amount || '';
+      document.getElementById('confirm-agent-amount').value = agentAmount || '';
+      document.getElementById('confirm-modal').classList.add('show');
+    }
+    function closeConfirmModal() {
+      document.getElementById('confirm-modal').classList.remove('show');
+    }
+    async function submitConfirmSelection() {
+      const id = document.getElementById('confirm-sel-id').value;
+      const amount = document.getElementById('confirm-amount').value || 0;
+      const agentAmount = document.getElementById('confirm-agent-amount').value || 0;
+      await fetch(`/api/admin/selections/${id}`,{method:'PUT',headers:{'Authorization':`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({status:'confirmed',hired:1,amount:parseFloat(amount),agent_amount:parseFloat(agentAmount)})});
+      closeConfirmModal();
+      cachedEarnings = null;
+      loadSelections(); loadStats(); loadFinance();
+    }
+    async function cancelSelection(id) {
+      await fetch(`/api/admin/selections/${id}`,{method:'PUT',headers:{'Authorization':`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({status:'cancelled',hired:0})});
+      cachedEarnings = null;
+      loadSelections(); loadStats(); loadFinance();
+    }
+    async function allowReapply(id) {
+      if (!confirm('هل تريد السماح للمستخدم بالتقديم مجدداً؟')) return;
+      await fetch(`/api/admin/selections/${id}/allow-reapply`, {method:'PUT',headers:{'Authorization':`Bearer ${token}`}});
+      cachedEarnings = null;
+      loadSelections(); loadStats(); loadFinance();
+    }
+    async function unfreezeAmount(id) {
+      await fetch(`/api/admin/selections/${id}/unfreeze`,{method:'PUT',headers:{'Authorization':`Bearer ${token}`}});
+      cachedEarnings = null;
+      loadSelections(); loadStats(); loadFinance();
+    }
+    let cachedSelections = [];
+    async function copyUserData(selId, el) {
+      const sel = cachedSelections.find(s => s.id === selId);
+      if (!sel) return;
+      const militaryMap = { 'exempt': 'Applying for military exemption', 'sole_provider': 'Applying for military exemption as the sole family provider', 'postponed': 'Postponed', 'served': 'Served' };
+      const cityMap = { 'Cairo': 'Cairo', 'Alex': 'Alex' };
+      const text = `● Could you please fill the below details:\n* Triple Name : ${sel.user_name || ''}\n* Phone number : ${sel.user_phone || ''}\n* Gmail : ${sel.user_email || ''}\n* Nationality : ${sel.nationality || ''}\n* Cairo or Alex site : ${cityMap[sel.city] || sel.city || ''}\n* Language you applied for : ${getLangName(sel.user_language)}\n* Age : ${sel.age || ''}\n* college : ${sel.college || ''}\n* Grad or Undergrad : ${sel.education_level === 'graduate' ? 'Grad' : sel.education_level === 'undergraduate' ? 'Undergrad' : ''}\n* Military Status : ${militaryMap[sel.military_status] || sel.military_status || ''}\n* Had you applied for (name of the company)in the last 3 months ? No\n* Your experience in call center or telesales or cold calling (if it exists) ? ${sel.call_center_experience === 'yes' ? 'Yes' : sel.call_center_experience === 'no' ? 'No' : ''}\nnational ID:${sel.national_id || ''}`;
+      const original = el.innerHTML;
+      try {
+        await navigator.clipboard.writeText(text);
+        el.innerHTML = `<strong>${sel.user_name}</strong><div style="font-size:10px;color:#22c55e;margin-top:2px;">تم النسخ!</div>`;
+        setTimeout(() => el.innerHTML = original, 2000);
+      } catch (e) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        el.innerHTML = `<strong>${sel.user_name}</strong><div style="font-size:10px;color:#22c55e;margin-top:2px;">تم النسخ!</div>`;
+        setTimeout(() => el.innerHTML = original, 2000);
+      }
+    }
+    function copyAppData(appId, el) {
+      const a = allApps.find(x => x.id === appId);
+      if (!a) return;
+      const militaryMap = { 'exempt': 'Applying for military exemption', 'sole_provider': 'Applying for military exemption as the sole family provider', 'postponed': 'Postponed', 'served': 'Served' };
+      const cityMap = { 'Cairo': 'Cairo', 'Alex': 'Alex' };
+      const text = `● Could you please fill the below details:\n* Triple Name : ${a.user_name || ''}\n* Phone number : ${a.user_phone || ''}\n* Gmail : ${a.user_email || ''}\n* Nationality : ${a.nationality || ''}\n* Cairo or Alex site : ${cityMap[a.city] || a.city || ''}\n* Language you applied for : ${getLangName(a.language || a.user_language)}\n* Age : ${a.age || ''}\n* college : ${a.college || ''}\n* Grad or Undergrad : ${a.education_level === 'graduate' ? 'Grad' : a.education_level === 'undergraduate' ? 'Undergrad' : ''}\n* Military Status : ${militaryMap[a.military_status] || a.military_status || ''}\n* Had you applied for (name of the company)in the last 3 months ? No\n* Your experience in call center or telesales or cold calling (if it exists) ? ${a.call_center_experience === 'yes' ? 'Yes' : a.call_center_experience === 'no' ? 'No' : ''}\nnational ID:${a.national_id || ''}`;
+      const orig = el.innerHTML;
+      navigator.clipboard.writeText(text).then(() => {
+        el.innerHTML = `<div class="name">${a.user_name}</div><div style="font-size:10px;color:#22c55e;margin-top:2px;">تم النسخ!</div>`;
+        setTimeout(() => el.innerHTML = orig, 2000);
+      }).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+        el.innerHTML = `<div class="name">${a.user_name}</div><div style="font-size:10px;color:#22c55e;margin-top:2px;">تم النسخ!</div>`;
+        setTimeout(() => el.innerHTML = orig, 2000);
+      });
+    }
+
+    async function loadFinance() {
+      try {
+        const res = await fetch('/api/admin/stats', { headers:{'Authorization':`Bearer ${token}`} });
+        const s = await res.json();
+        const hiredAmount = s.hired.reduce((sum,h)=>sum+(h.amount||0),0);
+        const agentTotal = s.hired.reduce((sum,h)=>sum+(h.agent_amount||0),0);
+        const grandTotal = hiredAmount + agentTotal;
+        const frozenSels = s.selections.filter(sel => sel.is_frozen === 1 && sel.status === 'confirmed');
+        const frozenCompany = frozenSels.reduce((sum,sel)=>sum+(sel.amount||0),0);
+        const frozenAgent = frozenSels.reduce((sum,sel)=>sum+(sel.agent_amount||0),0);
+        const frozenTotal = frozenCompany + frozenAgent;
+        document.getElementById('finance-stats').innerHTML = `
+          <div class="stat-card glass c3" style="position:relative;" onmouseenter="showFinanceTooltip(this, 'total')" onmouseleave="hideFinanceTooltip()">
+            <div class="num">${grandTotal.toLocaleString('ar-EG')}</div>
+            <div class="label">إجمالي الأرباح (جنيه)</div>
+          </div>
+          <div class="stat-card glass c1" style="position:relative;" onmouseenter="showFinanceTooltip(this, 'company')" onmouseleave="hideFinanceTooltip()">
+            <div class="num">${hiredAmount.toLocaleString('ar-EG')}</div>
+            <div class="label">أرباح الشركة (جنيه)</div>
+          </div>
+          <div class="stat-card glass c4" style="position:relative;" onmouseenter="showFinanceTooltip(this, 'agent')" onmouseleave="hideFinanceTooltip()">
+            <div class="num">${agentTotal.toLocaleString('ar-EG')}</div>
+            <div class="label">عمولات المندوبين (جنيه)</div>
+          </div>
+          <div class="stat-card glass" style="position:relative;background:rgba(251,191,36,0.04);border:1px solid rgba(251,191,36,0.12);">
+            <div class="num" style="color:#fbbf24;">${frozenTotal.toLocaleString('ar-EG')}</div>
+            <div class="label">المال المجمد (جنيه)</div>
+            <div style="font-size:10px;color:#888;margin-top:4px;">الشركة: ${frozenCompany.toLocaleString('ar-EG')} | المندوب: ${frozenAgent.toLocaleString('ar-EG')}</div>
+          </div>
+          <div class="stat-card glass c5"><div class="num">${s.hired.length}</div><div class="label">تم التوظيف</div></div>
+          <div class="stat-card glass c2"><div class="num">${s.cancelled.length}</div><div class="label">تم الإلغاء</div></div>
+          <div class="stat-card glass c4"><div class="num">${s.waiting.length}</div><div class="label">في الانتظار</div></div>`;
+        const all = [...s.hired.map(h=>({...h,type:'hire'})),...s.cancelled.map(c=>({...c,type:'cancel'})),...s.waiting.map(w=>({...w,type:'waiting'}))];
+        const fl = document.getElementById('finance-list');
+        if (all.length===0) { fl.innerHTML='<p style="text-align:center;padding:50px;color:#94a3b8;">لا توجد معاملات بعد</p>'; return; }
+        fl.innerHTML = all.map(item => `
+          <div class="selection-row">
+            <div><strong>${item.user_name}</strong></div>
+            <div>${item.company_name}</div>
+            <div>${item.position}</div>
+            <div><span class="status-badge ${item.type==='hire'?'approved':item.type==='cancel'?'rejected':'pending'}">${item.type==='hire'?'تم التوظيف':item.type==='cancel'?'ملغي':'في الانتظار'}</span></div>
+            <div style="font-size:13px;">
+              <div style="font-weight:700;color:${item.type==='hire'?'#66bb6a':item.type==='cancel'?'#e57373':'#d4a853'}">الشركة: ${item.amount?item.amount+' ج':'-'}</div>
+              <div style="font-weight:700;color:#d4a853;">المندوب: ${item.agent_amount?item.agent_amount+' ج':'-'}</div>
+            </div>
+            <div style="color:#94a3b8;font-size:13px;">${new Date(item.created_at).toLocaleDateString('ar-EG')}</div>
+          </div>
+        `).join('');
+
+        // Load agent earnings
+        const eres = await fetch('/api/admin/agent-earnings', { headers:{'Authorization':`Bearer ${token}`} });
+        const earnings = await eres.json();
+        const el = document.getElementById('agent-earnings-list');
+        if (earnings.length === 0) { el.innerHTML = '<p style="text-align:center;padding:30px;color:#94a3b8;">لا يوجد مندوبين بعد</p>'; return; }
+        el.innerHTML = earnings.map(a => `
+          <div class="table-container glass" style="margin-bottom:16px;">
+            <div class="table-header" style="cursor:pointer;" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
+              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+                <h3 style="font-size:17px;">${a.name}</h3>
+                <div style="display:flex;gap:20px;flex-wrap:wrap;font-size:14px;">
+                  <div><span style="color:#888;">التوظيف:</span> <strong style="color:#66bb6a;">${a.totalHired}</strong></div>
+                  <div><span style="color:#888;">الإلغاء:</span> <strong style="color:#e57373;">${a.totalCancelled}</strong></div>
+                  <div><span style="color:#888;">في الانتظار:</span> <strong style="color:#d4a853;">${a.totalWaiting}</strong></div>
+                  <div><span style="color:#888;">عمولة المندوب:</span> <strong style="color:#d4a853;">${a.totalAgentEarnings.toLocaleString('ar-EG')} ج</strong></div>
+                  <div><span style="color:#888;">أرباح الشركة:</span> <strong style="color:#66bb6a;">${a.totalCompanyEarnings.toLocaleString('ar-EG')} ج</strong></div>
+                  <div><span style="color:#888;">أعلى ربح:</span> <strong style="color:#66bb6a;">${a.highestEarning} ج</strong></div>
+                  <div><span style="color:#888;">أقل ربح:</span> <strong style="color:#e57373;">${a.lowestEarning} ج</strong></div>
+                </div>
+              </div>
+            </div>
+            <div style="display:none;">
+              ${a.details.length === 0 ? '<p style="text-align:center;padding:30px;color:#94a3b8;">لا توجد توظيفات بعد</p>' :
+                a.details.map(d => `
+                  <div class="app-row" style="grid-template-columns:2fr 2fr 2fr 1fr 1fr;">
+                    <div><div class="name" style="color:#f0d78c;">${d.user_name}</div></div>
+                    <div><div style="font-size:13px;color:#94a3b8;">${d.company_name}</div></div>
+                    <div><div style="font-size:13px;color:#94a3b8;">${d.position}</div></div>
+                    <div style="text-align:center;"><strong style="color:#66bb6a;">${d.amount} ج</strong></div>
+                    <div style="text-align:center;"><strong style="color:#d4a853;">${d.agent_amount} ج</strong></div>
+                  </div>
+                `).join('')}
+            </div>
+          </div>
+        `).join('');
+      } catch (e) {}
+    }
+
+    async function loadAgents() {
+      try {
+        const res = await fetch('/api/admin/agents', { headers: { 'Authorization': `Bearer ${token}` } });
+        const agents = await res.json();
+        const list = document.getElementById('agents-list');
+        const filter = document.getElementById('agent-filter');
+        const currentVal = filter.value;
+        filter.innerHTML = '<option value="">الكل - جميع المندوبين</option><option value="direct">التسجيل المباشر</option>';
+        agents.forEach(a => { filter.innerHTML += `<option value="${a.id}">${a.name} (${a.referral_code})</option>`; });
+        filter.value = currentVal;
+
+        if (agents.length === 0) { list.innerHTML = '<p style="text-align:center;padding:50px;color:#94a3b8;">لا يوجد مندوبين بعد</p>'; return; }
+        list.innerHTML = `
+          <div class="table-header agents-header">
+            <div>المندوب</div><div>كود الإحالة</div><div>الاعضاء</div><div>الطلبات</div><div>التوظيف</div><div>الاجراءات</div>
+          </div>
+          ${agents.map(a => `
+            <div class="agent-row">
+                <div class="agent-identity">
+                  <div class="agent-avatar" style="background:${a.is_active ? 'linear-gradient(135deg,#d4a853,#b8860b)' : '#374151'};">${a.name.charAt(0)}</div>
+                  <div>
+                    <div class="agent-name">${a.name}</div>
+                    <div class="agent-email">${a.email}</div>
+                  </div>
+                </div>
+                <div class="agent-code">${a.referral_code}</div>
+                <div class="agent-stat"><span class="agent-stat-val gold">${a.referredUsers}</span></div>
+                <div class="agent-stat"><span class="agent-stat-val amber">${a.referredWithApps}</span></div>
+                <div class="agent-stat"><span class="agent-stat-val green">${a.hired}</span></div>
+                <div class="agent-actions">
+                  <button class="agent-btn ${a.is_active ? 'disable' : 'enable'}" onclick="toggleAgent(${a.id})">${a.is_active ? 'تعطيل' : 'تفعيل'}</button>
+                  <button class="agent-btn copy" onclick="copyRefLink('${a.referral_code}')">نسخ الرابط</button>
+                </div>
+            </div>
+          `).join('')}
+        `;
+      } catch (e) {}
+    }
+
+    function openAgentModal() {
+      document.getElementById('agent-modal').classList.add('show');
+      document.getElementById('agent-link-box').style.display = 'none';
+      document.getElementById('agent-name').value = '';
+      document.getElementById('agent-email').value = '';
+      document.getElementById('agent-phone').value = '';
+      document.getElementById('agent-password').value = '';
+    }
+    function closeAgentModal() { document.getElementById('agent-modal').classList.remove('show'); }
+
+    async function addAgent() {
+      const name = document.getElementById('agent-name').value;
+      const email = document.getElementById('agent-email').value;
+      const phone = document.getElementById('agent-phone').value;
+      const password = document.getElementById('agent-password').value;
+      if (!name || !email || !password) return alert('من فضلك أكمل كل الحقول');
+      try {
+        const res = await fetch('/api/admin/agents', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, phone, password })
+        });
+        const data = await res.json();
+        if (data.error) return alert(data.error);
+        const link = window.location.origin + '/?ref=' + data.referral_code;
+        document.getElementById('agent-link').value = link;
+        document.getElementById('agent-link-box').style.display = 'block';
+        loadAgents();
+      } catch (e) { alert('حدث خطأ'); }
+    }
+
+    async function toggleAgent(id) {
+      await fetch(`/api/admin/agents/${id}/toggle`, { method: 'PUT', headers: { 'Authorization': `Bearer ${token}` } });
+      loadAgents();
+    }
+    function copyRefLink(code) {
+      navigator.clipboard.writeText(window.location.origin + '/?ref=' + code);
+      alert('تم نسخ الرابط!');
+    }
+    function copyAgentLink() {
+      navigator.clipboard.writeText(document.getElementById('agent-link').value);
+      alert('تم نسخ الرابط!');
+    }
+
+    function openAudioModal(file, userName) {
+      const modal = document.getElementById('audio-modal');
+      const player = document.getElementById('audio-modal-player');
+      const title = document.getElementById('audio-modal-title');
+      const userEl = document.getElementById('audio-modal-user');
+      const dlBtn = document.getElementById('audio-modal-download');
+
+      title.textContent = 'تسجيل صوتي';
+      userEl.textContent = userName || '';
+      player.src = '/uploads/' + file;
+      player.load();
+
+      dlBtn.onclick = function() {
+        const a = document.createElement('a');
+        a.href = '/uploads/' + file;
+        a.download = file;
+        a.click();
+      };
+
+      modal.classList.add('show');
+    }
+    function closeAudioModal() {
+      const modal = document.getElementById('audio-modal');
+      const player = document.getElementById('audio-modal-player');
+      player.pause();
+      player.src = '';
+      modal.classList.remove('show');
+    }
+    document.getElementById('audio-modal').addEventListener('click', function(e) {
+      if (e.target === this) closeAudioModal();
+    });
+
+    let cachedEarnings = null;
+    async function fetchEarnings() {
+      if (cachedEarnings) return cachedEarnings;
+      const res = await fetch('/api/admin/agent-earnings', { headers:{'Authorization':`Bearer ${token}`} });
+      cachedEarnings = await res.json();
+      return cachedEarnings;
+    }
+    async function showFinanceTooltip(el, type) {
+      const earnings = await fetchEarnings();
+      const totalCompany = earnings.reduce((s,a) => s + a.totalCompanyEarnings, 0);
+      const totalAgent = earnings.reduce((s,a) => s + a.totalAgentEarnings, 0);
+      const grand = totalCompany + totalAgent;
+      const tooltip = document.getElementById('finance-tooltip');
+      const content = document.getElementById('finance-tooltip-content');
+      let html = '';
+      if (type === 'total') {
+        html = `<div style="font-weight:800;font-size:16px;margin-bottom:14px;color:#d4a853;">الإجمالي الكلي: ${grand.toLocaleString('ar-EG')} ج</div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span style="color:#888;">أرباح الشركة</span><strong style="color:#66bb6a;">${totalCompany.toLocaleString('ar-EG')} ج</strong></div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:14px;"><span style="color:#888;">عمولات المندوبين</span><strong style="color:#d4a853;">${totalAgent.toLocaleString('ar-EG')} ج</strong></div>
+          <div style="border-top:1px solid rgba(255,255,255,0.06);padding-top:10px;font-weight:700;font-size:13px;color:#888;margin-bottom:10px;">تفصيل المندوبين:</div>`;
+        earnings.forEach(a => {
+          if (a.totalHired > 0) {
+            html += `<div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px;">
+              <span style="color:#ccc;">${a.name} <span style="color:#666;font-size:11px;">${a.phone || ''}</span></span>
+              <span><span style="color:#d4a853;">عمولة: ${a.totalAgentEarnings.toLocaleString('ar-EG')} ج</span> | <span style="color:#66bb6a;">شركة: ${a.totalCompanyEarnings.toLocaleString('ar-EG')} ج</span></span>
+            </div>`;
+          }
+        });
+      } else if (type === 'company') {
+        html = `<div style="font-weight:800;font-size:16px;margin-bottom:14px;color:#66bb6a;">أرباح الشركة: ${totalCompany.toLocaleString('ar-EG')} ج</div>`;
+        earnings.forEach(a => {
+          if (a.totalHired > 0) {
+            html += `<div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px;">
+              <span style="color:#ccc;">${a.name} <span style="color:#666;font-size:11px;">${a.phone || ''}</span> (${a.totalHired} توظيف)</span>
+              <strong style="color:#66bb6a;">${a.totalCompanyEarnings.toLocaleString('ar-EG')} ج</strong>
+            </div>`;
+          }
+        });
+      } else if (type === 'agent') {
+        html = `<div style="font-weight:800;font-size:16px;margin-bottom:14px;color:#d4a853;">عمولات المندوبين: ${totalAgent.toLocaleString('ar-EG')} ج</div>`;
+        earnings.forEach(a => {
+          if (a.totalHired > 0) {
+            html += `<div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px;">
+              <span style="color:#ccc;">${a.name} <span style="color:#666;font-size:11px;">${a.phone || ''}</span> (${a.totalHired} توظيف)</span>
+              <strong style="color:#d4a853;">${a.totalAgentEarnings.toLocaleString('ar-EG')} ج</strong>
+            </div>`;
+          }
+        });
+      }
+      content.innerHTML = html;
+      tooltip.style.display = 'block';
+      const rect = el.getBoundingClientRect();
+      tooltip.style.left = Math.min(rect.left, window.innerWidth - 300) + 'px';
+      tooltip.style.top = (rect.bottom + 10) + 'px';
+    }
+    function hideFinanceTooltip() {
+      document.getElementById('finance-tooltip').style.display = 'none';
+    }
+
+    loadStats(); loadApplications(); loadSelections(); loadFinance(); loadAgents();
+  </script>
+<!-- Splash Screen -->
+<div id="splash-screen" style="display:none;position:fixed;inset:0;z-index:99999;background:#0a0a0a;flex-direction:column;align-items:center;justify-content:center;">
+  <div style="text-align:center;">
+    <img src="/uploads/wazef.png" style="width:120px;border-radius:12px;margin-bottom:20px;animation:logoPulse 1.5s ease-in-out infinite;">
+    <h1 style="font-size:28px;background:linear-gradient(135deg,#f0d78c,#b8860b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;">وَظِيف</h1>
+    <p style="color:#666;font-size:13px;margin-bottom:28px;">يرجى الانتظار...</p>
+    <div style="display:flex;gap:6px;justify-content:center;">
+      <div class="splash-dot" style="width:10px;height:10px;border-radius:50%;background:#d4a853;animation:dotBounce 1.2s ease-in-out infinite;"></div>
+      <div class="splash-dot" style="width:10px;height:10px;border-radius:50%;background:#d4a853;animation:dotBounce 1.2s ease-in-out 0.2s infinite;"></div>
+      <div class="splash-dot" style="width:10px;height:10px;border-radius:50%;background:#d4a853;animation:dotBounce 1.2s ease-in-out 0.4s infinite;"></div>
+    </div>
+  </div>
+</div>
+<style>
+@keyframes logoPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.05);opacity:0.8}}
+@keyframes dotBounce{0%,100%{transform:translateY(0);opacity:0.4}50%{transform:translateY(-10px);opacity:1}}
+</style>
+<script>
+(function(){
+  let activeRequests=0;let splashTimer=null;const splash=document.getElementById('splash-screen');
+  function showSplash(){if(splash)splash.style.display='flex'}
+  function hideSplash(){if(splash)splash.style.display='none'}
+  const origFetch=window.fetch;
+  window.fetch=function(...args){
+    activeRequests++;clearTimeout(splashTimer);
+    splashTimer=setTimeout(showSplash,2000);
+    return origFetch.apply(this,args).then(res=>{
+      activeRequests--;if(activeRequests<=0){activeRequests=0;clearTimeout(splashTimer);hideSplash()}
+      return res;
+    }).catch(err=>{
+      activeRequests--;if(activeRequests<=0){activeRequests=0;clearTimeout(splashTimer);hideSplash()}
+      throw err;
+    });
+  };
+})();
+</script>
+</body>
+</html>

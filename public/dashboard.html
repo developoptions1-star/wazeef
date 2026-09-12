@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>وَظِيف - لوحة التحكم</title>
+  <link rel="icon" type="image/png" href="/uploads/wazef.png">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    ::-webkit-scrollbar{width:6px;height:6px}
+    ::-webkit-scrollbar-track{background:rgba(255,255,255,0.02);border-radius:10px}
+    ::-webkit-scrollbar-thumb{background:rgba(212,168,83,0.2);border-radius:10px;transition:background .3s}
+    ::-webkit-scrollbar-thumb:hover{background:rgba(212,168,83,0.35)}
+    body{scrollbar-width:thin;scrollbar-color:rgba(212,168,83,0.2) rgba(255,255,255,0.02)}
+    body{font-family:'Tajawal',sans-serif;min-height:100vh;background:#0a0a0a;color:#f5f0e8;overflow-x:hidden}
+    canvas#bg-canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0}
+    .navbar{position:relative;z-index:10;display:flex;justify-content:space-between;align-items:center;padding:16px 40px;background:transparent;border-bottom:none}
+    .navbar .brand{display:flex;align-items:center;gap:12px}
+    .navbar .brand-logo{height:80px;width:auto;border-radius:8px}
+    .navbar h1{font-size:24px;font-weight:800;background:linear-gradient(135deg,#f0d78c,#b8860b);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .navbar .user-info{display:flex;align-items:center;gap:14px}
+    .navbar .user-info span{color:#888;font-size:14px;font-weight:500}
+    .btn-logout{padding:8px 20px;background:transparent;border:none;color:#e57373;border-radius:12px;cursor:pointer;font-family:'Tajawal',sans-serif;font-size:13px;font-weight:600;transition:all .3s}
+    .btn-logout:hover{background:rgba(220,50,50,0.1)}
+    .container{position:relative;z-index:10;max-width:1000px;margin:30px auto;padding:0 28px}
+    .glass{background:linear-gradient(145deg,rgba(20,20,20,0.8),rgba(12,12,12,0.85));backdrop-filter:blur(40px);border:1px solid rgba(212,168,83,0.06);border-radius:22px;box-shadow:0 20px 60px rgba(0,0,0,0.5)}
+    .status-banner{padding:24px 28px;margin-bottom:24px;display:none;align-items:center;gap:18px;border-radius:22px}
+    .status-banner.show{display:flex;animation:fadeUp .5s ease}
+    .status-banner .icon{width:52px;height:52px;border-radius:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .status-banner h3{font-size:16px;margin-bottom:4px;font-weight:700}
+    .status-banner p{color:#666;font-size:13px;line-height:1.7}
+    .pending-banner{background:linear-gradient(135deg,rgba(212,168,83,0.06),rgba(212,168,83,0.02));border:1px solid rgba(212,168,83,0.1)}
+    .pending-banner .icon{background:rgba(212,168,83,0.08)}
+    .pending-banner h3{color:#d4a853}
+    .rejected-banner{background:linear-gradient(135deg,rgba(220,50,50,0.06),rgba(220,50,50,0.02));border:1px solid rgba(220,50,50,0.1)}
+    .rejected-banner .icon{background:rgba(220,50,50,0.08)}
+    .rejected-banner h3{color:#e57373}
+    .record-section{padding:40px 28px;text-align:center;margin-bottom:24px}
+    .record-section h2{font-size:24px;margin-bottom:8px;font-weight:900}
+    .record-section .subtitle{color:#555;font-size:14px;margin-bottom:32px;line-height:1.7}
+    .record-btn{width:130px;height:130px;border-radius:50%;border:3px solid rgba(212,168,83,0.12);background:rgba(212,168,83,0.03);cursor:pointer;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;transition:all .6s cubic-bezier(.16,1,.3,1);position:relative}
+    .record-btn::before{content:'';position:absolute;inset:-8px;border-radius:50%;border:1px solid rgba(212,168,83,0.05)}
+    .record-btn::after{content:'';position:absolute;inset:-16px;border-radius:50%;border:1px solid rgba(212,168,83,0.025)}
+    .record-btn:hover{border-color:rgba(212,168,83,0.3);background:rgba(212,168,83,0.06);transform:scale(1.08);box-shadow:0 0 50px rgba(212,168,83,0.1)}
+    .record-btn.recording{border-color:rgba(220,50,50,0.35);background:rgba(220,50,50,0.05);animation:recPulse 2s infinite}
+    .record-btn .mic{width:52px;height:52px;background:linear-gradient(135deg,#b8860b,#d4a853);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 30px rgba(212,168,83,0.3);transition:all .5s}
+    .record-btn.recording .mic{background:linear-gradient(135deg,#dc3545,#c62828);box-shadow:0 8px 30px rgba(220,50,50,0.3)}
+    @keyframes recPulse{0%,100%{box-shadow:0 0 0 0 rgba(220,50,50,0.25)}50%{box-shadow:0 0 0 30px rgba(220,50,50,0)}}
+    .record-btn.disabled{opacity:.25;cursor:not-allowed;pointer-events:none;filter:grayscale(.6)}
+    .timer{font-size:52px;font-weight:900;margin-bottom:8px;font-variant-numeric:tabular-nums;background:linear-gradient(135deg,#f0d78c,#888);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .timer-label{color:#444;font-size:14px;margin-bottom:28px}
+    .submit-btn{padding:15px 48px;background:linear-gradient(135deg,#b8860b,#d4a853);border:none;border-radius:16px;color:#0a0a0a;font-family:'Tajawal',sans-serif;font-size:16px;font-weight:800;cursor:pointer;display:none;margin:0 auto;box-shadow:0 12px 40px rgba(212,168,83,0.25);transition:all .5s cubic-bezier(.16,1,.3,1)}
+    .submit-btn:hover{transform:translateY(-3px);box-shadow:0 20px 60px rgba(212,168,83,0.4)}
+    .submit-btn.show{display:inline-block;animation:fadeUp .5s ease}
+    .lang-select-wrapper{margin-bottom:28px;text-align:center}
+    .lang-select-wrapper label{display:block;color:#555;font-size:13px;margin-bottom:10px;font-weight:600}
+    .lang-select{padding:13px 24px;background:rgba(255,255,255,0.03);border:1.5px solid rgba(255,255,255,0.06);border-radius:14px;color:#f5f0e8;font-family:'Tajawal',sans-serif;font-size:15px;font-weight:600;cursor:pointer;min-width:260px;transition:all .4s;-webkit-appearance:none;-moz-appearance:none;appearance:none;color-scheme:dark;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23666' viewBox='0 0 16 16'%3E%3Cpath d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:left 16px center;padding-left:40px}
+    .lang-select:focus{outline:none;border-color:rgba(212,168,83,0.4);box-shadow:0 0 0 4px rgba(212,168,83,0.06)}
+    .lang-select option{background:#111;color:#f5f0e8}
+    .section-title{font-size:20px;font-weight:800;margin-bottom:20px;display:flex;align-items:center;gap:12px}
+    .section-title .dot{width:8px;height:8px;background:linear-gradient(135deg,#b8860b,#d4a853);border-radius:50%;box-shadow:0 0 12px rgba(212,168,83,0.4)}
+    .jobs-section{margin-bottom:24px;display:none}
+    .jobs-section.show{display:block;animation:fadeUp .5s ease}
+    .jobs-list{display:flex;flex-direction:column;gap:14px}
+    .job-card{padding:22px 26px;display:flex;justify-content:space-between;align-items:center;transition:all .4s cubic-bezier(.16,1,.3,1);flex-wrap:wrap;gap:14px}
+    .job-card:hover{border-color:rgba(212,168,83,0.12);transform:translateY(-2px)}
+    .job-card .job-info{flex:1;min-width:200px}
+    .job-card .job-info h3{font-size:17px;margin-bottom:6px;font-weight:800}
+    .job-card .job-info .company{color:#d4a853;font-size:15px;margin-bottom:10px;font-weight:600}
+    .job-card .job-meta{display:flex;gap:18px;font-size:13px;color:#555;flex-wrap:wrap}
+    .btn-select{padding:11px 32px;background:linear-gradient(135deg,#b8860b,#d4a853);border:none;border-radius:14px;color:#0a0a0a;font-family:'Tajawal',sans-serif;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 8px 25px rgba(212,168,83,0.2);transition:all .4s cubic-bezier(.16,1,.3,1)}
+    .btn-select:hover{transform:translateY(-3px);box-shadow:0 14px 40px rgba(212,168,83,0.35)}
+    .btn-selected{padding:11px 32px;background:rgba(100,200,100,0.06);border:1px solid rgba(100,200,100,0.12);border-radius:14px;color:#66bb6a;font-family:'Tajawal',sans-serif;font-size:14px;font-weight:700;cursor:default}
+    .selections-section{margin-bottom:24px}
+    .selection-card{background:linear-gradient(145deg,rgba(20,20,20,0.85),rgba(14,14,14,0.9));border:1px solid rgba(212,168,83,0.08);border-radius:22px;padding:24px;margin-bottom:16px;transition:all .35s;position:relative}
+    .selection-card::before{content:'';position:absolute;top:0;right:0;width:4px;height:100%;border-radius:0 22px 22px 0}
+    .selection-card.waiting::before{background:linear-gradient(180deg,#d4a853,#b8860b)}
+    .selection-card.confirmed::before{background:linear-gradient(180deg,#66bb6a,#43a047)}
+    .selection-card.cancelled::before{background:linear-gradient(180deg,#e57373,#d32f2f)}
+    .selection-card:hover{border-color:rgba(212,168,83,0.18);transform:translateY(-2px)}
+    .selection-card .card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}
+    .selection-card h3{color:#d4a853;font-size:18px;font-weight:800;margin:0}
+    .selection-card .company-tag{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;background:rgba(212,168,83,0.06);border:1px solid rgba(212,168,83,0.1);border-radius:10px;font-size:12px;color:#d4a853;font-weight:600}
+    .selection-card .company-tag svg{width:14px;height:14px;stroke:#d4a853;fill:none;stroke-width:2}
+    .selection-card .details{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-top:14px}
+    .selection-card .detail-item{padding:12px 14px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:14px}
+    .selection-card .detail-item label{display:block;color:#94a3b8;font-size:11px;margin-bottom:5px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+    .selection-card .detail-item span{font-size:14px;font-weight:700;color:#e2e8f0}
+    .status-badge{display:inline-flex;align-items:center;gap:5px;padding:6px 16px;border-radius:20px;font-size:12px;font-weight:700}
+    .status-badge.waiting{background:rgba(212,168,83,0.08);color:#d4a853}
+    .status-badge.confirmed{background:rgba(100,200,100,0.08);color:#66bb6a}
+    .status-badge.cancelled{background:rgba(220,50,50,0.08);color:#e57373}
+    .info-card{padding:22px 26px;display:flex;align-items:center;gap:18px;margin-bottom:24px}
+    .info-card .icon{width:52px;height:52px;border-radius:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:rgba(212,168,83,0.06)}
+    .info-card h3{font-size:16px;margin-bottom:4px;font-weight:700;color:#d4a853}
+    .info-card p{color:#555;font-size:13px;line-height:1.7}
+    .notif-bell{position:relative;cursor:pointer}
+    .notif-bell svg{width:20px;height:20px;stroke:#888;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:all .3s}
+    .notif-bell:hover svg{stroke:#d4a853}
+    .notif-badge{position:absolute;top:-4px;right:-4px;width:16px;height:16px;border-radius:50%;background:#e57373;color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center}
+    .notif-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:400px;max-width:90vw;max-height:70vh;overflow-y:auto;background:linear-gradient(145deg,rgba(20,20,20,0.97),rgba(12,12,12,0.99));backdrop-filter:blur(40px);border:1px solid rgba(212,168,83,0.1);border-radius:18px;box-shadow:0 25px 70px rgba(0,0,0,0.7);display:none;z-index:9999;padding:6px 0}
+    .notif-popup.show{display:block;animation:fadeUp .3s ease}
+    .notif-popup-header{padding:14px 18px 10px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(212,168,83,0.06);margin-bottom:4px}
+    .notif-popup-header h4{font-size:14px;font-weight:700;color:#d4a853}
+    .notif-popup-header .mark-all{font-size:11px;color:#666;cursor:pointer;transition:color .2s;background:none;border:none;font-family:'Tajawal',sans-serif}
+    .notif-popup-header .mark-all:hover{color:#d4a853}
+    .notif-item{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.02);display:flex;align-items:flex-start;gap:10px;transition:background .2s;cursor:pointer;border-radius:10px;margin:2px 4px}
+    .notif-item:hover{background:rgba(212,168,83,0.04)}
+    .notif-item:last-child{border-bottom:none}
+    .notif-item.unread{background:rgba(212,168,83,0.04)}
+    .notif-icon{width:32px;height:32px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(212,168,83,0.08)}
+    .notif-icon svg{width:14px;height:14px;stroke:#d4a853;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+    .notif-content{flex:1}
+    .notif-content .notif-title{font-weight:700;font-size:12px;margin-bottom:2px}
+    .notif-content .notif-msg{color:#888;font-size:11px;line-height:1.5}
+    .notif-content .notif-time{color:#555;font-size:10px;margin-top:4px}
+    .notif-empty{text-align:center;padding:36px 16px;color:#555;font-size:13px}
+    .notif-overlay{position:fixed;top:0;left:0;width:100%;height:100%;z-index:9998;display:none;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px)}
+    .notif-overlay.show{display:block}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+    @media(max-width:768px){
+      .navbar{padding:12px 16px;flex-wrap:wrap;gap:10px;background:transparent;border-bottom:none}
+      .navbar h1{font-size:20px}
+      .navbar .brand-logo{height:56px}
+      .navbar .user-info{gap:10px}
+      .navbar .user-info span{font-size:12px}
+      .btn-logout{padding:6px 14px;font-size:12px}
+      .container{padding:0 14px;margin:20px auto}
+      .glass{border-radius:18px}
+      .status-banner{padding:18px 18px;gap:14px;border-radius:18px;flex-wrap:wrap}
+      .status-banner .icon{width:44px;height:44px;border-radius:12px}
+      .status-banner h3{font-size:14px}
+      .status-banner p{font-size:12px}
+      .record-section{padding:28px 18px}
+      .record-section h2{font-size:20px}
+      .record-section .subtitle{font-size:13px;margin-bottom:24px}
+      .record-btn{width:110px;height:110px;margin-bottom:20px}
+      .record-btn .mic{width:44px;height:44px}
+      .record-btn .mic svg{width:24px;height:24px}
+      .timer{font-size:42px}
+      .timer-label{font-size:12px;margin-bottom:22px}
+      .submit-btn{padding:13px 36px;font-size:14px}
+      .lang-select{min-width:220px;padding:11px 20px;font-size:14px}
+      .section-title{font-size:17px;margin-bottom:16px}
+      .job-card{padding:18px}
+      .job-card .job-info h3{font-size:15px}
+      .job-card .job-info .company{font-size:13px}
+      .job-card .job-meta{gap:12px;font-size:12px}
+      .btn-select,.btn-selected{padding:10px 24px;font-size:13px}
+      .selection-card{padding:18px}
+      .selection-card h3{font-size:16px}
+      .selection-card .details{grid-template-columns:1fr 1fr;gap:10px}
+      .selection-card .detail-item{padding:10px 12px}
+      .info-card{padding:18px;gap:14px}
+      .info-card .icon{width:44px;height:44px;border-radius:12px}
+      .info-card h3{font-size:14px}
+      .info-card p{font-size:12px}
+      .notif-popup{width:calc(100vw - 32px);max-width:400px;max-height:70vh}
+    }
+    @media(max-width:380px){
+      .navbar{padding:10px 12px}
+      .navbar h1{font-size:18px}
+      .container{padding:0 10px;margin:14px auto}
+      .record-section{padding:22px 14px}
+      .record-btn{width:100px;height:100px}
+      .timer{font-size:36px}
+      .selection-card .details{grid-template-columns:1fr}
+      .selection-card .card-top{flex-direction:column;gap:8px}
+    }
+  </style>
+</head>
+<body>
+  <canvas id="bg-canvas"></canvas>
+  <nav class="navbar">
+    <div class="brand"><img src="/uploads/wazef.png" alt="وَظِيف" class="brand-logo"></div>
+    <div class="user-info"><span id="user-name"></span>
+      <div class="notif-bell" onclick="toggleNotifPopup(event)">
+        <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span class="notif-badge" id="notif-badge" style="display:none;">0</span>
+      </div>
+      <button class="btn-logout" onclick="logout()">خروج</button></div>
+  </nav>
+  <div class="notif-overlay" id="notif-overlay" onclick="closeNotifPopup()"></div>
+  <div class="notif-popup" id="notif-popup">
+    <div class="notif-popup-header"><h4>الإشعارات</h4><button class="mark-all" onclick="markAllRead()">مقروءة الكل</button></div>
+    <div id="notif-list"></div>
+  </div>
+  <div class="container">
+    <div id="status-banner" class="status-banner glass"><div class="icon" id="status-icon"></div><div><h3 id="status-title"></h3><p id="status-text"></p></div></div>
+    <div id="record-section" class="record-section glass">
+      <h2>سجّل صوتك</h2>
+      <p class="subtitle">اختر اللغة أولاً ثم اضغط على الزر وابدأ التحدث لمدة دقيقتين</p>
+      <div class="lang-select-wrapper"><label>اللغة المطلوبة</label>
+        <select id="lang-select" class="lang-select" onchange="onLangChange()">
+          <option value="">اختر اللغة أولاً</option><option value="ar">العربية</option><option value="en">English</option><option value="de">Deutsch - ألماني</option><option value="ja">日本語 - ياباني</option><option value="pt">Português - برتغالي</option><option value="fr">Français - فرنسي</option><option value="es">Español - إسباني</option><option value="tr">Türkçe - تركي</option><option value="ko">한국어 - كوري</option><option value="zh">中文 - صيني</option><option value="ru">Русский - روسي</option><option value="it">Italiano - إيطالي</option><option value="hi">हिन्दी - هندي</option><option value="nl">Nederlands - هولندي</option><option value="sv">Svenska - سويدى</option>
+        </select>
+      </div>
+      <div class="record-btn disabled" id="record-btn" onclick="toggleRecording()"><div class="mic"><svg viewBox="0 0 24 24" style="width:28px;height:28px;stroke:#0a0a0a;fill:none;stroke-width:2;"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></div></div>
+      <div class="timer" id="timer">02:00</div>
+      <div class="timer-label" id="timer-label">اختر اللغة أولاً</div>
+      <button class="submit-btn" id="submit-btn" onclick="submitRecording()">إرسال التسجيل</button>
+    </div>
+    <div id="pending-section" class="status-banner glass pending-banner"><div class="icon"><svg viewBox="0 0 24 24" style="width:22px;height:22px;stroke:#d4a853;fill:none;stroke-width:2;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div><h3>في انتظار الموافقة</h3><p>يتم معاينة الملف وسوف يتم اضافة وظائف قريباً إلى حسابك خلال 3 أيام</p></div></div>
+    <div id="rerecord-section" class="status-banner glass rerecord-banner" style="display:none;background:linear-gradient(135deg,rgba(212,168,83,0.06),rgba(184,134,11,0.02));border:1px solid rgba(212,168,83,0.1);"><div class="icon" style="background:rgba(212,168,83,0.08);"><svg viewBox="0 0 24 24" style="width:22px;height:22px;stroke:#d4a853;fill:none;stroke-width:2;"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></div><div><h3 style="color:#d4a853;">تم طلب إعادة التسجيل</h3><p>يجب عليك إعادة تسجيل الريكورد الصوتي لأنه يحتاج إلى تحسين. سجّل مرة أخرى بالضغط على الزر أدناه.</p><button onclick="goToRecord()" style="margin-top:10px;padding:9px 20px;background:linear-gradient(135deg,#b8860b,#d4a853);border:none;border-radius:10px;color:#0a0a0a;font-family:'Tajawal',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">إعادة التسجيل</button></div></div>
+    <div id="jobs-section" class="jobs-section"><div class="section-title"><div class="dot"></div>الوظائف المتاحة</div><div class="jobs-list" id="jobs-list"></div></div>
+    <div id="selections-section" class="selections-section" style="display:none;"><div class="section-title"><div class="dot"></div>اختياراتي</div><div id="selections-list"></div></div>
+    <div class="info-card glass"><div class="icon"><svg viewBox="0 0 24 24" style="width:20px;height:20px;stroke:#d4a853;fill:none;stroke-width:2;"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div><div><h3>الشركات المناسبة ليك</h3><p>عندما يتم معاينة الريكورد الخاص بيك سيتم ارسال لك الشركات التي تناسبك</p></div></div>
+  </div>
+  <script>
+    const canvas=document.getElementById('bg-canvas'),ctx=canvas.getContext('2d');
+    let W,H,particles=[],time=0;
+    function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;initParticles()}
+    function initParticles(){particles=[];const c=Math.min(60,Math.floor(W*H/20000));for(let i=0;i<c;i++)particles.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-0.5)*0.3,vy:(Math.random()-0.5)*0.3,r:Math.random()*1.5+0.5,alpha:Math.random()*0.4+0.1,pulse:Math.random()*Math.PI*2})}
+    resize();window.addEventListener('resize',resize);
+    function animate(){ctx.clearRect(0,0,W,H);const bg=ctx.createRadialGradient(W*0.5,H*0.3,0,W*0.5,H*0.3,W*0.8);bg.addColorStop(0,'#12100a');bg.addColorStop(0.4,'#0e0c08');bg.addColorStop(1,'#0a0a0a');ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);for(let i=0;i<particles.length;i++){const p=particles[i];p.x+=p.vx;p.y+=p.vy;if(p.x<0)p.x=W;if(p.x>W)p.x=0;if(p.y<0)p.y=H;if(p.y>H)p.y=0;p.pulse+=0.015;const gl=p.alpha+Math.sin(p.pulse)*0.1;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=`rgba(212,168,83,${gl})`;ctx.fill();for(let j=i+1;j<particles.length;j++){const q=particles[j];const dx=p.x-q.x,dy=p.y-q.y,dist=Math.sqrt(dx*dx+dy*dy);if(dist<120){ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.strokeStyle=`rgba(212,168,83,${(1-dist/120)*0.06})`;ctx.lineWidth=0.4;ctx.stroke()}}}for(let i=0;i<4;i++){const bx=(i*W/3+time*15)%W,by=H*0.3+Math.sin(time*0.4+i*1.5)*H*0.12,br=60+Math.sin(time+i)*15;const bg2=ctx.createRadialGradient(bx,by,0,bx,by,br);bg2.addColorStop(0,`rgba(184,134,11,${0.015+Math.sin(time*0.2+i)*0.008})`);bg2.addColorStop(1,'rgba(184,134,11,0)');ctx.fillStyle=bg2;ctx.beginPath();ctx.arc(bx,by,br,0,Math.PI*2);ctx.fill()}time+=0.006;requestAnimationFrame(animate)}
+    animate();
+    const token=localStorage.getItem('token'),user=JSON.parse(localStorage.getItem('user')||'null');
+    if(!token||!user||user.role==='admin')window.location.href='/';
+    document.getElementById('user-name').textContent=user?.name||'';
+    let mediaRecorder,audioChunks=[],recordingBlob=null,timerInterval,timeLeft=120,isRecording=false;
+    function logout(){localStorage.removeItem('token');localStorage.removeItem('user');window.location.href='/'}
+    function updateTimer(){const m=Math.floor(timeLeft/60).toString().padStart(2,'0'),s=(timeLeft%60).toString().padStart(2,'0');document.getElementById('timer').textContent=`${m}:${s}`;if(timeLeft<=0)stopRecording();timeLeft--}
+    function onLangChange(){const l=document.getElementById('lang-select').value,b=document.getElementById('record-btn'),lb=document.getElementById('timer-label');if(l){b.classList.remove('disabled');lb.textContent='جاهز للتسجيل'}else{b.classList.add('disabled');lb.textContent='اختر اللغة أولاً'}}
+    async function toggleRecording(){const l=document.getElementById('lang-select').value;if(!l)return alert('من فضلك اختار اللغة أولاً');isRecording?stopRecording():startRecording()}
+    async function startRecording(){try{const s=await navigator.mediaDevices.getUserMedia({audio:true});mediaRecorder=new MediaRecorder(s);audioChunks=[];mediaRecorder.ondataavailable=e=>audioChunks.push(e.data);mediaRecorder.onstop=()=>{recordingBlob=new Blob(audioChunks,{type:'audio/webm'});s.getTracks().forEach(t=>t.stop())};mediaRecorder.start();isRecording=true;timeLeft=120;document.getElementById('record-btn').classList.add('recording');document.getElementById('timer-label').textContent='جاري التسجيل...';document.getElementById('submit-btn').classList.remove('show');timerInterval=setInterval(updateTimer,1000)}catch(e){alert('من فضلك امنح الصلاحية للميكروفون')}}
+    function stopRecording(){if(mediaRecorder&&mediaRecorder.state==='recording')mediaRecorder.stop();clearInterval(timerInterval);isRecording=false;document.getElementById('record-btn').classList.remove('recording');document.getElementById('timer-label').textContent='تم التسجيل - جاهز للإرسال';document.getElementById('submit-btn').classList.add('show')}
+    async function submitRecording(){if(!recordingBlob)return;const l=document.getElementById('lang-select').value;if(!l)return alert('من فضلك اختار اللغة');const fd=new FormData();fd.append('audio',recordingBlob,'recording.webm');fd.append('language',l);try{const r=await fetch('/api/applications',{method:'POST',headers:{'Authorization':`Bearer ${token}`},body:fd});const d=await r.json();if(d.error)return alert(d.error);document.getElementById('record-section').style.display='none';document.getElementById('pending-section').classList.add('show')}catch(e){alert('حدث خطأ في الإرسال')}}
+    async function loadApplicationStatus(){try{const r=await fetch('/api/user/application-status',{headers:{'Authorization':`Bearer ${token}`}});const a=await r.json();if(!a)return;document.getElementById('record-section').style.display='none';const b=document.getElementById('pending-section');const rr=document.getElementById('rerecord-section');if(a.rerecord_request&&a.status==='pending'){b.style.display='none';rr.style.display='flex';document.getElementById('record-section').style.display='block';document.getElementById('record-section').style.marginTop='0';document.getElementById('record-section').style.paddingTop='0';}else if(a.status==='pending'){b.style.display='flex';rr.style.display='none';}else if(a.status==='approved'){b.style.display='none';rr.style.display='none';document.getElementById('jobs-section').classList.add('show');loadJobs()}else if(a.status==='rejected'){b.className='status-banner glass rejected-banner show';rr.style.display='none';if(a.rejection_date){const rd=new Date(a.rejection_date);const ml=new Date(rd.getTime()+30*24*60*60*1000);const rem=Math.ceil((ml-new Date())/(24*60*60*1000));let reasonHTML=a.rejection_reason?`<div style="background:rgba(220,50,50,0.08);border:1px solid rgba(220,50,50,0.12);border-radius:12px;padding:14px 16px;margin-top:12px;margin-bottom:8px;"><h4 style="color:#e57373;font-size:13px;margin-bottom:6px;">سبب الرفض:</h4><p style="color:#ccc;font-size:13px;line-height:1.6;">${a.rejection_reason}</p></div>`:'';if(rem>0&&a.language){b.innerHTML=`<div class="icon"><svg viewBox="0 0 24 24" style="width:22px;height:22px;stroke:#e57373;fill:none;stroke-width:2;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div style="flex:1;"><h3>تم رفض طلبك - اللغة: ${a.language}</h3><p>يجب عليك التدريب على اللغة "${a.language}" لمدة ${rem} يوماً حتى تتمكن من التقديم مرة أخرى. تدرب وحسّن مستواك!</p>${reasonHTML}</div>`}else if(rem<=0&&a.language){b.innerHTML=`<div class="icon"><svg viewBox="0 0 24 24" style="width:22px;height:22px;stroke:#d4a853;fill:none;stroke-width:2;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div style="flex:1;"><h3>تم رفض طلبك سابقاً - اللغة: ${a.language}</h3><p>يمكنك الآن التقديم مرة أخرى!</p>${reasonHTML}<button onclick="goToRecord()" style="margin-top:10px;padding:9px 20px;background:linear-gradient(135deg,#b8860b,#d4a853);border:none;border-radius:10px;color:#0a0a0a;font-family:'Tajawal',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">تقديم مرة أخرى</button></div>`}}}}catch(e){}}
+    function goToRecord(){document.getElementById('record-section').style.display='block';document.getElementById('rerecord-section').style.display='none';document.getElementById('pending-section').style.display='none';}
+    async function loadJobs(){try{const r=await fetch('/api/user/jobs',{headers:{'Authorization':`Bearer ${token}`}});const j=await r.json();const l=document.getElementById('jobs-list');if(j.length===0){l.innerHTML='<p style="color:#444;text-align:center;padding:36px;">لا توجد وظائف متاحة بعد</p>';return}l.innerHTML=j.map(x=>{const salaryText=(x.salary_min||x.salary_max)?(x.salary_min&&x.salary_max?x.salary_min+' - '+x.salary_max+' جنيه':x.salary_min?'من '+x.salary_min+' جنيه':'حتى '+x.salary_max+' جنيه'):'يحدد لاحقاً';return`<div class="job-card glass"><div class="job-info"><h3>${x.position}</h3><div class="company">${x.company_name}</div><div class="job-meta"><span><svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:#d4a853;fill:none;stroke-width:2;display:inline;vertical-align:middle;margin-left:4px;"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${x.interview_time||'يحدد لاحقاً'}</span><span><svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:#d4a853;fill:none;stroke-width:2;display:inline;vertical-align:middle;margin-left:4px;"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>${salaryText}</span></div></div><div><button class="btn-select" onclick="selectJob(${x.id},this)">اختيار</button></div></div>`}).join('')}catch(e){}}
+    async function selectJob(id,btn){try{const r=await fetch('/api/user/select-job',{method:'POST',headers:{'Authorization':`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({job_id:id})});const d=await r.json();if(d.error)return alert(d.error);btn.className='btn-selected';btn.textContent='تم الاختيار';btn.disabled=true;loadSelections()}catch(e){}}
+    async function loadSelections(){
+      try {
+        const r = await fetch('/api/user/selections', {headers:{'Authorization':`Bearer ${token}`}});
+        const s = await r.json();
+        const sec = document.getElementById('selections-section');
+        const l = document.getElementById('selections-list');
+        if(s.length === 0){ sec.style.display = 'none'; return; }
+        sec.style.display = 'block';
+        l.innerHTML = s.map(x => {
+          const c = x.status === 'selected' ? 'waiting' : x.status === 'confirmed' ? 'confirmed' : 'cancelled';
+          const t = x.status === 'selected' ? 'في انتظار التثبيت' : x.status === 'confirmed' ? 'تم التثبيت' : 'ملغي';
+          const salaryText = (x.salary_min || x.salary_max) ? (x.salary_min && x.salary_max ? x.salary_min + ' - ' + x.salary_max + ' جنيه' : x.salary_min ? 'من ' + x.salary_min + ' جنيه' : 'حتى ' + x.salary_max + ' جنيه') : 'يحدد لاحقاً';
+          const descHTML = x.description ? '<div class="detail-item" style="grid-column:1/-1;"><label>ملاحظات</label><span>' + x.description + '</span></div>' : '';
+          return '<div class="selection-card"><h3>' + x.company_name + '</h3><div class="details"><div class="detail-item"><label>الوظيفة</label><span>' + x.position + '</span></div><div class="detail-item"><label>وقت المقابلة</label><span>' + (x.interview_time || 'يحدد لاحقاً') + '</span></div><div class="detail-item"><label>المرتب</label><span>' + salaryText + '</span></div>' + descHTML + '</div><span class="status-badge ' + c + '">' + t + '</span></div>';
+        }).join('');
+      } catch(e) {}
+    }
+    loadApplicationStatus();loadSelections();loadNotifications();
+    function toggleNotifPopup(e){e.stopPropagation();const p=document.getElementById('notif-popup'),o=document.getElementById('notif-overlay');if(p.classList.contains('show')){closeNotifPopup()}else{p.classList.add('show');o.classList.add('show');loadNotifications()}}
+    function closeNotifPopup(){document.getElementById('notif-popup').classList.remove('show');document.getElementById('notif-overlay').classList.remove('show')}
+    async function loadNotifications(){try{const res=await fetch('/api/user/notifications',{headers:{'Authorization':`Bearer ${token}`}});const notifs=await res.json();const unread=notifs.filter(n=>!n.is_read);const badge=document.getElementById('notif-badge');if(unread.length>0){badge.textContent=unread.length;badge.style.display='flex'}else{badge.style.display='none'}const list=document.getElementById('notif-list');if(notifs.length===0){list.innerHTML='<div class="notif-empty">لا توجد إشعارات</div>';return}list.innerHTML=notifs.map(n=>`<div class="notif-item ${n.is_read?'':'unread'}" onclick="markNotifRead(${n.id},this)"><div class="notif-icon"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div><div class="notif-content"><div class="notif-title">${n.title}</div><div class="notif-msg">${n.message}</div><div class="notif-time">${new Date(n.created_at).toLocaleString('ar-EG')}</div></div></div>`).join('')}catch(e){}}
+    async function markNotifRead(id,el){try{await fetch(`/api/notifications/${id}/read`,{method:'PUT',headers:{'Authorization':`Bearer ${token}`}});el.classList.remove('unread');loadNotifications()}catch(e){}}
+    async function markAllRead(){try{await fetch('/api/notifications/read-all',{method:'PUT',headers:{'Authorization':`Bearer ${token}`}});loadNotifications()}catch(e){}}
+  </script>
+<!-- Splash Screen -->
+<div id="splash-screen" style="display:none;position:fixed;inset:0;z-index:99999;background:#0a0a0a;flex-direction:column;align-items:center;justify-content:center;">
+  <div style="text-align:center;">
+    <img src="/uploads/wazef.png" style="width:120px;border-radius:12px;margin-bottom:20px;animation:logoPulse 1.5s ease-in-out infinite;">
+    <h1 style="font-size:28px;background:linear-gradient(135deg,#f0d78c,#b8860b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;">وَظِيف</h1>
+    <p style="color:#666;font-size:13px;margin-bottom:28px;">يرجى الانتظار...</p>
+    <div style="display:flex;gap:6px;justify-content:center;">
+      <div class="splash-dot" style="width:10px;height:10px;border-radius:50%;background:#d4a853;animation:dotBounce 1.2s ease-in-out infinite;"></div>
+      <div class="splash-dot" style="width:10px;height:10px;border-radius:50%;background:#d4a853;animation:dotBounce 1.2s ease-in-out 0.2s infinite;"></div>
+      <div class="splash-dot" style="width:10px;height:10px;border-radius:50%;background:#d4a853;animation:dotBounce 1.2s ease-in-out 0.4s infinite;"></div>
+    </div>
+  </div>
+</div>
+<style>
+@keyframes logoPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.05);opacity:0.8}}
+@keyframes dotBounce{0%,100%{transform:translateY(0);opacity:0.4}50%{transform:translateY(-10px);opacity:1}}
+</style>
+<script>
+(function(){
+  let activeRequests=0;let splashTimer=null;const splash=document.getElementById('splash-screen');
+  function showSplash(){if(splash)splash.style.display='flex'}
+  function hideSplash(){if(splash)splash.style.display='none'}
+  const origFetch=window.fetch;
+  window.fetch=function(...args){
+    activeRequests++;clearTimeout(splashTimer);
+    splashTimer=setTimeout(showSplash,2000);
+    return origFetch.apply(this,args).then(res=>{
+      activeRequests--;if(activeRequests<=0){activeRequests=0;clearTimeout(splashTimer);hideSplash()}
+      return res;
+    }).catch(err=>{
+      activeRequests--;if(activeRequests<=0){activeRequests=0;clearTimeout(splashTimer);hideSplash()}
+      throw err;
+    });
+  };
+})();
+</script>
+</body>
+</html>

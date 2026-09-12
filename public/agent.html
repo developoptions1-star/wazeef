@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>وَظِيف - لوحة تحكم المندوب</title>
+  <link rel="icon" type="image/png" href="/uploads/wazef.png">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    ::-webkit-scrollbar{width:6px;height:6px}
+    ::-webkit-scrollbar-track{background:rgba(255,255,255,0.02);border-radius:10px}
+    ::-webkit-scrollbar-thumb{background:rgba(212,168,83,0.2);border-radius:10px;transition:background .3s}
+    ::-webkit-scrollbar-thumb:hover{background:rgba(212,168,83,0.35)}
+    body{scrollbar-width:thin;scrollbar-color:rgba(212,168,83,0.2) rgba(255,255,255,0.02)}
+    body {
+      font-family: 'Tajawal', sans-serif;
+      min-height: 100vh;
+      background: #0a0a0a;
+      color: #f5f0e8;
+      overflow-x: hidden;
+    }
+    canvas#bg-canvas {
+      position: fixed; top: 0; left: 0;
+      width: 100%; height: 100%; z-index: 0;
+    }
+
+    .navbar {
+      position: relative; z-index: 10;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 20px 44px;
+      background: transparent;
+      border-bottom: none;
+    }
+    .navbar .brand { display: flex; align-items: center; gap: 12px; }
+    .navbar .brand-logo { height: 80px; width: auto; border-radius: 8px; }
+    .navbar h1 {
+      font-size: 26px; font-weight: 800;
+      background: linear-gradient(135deg, #f0d78c, #b8860b);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .navbar .user-info { display: flex; align-items: center; gap: 16px; }
+    .navbar .user-info span { color: #888; font-size: 14px; }
+    .btn-logout {
+      padding: 9px 22px; background: transparent;
+      border: none;
+      color: #e57373; border-radius: 12px; cursor: pointer;
+      font-family: 'Tajawal', sans-serif; font-size: 14px; font-weight: 600;
+      transition: all 0.3s;
+    }
+    .btn-logout:hover { background: rgba(220,50,50,0.1); }
+
+    .container { position: relative; z-index: 10; max-width: 1200px; margin: 35px auto; padding: 0 30px; }
+
+    .glass {
+      background: linear-gradient(145deg, rgba(20,20,20,0.8), rgba(12,12,12,0.85));
+      backdrop-filter: blur(40px);
+      border: 1px solid rgba(212,168,83,0.06);
+      border-radius: 26px;
+      box-shadow: 0 25px 70px rgba(0,0,0,0.5);
+    }
+
+    .section-label {
+      font-size: 13px; color: #888; font-weight: 600; margin-bottom: 14px;
+      display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 1px;
+    }
+    .section-label::before {
+      content: ''; width: 4px; height: 16px; border-radius: 2px;
+      background: linear-gradient(180deg, #d4a853, #b8860b);
+    }
+
+    .referral-box {
+      padding: 32px 40px;
+      margin-bottom: 32px;
+      display: flex; align-items: center; justify-content: space-between; gap: 24px;
+      flex-wrap: wrap;
+    }
+    .referral-box .ref-info { flex: 1; min-width: 280px; }
+    .referral-box h3 { font-size: 18px; margin-bottom: 6px; font-weight: 700; color: #f0d78c; }
+    .referral-box p { color: #666; font-size: 13px; line-height: 1.6; }
+    .referral-link { display: flex; gap: 10px; align-items: center; flex: 1; min-width: 300px; justify-content: flex-end; }
+    .referral-link input {
+      flex: 1; max-width: 400px;
+      padding: 13px 16px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(212,168,83,0.1);
+      border-radius: 12px;
+      color: #d4a853; font-family: monospace; font-size: 13px;
+      outline: none; transition: all 0.3s;
+    }
+    .referral-link input:focus { border-color: rgba(212,168,83,0.3); }
+    .referral-link button {
+      padding: 13px 24px;
+      background: linear-gradient(135deg, #b8860b, #d4a853);
+      border: none; border-radius: 12px;
+      color: #0a0a0a; font-family: 'Tajawal', sans-serif;
+      font-size: 14px; font-weight: 700; cursor: pointer;
+      box-shadow: 0 8px 25px rgba(212,168,83,0.2);
+      transition: all 0.3s;
+    }
+    .referral-link button:hover { transform: translateY(-2px); box-shadow: 0 12px 35px rgba(212,168,83,0.3); }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 14px; margin-bottom: 32px;
+    }
+    .stat-card {
+      padding: 22px 18px; text-align: center;
+      transition: all 0.35s cubic-bezier(0.16,1,0.3,1);
+      cursor: default;
+    }
+    .stat-card:hover { transform: translateY(-3px); }
+    .stat-card .num { font-size: 32px; font-weight: 900; margin-bottom: 4px; }
+    .stat-card .label { font-size: 12px; color: #666; font-weight: 500; }
+    .stat-card.gold .num { color: #d4a853; }
+    .stat-card.green .num { color: #66bb6a; }
+    .stat-card.red .num { color: #e57373; }
+
+    .earnings-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px; margin-bottom: 32px;
+    }
+    .earn-card {
+      padding: 22px 18px; text-align: center;
+      background: linear-gradient(145deg, rgba(212,168,83,0.04), rgba(184,134,11,0.02));
+      border: 1px solid rgba(212,168,83,0.08);
+      border-radius: 20px;
+      transition: all 0.3s;
+    }
+    .earn-card:hover { transform: translateY(-2px); border-color: rgba(212,168,83,0.15); }
+    .earn-card .earn-val { font-size: 26px; font-weight: 900; color: #d4a853; margin-bottom: 4px; }
+    .earn-card .earn-label { font-size: 12px; color: #888; font-weight: 500; }
+    .earn-card .earn-icon {
+      width: 36px; height: 36px; border-radius: 10px; margin: 0 auto 10px;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(212,168,83,0.08);
+    }
+    .earn-card .earn-icon svg { width: 18px; height: 18px; stroke: #d4a853; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+    .perf-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px; margin-bottom: 32px;
+    }
+    .perf-card {
+      padding: 22px 20px;
+      background: linear-gradient(145deg, rgba(20,20,20,0.8), rgba(12,12,12,0.85));
+      border: 1px solid rgba(212,168,83,0.06);
+      border-radius: 20px;
+    }
+    .perf-card .perf-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .perf-card .perf-title { font-size: 13px; color: #888; font-weight: 600; }
+    .perf-card .perf-val { font-size: 28px; font-weight: 900; color: #d4a853; }
+    .perf-card .perf-detail { font-size: 12px; color: #555; margin-top: 8px; }
+    .perf-bar { height: 5px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-top: 12px; overflow: hidden; }
+    .perf-bar-fill { height: 100%; border-radius: 10px; transition: width 0.8s ease; }
+
+    .section-title {
+      font-size: 15px; font-weight: 700; margin-bottom: 16px;
+      display: flex; align-items: center; gap: 10px; color: #ccc;
+    }
+
+    .filter-tabs { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+    .filter-tab {
+      padding: 7px 18px; border-radius: 10px; font-size: 12px; font-weight: 600;
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
+      color: #666; cursor: pointer; transition: all 0.3s; font-family: 'Tajawal', sans-serif;
+    }
+    .filter-tab.active {
+      background: rgba(212,168,83,0.1); border-color: rgba(212,168,83,0.2); color: #d4a853;
+    }
+    .filter-tab:hover:not(.active) { color: #888; border-color: rgba(255,255,255,0.08); }
+
+    .table-container { overflow: hidden; margin-bottom: 32px; }
+    .table-header {
+      padding: 20px 28px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .table-header h3 { font-size: 16px; font-weight: 700; }
+    .table-header .count { font-size: 12px; color: #666; background: rgba(255,255,255,0.05); padding: 4px 12px; border-radius: 20px; }
+
+    .user-row {
+      padding: 16px 28px;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      display: grid;
+      grid-template-columns: 2.2fr 1.3fr 1.2fr 1.3fr 1fr;
+      align-items: center; gap: 12px;
+      transition: background 0.2s;
+    }
+    .user-row:hover { background: rgba(212,168,83,0.02); }
+    .user-row:last-child { border-bottom: none; }
+    .user-row .user-info-cell .name { font-weight: 700; font-size: 14px; margin-bottom: 2px; color: #f0d78c; }
+    .user-row .user-info-cell .email { color: #94a3b8; font-size: 12px; }
+    .user-row .user-info-cell .phone { color: #94a3b8; font-size: 12px; margin-top: 2px; display: flex; align-items: center; gap: 4px; }
+    .user-row .date-cell { font-size: 12px; color: #94a3b8; }
+    .user-row .earning-cell { font-weight: 700; font-size: 14px; color: #d4a853; }
+
+    .status-badge { padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; display: inline-block; }
+    .status-badge.pending { background: rgba(212,168,83,0.08); color: #d4a853; }
+    .status-badge.approved { background: rgba(100,200,100,0.08); color: #66bb6a; }
+    .status-badge.rejected { background: rgba(220,50,50,0.08); color: #e57373; }
+    .status-badge.hired { background: rgba(100,200,100,0.08); color: #66bb6a; }
+    .status-badge.none { background: rgba(255,255,255,0.04); color: #555; }
+
+    .empty-state { text-align: center; padding: 60px 20px; color: #444; }
+    .empty-state .empty-icon {
+      width: 64px; height: 64px; border-radius: 16px; margin: 0 auto 16px;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(212,168,83,0.05); border: 1px dashed rgba(212,168,83,0.15);
+    }
+    .empty-state .empty-icon svg { width: 28px; height: 28px; stroke: #555; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+    .empty-state p { font-size: 14px; }
+
+    .notif-section { margin-bottom: 32px; }
+    .notif-item {
+      padding: 16px 24px;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      display: flex; align-items: flex-start; gap: 14px;
+      transition: background 0.2s; cursor: pointer;
+    }
+    .notif-item:hover { background: rgba(212,168,83,0.02); }
+    .notif-item:last-child { border-bottom: none; }
+    .notif-item.unread { background: rgba(212,168,83,0.03); }
+    .notif-icon {
+      width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(212,168,83,0.08);
+    }
+    .notif-icon svg { width: 18px; height: 18px; stroke: #d4a853; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .notif-content { flex: 1; }
+    .notif-content .notif-title { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+    .notif-content .notif-msg { color: #888; font-size: 13px; line-height: 1.6; }
+    .notif-content .notif-time { color: #555; font-size: 11px; margin-top: 6px; }
+    .notif-badge {
+      position: absolute; top: -4px; right: -4px;
+      width: 16px; height: 16px; border-radius: 50%;
+      background: #e57373; color: #fff; font-size: 9px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .notif-bell { position: relative; cursor: pointer; }
+    .notif-bell svg { width: 20px; height: 20px; stroke: #888; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: all 0.3s; }
+    .notif-bell:hover svg { stroke: #d4a853; }
+    .notif-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:400px;max-width:90vw;max-height:70vh;overflow-y:auto;background:linear-gradient(145deg,rgba(20,20,20,0.97),rgba(12,12,12,0.99));backdrop-filter:blur(40px);border:1px solid rgba(212,168,83,0.1);border-radius:18px;box-shadow:0 25px 70px rgba(0,0,0,0.7);display:none;z-index:9999;padding:6px 0}
+    .notif-popup.show{display:block;animation:fadeUp .3s ease}
+    .notif-popup-header{padding:14px 18px 10px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(212,168,83,0.06);margin-bottom:4px}
+    .notif-popup-header h4{font-size:14px;font-weight:700;color:#d4a853}
+    .notif-popup-header .mark-all{font-size:11px;color:#666;cursor:pointer;transition:color .2s;background:none;border:none;font-family:'Tajawal',sans-serif}
+    .notif-popup-header .mark-all:hover{color:#d4a853}
+    .notif-item{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.02);display:flex;align-items:flex-start;gap:10px;transition:background .2s;cursor:pointer;border-radius:10px;margin:2px 4px}
+    .notif-item:hover{background:rgba(212,168,83,0.04)}
+    .notif-item:last-child{border-bottom:none}
+    .notif-item.unread{background:rgba(212,168,83,0.04)}
+    .notif-icon{width:32px;height:32px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(212,168,83,0.08)}
+    .notif-icon svg{width:14px;height:14px;stroke:#d4a853;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+    .notif-content{flex:1}
+    .notif-content .notif-title{font-weight:700;font-size:12px;margin-bottom:2px}
+    .notif-content .notif-msg{color:#888;font-size:11px;line-height:1.5}
+    .notif-content .notif-time{color:#555;font-size:10px;margin-top:4px}
+    .notif-empty{text-align:center;padding:36px 16px;color:#555;font-size:13px}
+    .notif-overlay{position:fixed;top:0;left:0;width:100%;height:100%;z-index:9998;display:none;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px)}
+    .notif-overlay.show{display:block}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+    .modal-overlay {
+      position: fixed; top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(8px);
+      display: none; align-items: center; justify-content: center;
+      z-index: 1000; padding: 20px;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal {
+      background: linear-gradient(145deg, rgba(20,20,20,0.97), rgba(12,12,12,0.99));
+      border: 1px solid rgba(212,168,83,0.1);
+      border-radius: 24px; padding: 36px;
+      max-width: 520px; width: 100%;
+      box-shadow: 0 25px 70px rgba(0,0,0,0.6);
+      position: relative;
+    }
+    .modal h2 { font-size: 22px; margin-bottom: 28px; font-weight: 800; }
+    .modal .form-group { margin-bottom: 20px; }
+    .modal .form-group label {
+      display: block; font-size: 12px; color: #888;
+      margin-bottom: 6px; font-weight: 600;
+    }
+    .modal .form-group input, .modal .form-group textarea {
+      width: 100%; padding: 14px 16px;
+      background: rgba(255,255,255,0.04);
+      border: 1.5px solid rgba(255,255,255,0.06);
+      border-radius: 12px; color: #e2e8f0;
+      font-family: 'Tajawal', sans-serif; font-size: 14px;
+      outline: none; transition: all 0.3s;
+    }
+    .modal .form-group textarea { resize: vertical; min-height: 85px; }
+    .modal .form-group input:focus, .modal .form-group textarea:focus {
+      border-color: rgba(212,168,83,0.3);
+      background: rgba(255,255,255,0.06);
+    }
+    .modal .form-group input::placeholder, .modal .form-group textarea::placeholder { color: #475569; }
+    .modal .btn-row { display: flex; gap: 12px; margin-top: 24px; }
+    .modal .btn-submit {
+      flex: 1; padding: 14px;
+      background: linear-gradient(135deg, #b8860b, #d4a853);
+      border: none; border-radius: 12px; color: #0a0a0a;
+      font-family: 'Tajawal', sans-serif; font-size: 15px;
+      font-weight: 700; cursor: pointer; transition: all 0.3s;
+    }
+    .modal .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 14px 40px rgba(212,168,83,0.35); }
+    .modal .btn-cancel {
+      flex: 1; padding: 14px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px; color: #888;
+      font-family: 'Tajawal', sans-serif; font-size: 15px;
+      font-weight: 600; cursor: pointer; transition: all 0.3s;
+    }
+    .modal .btn-cancel:hover { background: rgba(255,255,255,0.06); color: #94a3b8; }
+
+    @media (max-width: 768px) {
+      .navbar{padding:12px 16px;flex-wrap:wrap;gap:8px;background:transparent;border-bottom:none}
+      .navbar h1{font-size:20px}
+      .navbar .brand-logo{height:56px}
+      .navbar .user-info{gap:10px}
+      .navbar .user-info span{font-size:12px}
+      .btn-logout{padding:7px 14px;font-size:12px}
+      .container{padding:0 14px;margin:16px auto}
+      .glass{border-radius:18px}
+      .referral-box{padding:20px;flex-direction:column;text-align:center;gap:16px}
+      .referral-box .ref-info{min-width:auto}
+      .referral-link{justify-content:center;flex-direction:column;width:100%}
+      .referral-link input{max-width:100%;width:100%}
+      .referral-link button{width:100%}
+      .stats-row{grid-template-columns:repeat(3,1fr);gap:10px}
+      .stat-card{padding:16px 12px}
+      .stat-card .num{font-size:26px}
+      .stat-card .label{font-size:11px}
+      .earnings-row{grid-template-columns:repeat(2,1fr);gap:10px}
+      .earn-card{padding:16px 12px}
+      .earn-card .earn-val{font-size:22px}
+      .perf-row{grid-template-columns:1fr}
+      .user-row{
+        grid-template-columns:1fr!important;gap:0;padding:0;
+        background:rgba(15,15,15,0.8);border:1px solid rgba(212,168,83,0.08);
+        border-radius:16px;margin-bottom:10px;overflow:hidden;
+      }
+      .user-row>div{padding:10px 16px;border-bottom:1px solid rgba(212,168,83,0.05)}
+      .user-row>div:last-child{border-bottom:none}
+      .user-row>div::before{font-size:10px;color:#666;font-weight:600;display:block;margin-bottom:2px;text-transform:uppercase;letter-spacing:.5px}
+      .user-row>div:nth-child(1)::before{content:'العضو'}
+      .user-row>div:nth-child(2)::before{content:'التاريخ'}
+      .user-row>div:nth-child(3)::before{content:'الحالة'}
+      .user-row>div:nth-child(4)::before{content:'الأرباح'}
+      .user-row>div:nth-child(5)::before{content:'الوظيفة'}
+      .table-container{overflow-x:auto}
+      .filter-tabs{gap:4px}
+      .filter-tab{padding:6px 12px;font-size:11px}
+      #agent-search{min-width:100%!important}
+      #agent-status-filter{min-width:100%!important}
+      .section-label{font-size:12px;letter-spacing:0.5px}
+      .notif-section{margin-bottom:20px}
+      .notif-popup{width:calc(100vw - 32px);max-width:400px;max-height:70vh}
+      .modal{width:90vw;padding:28px;border-radius:22px}
+      .modal h2{font-size:18px;margin-bottom:20px}
+      .modal .form-group input,.modal .form-group textarea{padding:12px 14px;font-size:14px}
+    }
+    @media(max-width:380px){
+      .stats-row,.earnings-row{grid-template-columns:1fr 1fr;gap:8px}
+      .stat-card .num{font-size:22px}
+      .earn-card .earn-val{font-size:20px}
+    }
+  </style>
+</head>
+<body>
+  <canvas id="bg-canvas"></canvas>
+
+  <nav class="navbar">
+    <div class="brand"><img src="/uploads/wazef.png" alt="وَظِيف" class="brand-logo"></div>
+    <div class="user-info">
+      <span id="user-name"></span>
+      <div class="notif-bell" onclick="toggleNotifPopup(event)">
+        <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span class="notif-badge" id="notif-badge" style="display:none;">0</span>
+      </div>
+      <button class="btn-logout" onclick="logout()">خروج</button>
+    </div>
+  </nav>
+  <div class="notif-overlay" id="notif-overlay" onclick="closeNotifPopup()"></div>
+  <div class="notif-popup" id="notif-popup">
+    <div class="notif-popup-header"><h4>الإشعارات</h4><button class="mark-all" onclick="markAllRead()">مقروءة الكل</button></div>
+    <div id="notif-list"></div>
+  </div>
+
+  <div class="container">
+    <!-- Referral Link -->
+    <div class="referral-box glass">
+      <div class="ref-info">
+        <h3>رابط الإحالة الخاص بيك</h3>
+        <p>شارك هذا الرابط مع أي شخص والأشخاص اللي يسجلوا من خلالك هيتحسبوا ليك</p>
+      </div>
+      <div class="referral-link">
+        <input type="text" id="ref-link" readonly>
+        <button onclick="copyLink()">نسخ</button>
+      </div>
+    </div>
+
+    <!-- Main Stats -->
+    <div class="section-label">الإحصائيات العامة</div>
+    <div class="stats-row" id="stats-grid"></div>
+
+    <!-- Earnings -->
+    <div class="section-label">الأرباح</div>
+    <div class="earnings-row" id="earnings-grid"></div>
+
+    <!-- Performance -->
+    <div class="section-label">تقييم الأداء</div>
+    <div class="perf-row" id="perf-grid"></div>
+
+    <!-- Users List -->
+    <div class="section-title">
+      <span>الأشخاص اللي إححتهم</span>
+    </div>
+    <div class="filter-tabs">
+      <div class="filter-tab active" onclick="filterUsers('all', this)">الكل</div>
+      <div class="filter-tab" onclick="filterUsers('today', this)">اليوم</div>
+      <div class="filter-tab" onclick="filterUsers('week', this)">هذا الأسبوع</div>
+      <div class="filter-tab" onclick="filterUsers('month', this)">هذا الشهر</div>
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+      <input type="text" id="agent-search" placeholder="بحث بالاسم أو البريد..." oninput="renderUsers()" style="flex:1;min-width:180px;padding:10px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:10px;color:#f5f0e8;font-family:'Tajawal',sans-serif;font-size:13px;outline:none;" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')">
+      <select id="agent-status-filter" onchange="renderUsers()" style="padding:10px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:10px;color:#f5f0e8;font-family:'Tajawal',sans-serif;font-size:13px;outline:none;cursor:pointer;-webkit-appearance:none;-moz-appearance:none;appearance:none;color-scheme:dark;" autocomplete="off">
+        <option value="">جميع الحالات</option>
+        <option value="pending">قيد المراجعة</option>
+        <option value="approved">تمت الموافقة</option>
+        <option value="rejected">مرفوض</option>
+        <option value="hired">تم التوظيف</option>
+        <option value="none">لم يقدم بعد</option>
+      </select>
+    </div>
+    <div class="table-container glass">
+      <div class="table-header">
+        <h3>قائمة الأعضاء</h3>
+        <span class="count" id="users-count">0 عضو</span>
+      </div>
+      <div id="users-list"></div>
+    </div>
+
+  </div>
+
+  <div class="modal-overlay" id="job-modal" onclick="if(event.target===this)closeJobModal()">
+    <div class="modal" style="width:520px;max-height:85vh;overflow-y:auto;">
+      <h2 style="color:#d4a853;margin-bottom:16px;">إضافة وظائف</h2>
+      <input type="hidden" id="modal-app-id">
+      <input type="hidden" id="modal-user-id">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="form-group"><label>اسم الشركة</label><input type="text" id="job-company" placeholder="اسم الشركة" autocomplete="off"></div>
+        <div class="form-group"><label>اسم الوظيفة</label><input type="text" id="job-position" placeholder="مثال: مطور ويب" autocomplete="off"></div>
+      </div>
+      <div class="form-group"><label>وقت المقابلة</label><input type="text" id="job-time" placeholder="مثال: السبت 2 م" autocomplete="off"></div>
+      <div class="form-group"><label>المرتب (جنيه) - اختياري</label>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <input type="number" id="job-salary-min" placeholder="الحد الأدنى" autocomplete="off" style="flex:1;">
+          <span style="color:#555;font-size:14px;">-</span>
+          <input type="number" id="job-salary-max" placeholder="الحد الأقصى" autocomplete="off" style="flex:1;">
+        </div>
+      </div>
+      <div class="form-group"><label>وصف إضافي</label><textarea id="job-desc" placeholder="تفاصيل إضافية" autocomplete="off" style="width:100%;padding:12px 16px;background:rgba(255,255,255,0.04);border:1.5px solid rgba(255,255,255,0.06);border-radius:12px;color:#e2e8f0;font-family:'Tajawal',sans-serif;font-size:14px;min-height:70px;resize:vertical;outline:none;"></textarea></div>
+      <div class="form-group"><label>جيميل الشركة (اختياري - لإرسال بيانات المتقدم)</label><input type="email" id="job-company-email" placeholder="example@company.com" autocomplete="off" style="width:100%;padding:12px 16px;background:rgba(255,255,255,0.04);border:1.5px solid rgba(255,255,255,0.06);border-radius:12px;color:#e2e8f0;font-family:'Tajawal',sans-serif;font-size:14px;direction:ltr;text-align:left;outline:none;"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+        <button class="btn-submit" onclick="addJobToList()" style="background:linear-gradient(135deg,#b8860b,#d4a853);color:#0a0a0a;border:none;border-radius:12px;padding:12px;font-family:'Tajawal',sans-serif;font-size:14px;font-weight:700;cursor:pointer;">+ إضافة وظيفة</button>
+        <button class="btn-submit" id="btn-confirm-all" onclick="confirmAllJobs()" style="background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;border:none;border-radius:12px;padding:12px;font-family:'Tajawal',sans-serif;font-size:14px;font-weight:700;cursor:pointer;display:none;">تأكيد وإرسال الكل</button>
+      </div>
+      <div id="jobs-added-modal"></div>
+      <div id="existing-jobs-modal" style="margin-bottom:16px;"></div>
+      <div style="text-align:left;">
+        <button onclick="closeJobModal()" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:#888;border-radius:12px;padding:10px 28px;font-family:'Tajawal',sans-serif;font-size:14px;cursor:pointer;">إغلاق</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('bg-canvas');
+    const ctx = canvas.getContext('2d');
+    let W, H, particles = [], time = 0;
+    function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; initParticles(); }
+    function initParticles() { particles = []; const c = Math.min(60, Math.floor(W * H / 20000)); for (let i = 0; i < c; i++) particles.push({ x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3, r: Math.random() * 1.5 + 0.5, alpha: Math.random() * 0.4 + 0.1, pulse: Math.random() * Math.PI * 2 }); }
+    resize();
+    window.addEventListener('resize', resize);
+    function animate() {
+      ctx.clearRect(0, 0, W, H);
+      const bg = ctx.createRadialGradient(W * 0.5, H * 0.3, 0, W * 0.5, H * 0.3, W * 0.8);
+      bg.addColorStop(0, '#12100a'); bg.addColorStop(0.4, '#0e0c08'); bg.addColorStop(1, '#0a0a0a');
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i]; p.x += p.vx; p.y += p.vy;
+        if (p.x < 0) p.x = W; if (p.x > W) p.x = 0; if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+        p.pulse += 0.015; const gl = p.alpha + Math.sin(p.pulse) * 0.1;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fillStyle = `rgba(212,168,83,${gl})`; ctx.fill();
+        for (let j = i + 1; j < particles.length; j++) { const q = particles[j]; const dx = p.x - q.x, dy = p.y - q.y, dist = Math.sqrt(dx * dx + dy * dy); if (dist < 120) { ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.strokeStyle = `rgba(212,168,83,${(1 - dist / 120) * 0.06})`; ctx.lineWidth = 0.4; ctx.stroke(); } }
+      }
+      for (let i = 0; i < 4; i++) { const bx = (i * W / 3 + time * 15) % W, by = H * 0.3 + Math.sin(time * 0.4 + i * 1.5) * H * 0.12, br = 60 + Math.sin(time + i) * 15; const bg2 = ctx.createRadialGradient(bx, by, 0, bx, by, br); bg2.addColorStop(0, `rgba(184,134,11,${0.015 + Math.sin(time * 0.2 + i) * 0.008})`); bg2.addColorStop(1, 'rgba(184,134,11,0)'); ctx.fillStyle = bg2; ctx.beginPath(); ctx.arc(bx, by, br, 0, Math.PI * 2); ctx.fill(); }
+      time += 0.006; requestAnimationFrame(animate);
+    }
+    animate();
+
+    const token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    if (!token || !user || user.role !== 'agent') { window.location.href = '/'; }
+    document.getElementById('user-name').textContent = user?.name || '';
+
+    const refLink = window.location.origin + '/?ref=' + user.referral_code;
+    document.getElementById('ref-link').value = refLink;
+
+    function logout() { localStorage.removeItem('token'); localStorage.removeItem('user'); window.location.href = '/'; }
+    function copyLink() {
+      navigator.clipboard.writeText(refLink);
+      const btn = document.querySelector('.referral-link button');
+      btn.textContent = 'تم النسخ!';
+      setTimeout(() => btn.textContent = 'نسخ', 2000);
+    }
+
+    let agentStats = null;
+    let currentFilter = 'all';
+
+    async function loadStats() {
+      try {
+        const res = await fetch('/api/agent/stats', { headers: { 'Authorization': `Bearer ${token}` } });
+        agentStats = await res.json();
+        const s = agentStats;
+
+        document.getElementById('stats-grid').innerHTML = `
+          <div class="stat-card glass gold"><div class="num">${s.totalReferred}</div><div class="label">إجمالي الأعضاء</div></div>
+          <div class="stat-card glass gold"><div class="num">${s.withApplication}</div><div class="label">قدموا طلبات</div></div>
+          <div class="stat-card glass green"><div class="num">${s.hired}</div><div class="label">تم توظيفهم</div></div>
+          <div class="stat-card glass red"><div class="num">${s.rejected || 0}</div><div class="label">تم رفضهم</div></div>
+          <div class="stat-card glass ${s.pending > 0 ? 'gold' : ''}"><div class="num">${s.pending}</div><div class="label">قيد المراجعة</div></div>
+        `;
+
+        document.getElementById('earnings-grid').innerHTML = `
+          <div class="earn-card"><div class="earn-icon"><svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><div class="earn-val">${s.totalAgentEarnings.toLocaleString('ar-EG')}</div><div class="earn-label">إجمالي أرباحي (جنيه)</div></div>
+          <div class="earn-card" style="${s.frozenTotal>0?'background:rgba(251,191,36,0.04);border:1px solid rgba(251,191,36,0.12);':''}"><div class="earn-icon"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><div class="earn-val" style="${s.frozenTotal>0?'color:#fbbf24;':''}">${s.frozenTotal.toLocaleString('ar-EG')}</div><div class="earn-label">المال المجمد (جنيه)</div></div>
+          <div class="earn-card"><div class="earn-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="12" cy="15" r="2"/></svg></div><div class="earn-val">${s.todayEarnings.toLocaleString('ar-EG')}</div><div class="earn-label">أرباح اليوم</div></div>
+          <div class="earn-card"><div class="earn-icon"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div><div class="earn-val">${s.weekEarnings.toLocaleString('ar-EG')}</div><div class="earn-label">أرباح الأسبوع</div></div>
+          <div class="earn-card"><div class="earn-icon"><svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div><div class="earn-val">${s.monthEarnings.toLocaleString('ar-EG')}</div><div class="earn-label">أرباح الشهر</div></div>
+        `;
+
+        let frozenHTML = '';
+        if (s.frozenSelections && s.frozenSelections.length > 0) {
+          frozenHTML = `
+            <div class="section-label" style="margin-top:20px;">المبالغ المتجمدة (${s.frozenSelections.length})</div>
+            ${s.frozenSelections.map(f => {
+              const deadline = new Date(f.frozen_deadline);
+              const now = new Date();
+              const diff = deadline - now;
+              let timeText = '';
+              if (diff <= 0) { timeText = 'انتهت المدة!'; }
+              else {
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                timeText = 'متبقي ' + days + ' يوم ' + hours + ' ساعة';
+              }
+              return `<div style="padding:14px 18px;background:rgba(251,191,36,0.04);border:1px solid rgba(251,191,36,0.1);border-radius:14px;margin-bottom:10px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                  <div><strong style="color:#f5f0e8;">${f.user_name}</strong><div style="font-size:12px;color:#888;">${f.company_name} - ${f.position}</div></div>
+                  <div style="text-align:left;">
+                    <div style="font-size:15px;font-weight:700;color:#fbbf24;">${(f.agent_amount||0).toLocaleString('ar-EG')} ج</div>
+                    <div style="font-size:10px;color:${diff<=0?'#e57373':'#888'};">${timeText}</div>
+                  </div>
+                </div>
+                <div style="margin-top:8px;padding:6px 10px;background:rgba(251,191,36,0.05);border:1px solid rgba(251,191,36,0.1);border-radius:8px;font-size:11px;color:#fbbf24;">سيتم الإرسال خلال أسبوع إلى 3 أسابيع</div>
+              </div>`;
+            }).join('')}
+          `;
+        }
+        document.getElementById('perf-grid').insertAdjacentHTML('beforebegin', frozenHTML);
+
+        const conversionRate = s.totalReferred > 0 ? ((s.hired / s.totalReferred) * 100).toFixed(1) : 0;
+        const appRate = s.totalReferred > 0 ? ((s.withApplication / s.totalReferred) * 100).toFixed(1) : 0;
+        const avgEarning = s.hired > 0 ? (s.totalAgentEarnings / s.hired).toFixed(0) : 0;
+
+        document.getElementById('perf-grid').innerHTML = `
+          <div class="perf-card">
+            <div class="perf-header">
+              <div class="perf-title">معدل التحويل للتوظيف</div>
+              <div class="perf-val">${conversionRate}%</div>
+            </div>
+            <div class="perf-detail">${s.hired} من ${s.totalReferred} عضو تم توظيفهم</div>
+            <div class="perf-bar"><div class="perf-bar-fill" style="width:${conversionRate}%;background:linear-gradient(90deg,#66bb6a,#d4a853);"></div></div>
+          </div>
+          <div class="perf-card">
+            <div class="perf-header">
+              <div class="perf-title">معدل التقديم على الوظائف</div>
+              <div class="perf-val">${appRate}%</div>
+            </div>
+            <div class="perf-detail">${s.withApplication} من ${s.totalReferred} عضو قدّموا</div>
+            <div class="perf-bar"><div class="perf-bar-fill" style="width:${appRate}%;background:linear-gradient(90deg,#d4a853,#b8860b);"></div></div>
+          </div>
+          <div class="perf-card">
+            <div class="perf-header">
+              <div class="perf-title">متوسط الربح لكل توظيف</div>
+              <div class="perf-val" style="font-size:22px;">${Number(avgEarning).toLocaleString('ar-EG')} ج</div>
+            </div>
+            <div class="perf-detail">هذا الأسبوع: ${s.weekHired} توظيف | هذا الشهر: ${s.monthHired} توظيف</div>
+          </div>
+        `;
+
+        renderUsers();
+      } catch (e) {}
+    }
+
+    function filterUsers(period, el) {
+      currentFilter = period;
+      document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+      el.classList.add('active');
+      renderUsers();
+    }
+
+    function renderUsers() {
+      if (!agentStats) return;
+      let users = [...agentStats.referredUsers];
+      const now = new Date();
+      if (currentFilter === 'today') {
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        users = users.filter(u => new Date(u.created_at) >= todayStart);
+      } else if (currentFilter === 'week') {
+        const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        users = users.filter(u => new Date(u.created_at) >= weekStart);
+      } else if (currentFilter === 'month') {
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        users = users.filter(u => new Date(u.created_at) >= monthStart);
+      }
+
+      const searchVal = (document.getElementById('agent-search')?.value || '').trim().toLowerCase();
+      if (searchVal) users = users.filter(u => (u.name || '').toLowerCase().includes(searchVal) || (u.email || '').toLowerCase().includes(searchVal));
+
+      const statusVal = document.getElementById('agent-status-filter')?.value || '';
+      if (statusVal) {
+        users = users.filter(u => {
+          if (statusVal === 'none') return !u.app_status;
+          if (statusVal === 'hired') return u.is_hired;
+          if (statusVal === 'rejected') return (u.app_status === 'rejected') || (u.sel_status === 'cancelled' && u.sel_apology);
+          if (statusVal === 'approved') return u.app_status === 'approved' && !u.is_hired && u.sel_status !== 'cancelled';
+          if (statusVal === 'pending') return u.app_status === 'pending';
+          return true;
+        });
+      }
+
+      document.getElementById('users-count').textContent = users.length + ' عضو';
+
+      const list = document.getElementById('users-list');
+      if (users.length === 0) {
+        list.innerHTML = '<div class="empty-state"><div class="empty-icon"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><p>لسه مفيش أعضاء في هذا الفترة</p></div>';
+        return;
+      }
+      list.innerHTML = users.map(u => {
+        let statusClass = 'none';
+        let statusText = 'لم يقدم بعد';
+        let extraBadge = '';
+        if (u.sel_status === 'cancelled' && u.sel_apology) {
+          statusClass = 'rejected';
+          statusText = 'تم الإعتذار';
+          extraBadge = `<div style="margin-top:6px;padding:6px 10px;background:rgba(220,50,50,0.06);border:1px solid rgba(220,50,50,0.12);border-radius:8px;font-size:11px;color:#e57373;"><strong>سبب الإعتذار:</strong> ${u.sel_apology}</div>`;
+        } else if (u.is_hired) { statusClass = 'hired'; statusText = 'تم التوظيف'; }
+        else if (u.app_status === 'approved') { statusClass = 'approved'; statusText = 'تمت الموافقة'; }
+        else if (u.app_status === 'pending') { statusClass = 'pending'; statusText = 'قيد المراجعة'; }
+        else if (u.app_status === 'rejected') { statusClass = 'rejected'; statusText = 'مرفوض'; }
+        else if (u.app_status) { statusClass = 'pending'; statusText = 'قيد المراجعة'; }
+        return `
+          <div class="user-row">
+            <div class="user-info-cell">
+              <div class="name">${u.name}</div>
+              <div class="email">${u.email}</div>
+              ${u.phone ? `<div class="phone"><svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:#94a3b8;fill:none;stroke-width:2;display:inline;vertical-align:middle;margin-left:4px;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>${u.phone}</div>` : ''}
+              ${extraBadge}
+            </div>
+            <div class="date-cell">${new Date(u.created_at).toLocaleDateString('ar-EG')}</div>
+            <div><span class="status-badge ${statusClass}">${statusText}</span></div>
+            <div class="earning-cell">${(u.earned_amount||0).toLocaleString('ar-EG')} ج</div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="font-size:12px;color:#94a3b8;">${u.app_status ? 'تم التقديم' : 'لمقدم بعد'}</span>
+              ${u.app_status === 'approved' && u.sel_status !== 'cancelled' ? (u.jobs_count > 0 ? `<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#66bb6a;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.15);padding:4px 10px;border-radius:8px;font-weight:600;"><svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:#66bb6a;fill:none;stroke-width:2;"><polyline points="20 6 9 17 4 12"/></svg> تم إرسال ${u.jobs_count} وظيفة</span>` : `<button onclick="openJobModalAgent(${u.app_id || 0}, ${u.id})" style="font-size:11px;padding:4px 10px;border-radius:8px;background:rgba(212,168,83,0.08);border:1px solid rgba(212,168,83,0.15);color:#d4a853;cursor:pointer;font-family:'Tajawal',sans-serif;font-weight:600;">إضافة وظيفة</button>`) : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    loadStats();
+    loadNotifications();
+
+    let pendingJobs = [];
+    function openJobModalAgent(appId, userId) {
+      document.getElementById('modal-app-id').value = appId;
+      document.getElementById('modal-user-id').value = userId;
+      document.getElementById('job-modal').classList.add('show');
+      pendingJobs = [];
+      renderPendingJobs();
+      loadJobsInModal(appId);
+    }
+    function closeJobModal() {
+      document.getElementById('job-modal').classList.remove('show');
+      pendingJobs = [];
+      ['job-company','job-position','job-time','job-salary-min','job-salary-max','job-desc','job-company-email'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+    }
+    async function loadJobsInModal(appId) {
+      try {
+        const res = await fetch(`/api/agent/jobs/${appId}`, { headers:{'Authorization':`Bearer ${token}`} });
+        const jobs = await res.json();
+        const c = document.getElementById('existing-jobs-modal');
+        if (jobs.length === 0) { c.innerHTML = ''; return; }
+        c.innerHTML = '<h4 style="margin-bottom:12px;color:#64748b;font-size:14px;">الوظائف المضافة مسبقاً:</h4>' +
+          jobs.map(j => `<div style="padding:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;"><div><strong>${j.position}</strong> - <span style="color:#d4a853;">${j.company_name}</span> ${(j.salary_min||j.salary_max)?(j.salary_min&&j.salary_max?j.salary_min+' - '+j.salary_max+' ج':j.salary_min?'من '+j.salary_min+' ج':'حتى '+j.salary_max+' ج'):''}</div></div>`).join('');
+      } catch (e) {}
+    }
+    function addJobToList() {
+      const company = document.getElementById('job-company').value;
+      const position = document.getElementById('job-position').value;
+      const time = document.getElementById('job-time').value;
+      const salaryMin = document.getElementById('job-salary-min').value;
+      const salaryMax = document.getElementById('job-salary-max').value;
+      const desc = document.getElementById('job-desc').value;
+      const companyEmail = document.getElementById('job-company-email').value;
+      if (!company || !position) return alert('من فضلك أكمل البيانات (اسم الشركة + اسم الوظيفة)');
+      pendingJobs.push({ company_name: company, position, interview_time: time, salary_min: salaryMin ? parseFloat(salaryMin) : 0, salary_max: salaryMax ? parseFloat(salaryMax) : 0, description: desc, company_email: companyEmail || '' });
+      ['job-company','job-position','job-time','job-salary-min','job-salary-max','job-desc','job-company-email'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+      renderPendingJobs();
+    }
+    function removeJobFromList(index) {
+      pendingJobs.splice(index, 1);
+      renderPendingJobs();
+    }
+    function renderPendingJobs() {
+      const c = document.getElementById('jobs-added-modal');
+      const btn = document.getElementById('btn-confirm-all');
+      if (pendingJobs.length === 0) {
+        btn.style.display = 'none';
+        loadJobsInModal(document.getElementById('modal-app-id').value);
+        return;
+      }
+      btn.style.display = 'inline-block';
+      let html = '<h4 style="margin-bottom:12px;color:#d4a853;font-size:14px;">الوظائف جاهزة للإرسال (' + pendingJobs.length + '):</h4>';
+      html += pendingJobs.map((j, i) => `
+        <div style="padding:12px;background:rgba(34,197,94,0.04);border:1px solid rgba(34,197,94,0.12);border-radius:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+          <div><strong>${j.position}</strong> - <span style="color:#d4a853;">${j.company_name}</span> ${j.salary_min || j.salary_max ? (j.salary_min && j.salary_max ? j.salary_min + ' - ' + j.salary_max + ' ج' : j.salary_min ? 'من ' + j.salary_min + ' ج' : 'حتى ' + j.salary_max + ' ج') : ''} ${j.interview_time ? '<span style="color:#888;">' + j.interview_time + '</span>' : ''}</div>
+          <button onclick="removeJobFromList(${i})" style="background:rgba(220,50,50,0.08);border:1px solid rgba(220,50,50,0.15);color:#e57373;border-radius:8px;padding:4px 12px;cursor:pointer;font-size:12px;font-family:'Tajawal',sans-serif;">حذف</button>
+        </div>
+      `).join('');
+      c.innerHTML = html;
+    }
+    async function confirmAllJobs() {
+      if (pendingJobs.length === 0) return;
+      const appId = document.getElementById('modal-app-id').value;
+      const userId = document.getElementById('modal-user-id').value;
+      const btn = document.getElementById('btn-confirm-all');
+      btn.disabled = true;
+      btn.textContent = 'جاري الإرسال...';
+      try {
+        const res = await fetch('/api/agent/jobs/batch', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ application_id: parseInt(appId), user_id: parseInt(userId), jobs: pendingJobs })
+        });
+        const data = await res.json();
+        if (data.error) { alert(data.error); return; }
+        pendingJobs = [];
+        closeJobModal();
+        loadStats();
+        alert('تم إرسال جميع الوظائف بنجاح! سيتم إرسال إشعارات بالبريد الإلكتروني.');
+      } catch (e) {
+        alert('حدث خطأ أثناء الإرسال');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'تأكيد وإرسال الكل';
+      }
+    }
+
+    function toggleNotifPopup(e){e.stopPropagation();const p=document.getElementById('notif-popup'),o=document.getElementById('notif-overlay');if(p.classList.contains('show')){closeNotifPopup()}else{p.classList.add('show');o.classList.add('show');loadNotifications()}}
+    function closeNotifPopup(){document.getElementById('notif-popup').classList.remove('show');document.getElementById('notif-overlay').classList.remove('show')}
+
+    async function loadNotifications(){try{const res=await fetch('/api/agent/notifications',{headers:{'Authorization':`Bearer ${token}`}});const notifs=await res.json();const unread=notifs.filter(n=>!n.is_read);const badge=document.getElementById('notif-badge');if(unread.length>0){badge.textContent=unread.length;badge.style.display='flex'}else{badge.style.display='none'}const list=document.getElementById('notif-list');if(notifs.length===0){list.innerHTML='<div class="notif-empty">لا توجد إشعارات</div>';return}list.innerHTML=notifs.map(n=>`<div class="notif-item ${n.is_read?'':'unread'}" onclick="markRead(${n.id},this)"><div class="notif-icon"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div><div class="notif-content"><div class="notif-title">${n.title}</div><div class="notif-msg">${n.message}</div><div class="notif-time">${new Date(n.created_at).toLocaleString('ar-EG')}</div></div></div>`).join('')}catch(e){}}
+
+    async function markRead(id,el){try{await fetch(`/api/notifications/${id}/read`,{method:'PUT',headers:{'Authorization':`Bearer ${token}`}});el.classList.remove('unread');loadNotifications()}catch(e){}}
+
+    async function markAllRead(){try{await fetch('/api/notifications/read-all',{method:'PUT',headers:{'Authorization':`Bearer ${token}`}});loadNotifications()}catch(e){}}
+  </script>
+<!-- Splash Screen -->
+<div id="splash-screen" style="display:none;position:fixed;inset:0;z-index:99999;background:#0a0a0a;flex-direction:column;align-items:center;justify-content:center;">
+  <div style="text-align:center;">
+    <img src="/uploads/wazef.png" style="width:120px;border-radius:12px;margin-bottom:20px;animation:logoPulse 1.5s ease-in-out infinite;">
+    <h1 style="font-size:28px;background:linear-gradient(135deg,#f0d78c,#b8860b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;">وَظِيف</h1>
+    <p style="color:#666;font-size:13px;margin-bottom:28px;">يرجى الانتظار...</p>
+    <div style="display:flex;gap:6px;justify-content:center;">
+      <div class="splash-dot" style="width:10px;height:10px;border-radius:50%;background:#d4a853;animation:dotBounce 1.2s ease-in-out infinite;"></div>
+      <div class="splash-dot" style="width:10px;height:10px;border-radius:50%;background:#d4a853;animation:dotBounce 1.2s ease-in-out 0.2s infinite;"></div>
+      <div class="splash-dot" style="width:10px;height:10px;border-radius:50%;background:#d4a853;animation:dotBounce 1.2s ease-in-out 0.4s infinite;"></div>
+    </div>
+  </div>
+</div>
+<style>
+@keyframes logoPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.05);opacity:0.8}}
+@keyframes dotBounce{0%,100%{transform:translateY(0);opacity:0.4}50%{transform:translateY(-10px);opacity:1}}
+</style>
+<script>
+(function(){
+  let activeRequests=0;let splashTimer=null;const splash=document.getElementById('splash-screen');
+  function showSplash(){if(splash)splash.style.display='flex'}
+  function hideSplash(){if(splash)splash.style.display='none'}
+  const origFetch=window.fetch;
+  window.fetch=function(...args){
+    activeRequests++;clearTimeout(splashTimer);
+    splashTimer=setTimeout(showSplash,2000);
+    return origFetch.apply(this,args).then(res=>{
+      activeRequests--;if(activeRequests<=0){activeRequests=0;clearTimeout(splashTimer);hideSplash()}
+      return res;
+    }).catch(err=>{
+      activeRequests--;if(activeRequests<=0){activeRequests=0;clearTimeout(splashTimer);hideSplash()}
+      throw err;
+    });
+  };
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+node_modules/
+app.db-shm
+app.db-wal
+server.log
+token.txt
+nul
+.env
+*.log

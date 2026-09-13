@@ -16,7 +16,8 @@ const JWT_SECRET = process.env.JWT_SECRET || 'sss_super_secret_key_2024';
 // Security headers
 app.use(helmet({
   contentSecurityPolicy: false,
-  crossOriginEmbedderPolicy: false
+  crossOriginEmbedderPolicy: false,
+  frameguard: { action: 'deny' }
 }));
 
 // Rate limiting for auth routes

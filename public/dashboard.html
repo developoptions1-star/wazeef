@@ -219,7 +219,7 @@
     const token=localStorage.getItem('token'),user=JSON.parse(localStorage.getItem('user')||'null');
     if(!token||!user||user.role==='admin')window.location.href='/';
     document.getElementById('user-name').textContent=user?.name||'';
-    let mediaRecorder,audioChunks=[],recordingBlob=null,timerInterval,timeLeft=120,isRecording=false;
+    var mediaRecorder,audioChunks=[],recordingBlob=null,timerInterval,timeLeft=120,isRecording=false;
     function logout(){localStorage.removeItem('token');localStorage.removeItem('user');window.location.href='/'}
     function updateTimer(){const m=Math.floor(timeLeft/60).toString().padStart(2,'0'),s=(timeLeft%60).toString().padStart(2,'0');document.getElementById('timer').textContent=`${m}:${s}`;if(timeLeft<=0)stopRecording();timeLeft--}
     function onLangChange(){const l=document.getElementById('lang-select').value,b=document.getElementById('record-btn'),lb=document.getElementById('timer-label');if(l){b.classList.remove('disabled');lb.textContent='جاهز للتسجيل'}else{b.classList.add('disabled');lb.textContent='اختر اللغة أولاً'}}

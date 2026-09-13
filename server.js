@@ -10,8 +10,9 @@ const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'sss_super_secret_key_2024';
+const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 
 // Security headers
 app.use(helmet({
@@ -48,15 +49,20 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Ensure directories exist
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+
 // Multer for audio uploads
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, 'uploads/'),
+  destination: (req, file, cb) => cb(null, uploadsDir),
   filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
 });
 const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
 
 // Database setup
-const db = new Database('app.db');
+const dbPath = path.join(__dirname, 'app.db');
+const db = new Database(dbPath);
 db.pragma('journal_mode = WAL');
 
 db.exec(`
@@ -296,7 +302,7 @@ app.post('/api/forgot-password', authLimiter, (req, res) => {
     const html = `
       <div dir="rtl" style="font-family:'Tajawal',Arial,sans-serif;max-width:600px;margin:0 auto;padding:40px 30px;background:#0a0a0a;color:#f5f0e8;border-radius:20px;border:1px solid rgba(212,168,83,0.1);">
         <div style="text-align:center;margin-bottom:30px;">
-          <img src="http://localhost:3000/uploads/wazef.png" alt="وَظِيف" style="width:180px;height:auto;border-radius:10px;">
+          <img src="${BASE_URL}/uploads/wazef.png" alt="وَظِيف" style="width:180px;height:auto;border-radius:10px;">
           <h1 style="font-size:28px;background:linear-gradient(135deg,#f0d78c,#b8860b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin:12px 0 4px;">وَظِيف</h1>
         </div>
         <h2 style="color:#d4a853;font-size:20px;margin-bottom:16px;text-align:center;">إعادة تعيين كلمة المرور</h2>
@@ -442,7 +448,7 @@ app.put('/api/admin/applications/:id/approve', authMiddleware, adminMiddleware, 
       const html = `
         <div dir="rtl" style="font-family:'Tajawal',Arial,sans-serif;max-width:600px;margin:0 auto;padding:40px 30px;background:#0a0a0a;color:#f5f0e8;border-radius:20px;border:1px solid rgba(212,168,83,0.1);">
           <div style="text-align:center;margin-bottom:30px;">
-            <img src="http://localhost:3000/uploads/wazef.png" alt="وَظِيف" style="width:180px;height:auto;border-radius:10px;">
+            <img src="${BASE_URL}/uploads/wazef.png" alt="وَظِيف" style="width:180px;height:auto;border-radius:10px;">
             <h1 style="font-size:28px;background:linear-gradient(135deg,#f0d78c,#b8860b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin:12px 0 4px;">وَظِيف</h1>
           </div>
           <h2 style="color:#66bb6a;font-size:20px;margin-bottom:16px;">تمت الموافقة على طلبك!</h2>
@@ -477,7 +483,7 @@ app.put('/api/admin/applications/:id/reject', authMiddleware, adminMiddleware, (
       const html = `
         <div dir="rtl" style="font-family:'Tajawal',Arial,sans-serif;max-width:600px;margin:0 auto;padding:40px 30px;background:#0a0a0a;color:#f5f0e8;border-radius:20px;border:1px solid rgba(212,168,83,0.1);">
           <div style="text-align:center;margin-bottom:30px;">
-            <img src="http://localhost:3000/uploads/wazef.png" alt="وَظِيف" style="width:180px;height:auto;border-radius:10px;">
+            <img src="${BASE_URL}/uploads/wazef.png" alt="وَظِيف" style="width:180px;height:auto;border-radius:10px;">
             <h1 style="font-size:28px;background:linear-gradient(135deg,#f0d78c,#b8860b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin:12px 0 4px;">وَظِيف</h1>
           </div>
           <h2 style="color:#e57373;font-size:20px;margin-bottom:16px;">تم رفض طلبك</h2>
@@ -518,7 +524,7 @@ app.put('/api/admin/applications/:id/allow-reapply', authMiddleware, adminMiddle
       const html = `
         <div dir="rtl" style="font-family:'Tajawal',Arial,sans-serif;max-width:600px;margin:0 auto;padding:40px 30px;background:#0a0a0a;color:#f5f0e8;border-radius:20px;border:1px solid rgba(212,168,83,0.1);">
           <div style="text-align:center;margin-bottom:30px;">
-            <img src="http://localhost:3000/uploads/wazef.png" alt="وَظِيف" style="width:180px;height:auto;border-radius:10px;">
+            <img src="${BASE_URL}/uploads/wazef.png" alt="وَظِيف" style="width:180px;height:auto;border-radius:10px;">
             <h1 style="font-size:28px;background:linear-gradient(135deg,#f0d78c,#b8860b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin:12px 0 4px;">وَظِيف</h1>
           </div>
           <h2 style="color:#66bb6a;font-size:20px;margin-bottom:16px;">تم السماح لك بالتقديم مجدداً</h2>
@@ -556,7 +562,7 @@ app.put('/api/admin/applications/:id/rerecord', authMiddleware, adminMiddleware,
       const html = `
         <div dir="rtl" style="font-family:'Tajawal',Arial,sans-serif;max-width:600px;margin:0 auto;padding:40px 30px;background:#0a0a0a;color:#f5f0e8;border-radius:20px;border:1px solid rgba(212,168,83,0.1);">
           <div style="text-align:center;margin-bottom:30px;">
-            <img src="http://localhost:3000/uploads/wazef.png" alt="وَظِيف" style="width:180px;height:auto;border-radius:10px;">
+            <img src="${BASE_URL}/uploads/wazef.png" alt="وَظِيف" style="width:180px;height:auto;border-radius:10px;">
             <h1 style="font-size:28px;background:linear-gradient(135deg,#f0d78c,#b8860b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin:12px 0 4px;">وَظِيف</h1>
           </div>
           <h2 style="color:#fbbf24;font-size:20px;margin-bottom:16px;">يرجى إعادة التسجيل</h2>
@@ -629,7 +635,7 @@ app.post('/api/admin/jobs/batch', authMiddleware, adminMiddleware, (req, res) =>
           <h3 style="color:#333;">الوظائف المضافة:</h3>
           ${jobsListHTML}
           <div style="text-align:center;margin-top:30px;">
-            <a href="${process.env.BASE_URL || 'http://localhost:3000'}/dashboard" style="padding:14px 40px;background:linear-gradient(135deg,#b8860b,#d4a853);color:#0a0a0a;text-decoration:none;border-radius:14px;font-weight:700;display:inline-block;">عرض الوظائف</a>
+            <a href="${BASE_URL}/dashboard" style="padding:14px 40px;background:linear-gradient(135deg,#b8860b,#d4a853);color:#0a0a0a;text-decoration:none;border-radius:14px;font-weight:700;display:inline-block;">عرض الوظائف</a>
           </div>
           <p style="color:#888;font-size:12px;margin-top:30px;text-align:center;">فريق وَظِيف</p>
         </div>
@@ -699,7 +705,7 @@ app.post('/api/admin/jobs/batch', authMiddleware, adminMiddleware, (req, res) =>
           <p>تمت إضافة ${jobs.length} وظيفة للعضو <strong>${user.name}</strong> الذي سجل من خلال رابط الإحالة الخاص بك.</p>
           <p>يمكنك متابعة التقدم من خلال لوحة تحكم المندوب.</p>
           <div style="text-align:center;margin-top:30px;">
-            <a href="${process.env.BASE_URL || 'http://localhost:3000'}/agent" style="padding:14px 40px;background:linear-gradient(135deg,#b8860b,#d4a853);color:#0a0a0a;text-decoration:none;border-radius:14px;font-weight:700;display:inline-block;">لوحة تحكم المندوب</a>
+            <a href="${BASE_URL}/agent" style="padding:14px 40px;background:linear-gradient(135deg,#b8860b,#d4a853);color:#0a0a0a;text-decoration:none;border-radius:14px;font-weight:700;display:inline-block;">لوحة تحكم المندوب</a>
           </div>
           <p style="color:#888;font-size:12px;margin-top:30px;text-align:center;">فريق وَظِيف</p>
         </div>
@@ -781,7 +787,7 @@ app.post('/api/agent/jobs/batch', authMiddleware, (req, res) => {
           <h3 style="color:#333;">الوظائف المضافة:</h3>
           ${jobsListHTML}
           <div style="text-align:center;margin-top:30px;">
-            <a href="http://localhost:3000/dashboard" style="padding:14px 40px;background:linear-gradient(135deg,#b8860b,#d4a853);color:#0a0a0a;text-decoration:none;border-radius:14px;font-weight:700;display:inline-block;">عرض الوظائف</a>
+            <a href="${BASE_URL}/dashboard" style="padding:14px 40px;background:linear-gradient(135deg,#b8860b,#d4a853);color:#0a0a0a;text-decoration:none;border-radius:14px;font-weight:700;display:inline-block;">عرض الوظائف</a>
           </div>
         </div>
       `;
@@ -1080,7 +1086,7 @@ app.put('/api/admin/selections/:id/allow-reapply', authMiddleware, adminMiddlewa
       const html = `
         <div dir="rtl" style="font-family:'Tajawal',Arial,sans-serif;max-width:600px;margin:0 auto;padding:40px 30px;background:#0a0a0a;color:#f5f0e8;border-radius:20px;border:1px solid rgba(212,168,83,0.1);">
           <div style="text-align:center;margin-bottom:30px;">
-            <img src="http://localhost:3000/uploads/wazef.png" alt="وَظِيف" style="width:180px;height:auto;border-radius:10px;">
+            <img src="${BASE_URL}/uploads/wazef.png" alt="وَظِيف" style="width:180px;height:auto;border-radius:10px;">
             <h1 style="font-size:28px;background:linear-gradient(135deg,#f0d78c,#b8860b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin:12px 0 4px;">وَظِيف</h1>
           </div>
           <h2 style="color:#66bb6a;font-size:20px;margin-bottom:16px;">تم السماح لك بالتقديم مجدداً</h2>
@@ -1424,7 +1430,7 @@ app.post('/api/register', registerLimiter, async (req, res) => {
     await sendEmail(email, 'كود التحقق من حسابك في وَظِيف', `
       <div dir="rtl" style="font-family:Tajawal,sans-serif;max-width:480px;margin:0 auto;padding:40px;background:#0a0a0a;border-radius:20px;border:1px solid rgba(212,168,83,0.1);">
         <div style="text-align:center;margin-bottom:30px;">
-          <img src="http://localhost:3000/uploads/wazef.png" alt="وَظِيف" style="width:180px;height:auto;border-radius:10px;display:block;margin:0 auto 14px;">
+          <img src="${BASE_URL}/uploads/wazef.png" alt="وَظِيف" style="width:180px;height:auto;border-radius:10px;display:block;margin:0 auto 14px;">
         </div>
         <h2 style="color:#f5f0e8;text-align:center;font-size:18px;margin-bottom:10px;">كود التحقق</h2>
         <p style="color:#888;text-align:center;font-size:14px;margin-bottom:24px;">أدخل الكود التالي لإتمام التسجيل:</p>
@@ -1466,7 +1472,7 @@ app.post('/api/resend-code', authLimiter, async (req, res) => {
     await sendEmail(email, 'كود التحقق الجديد من حسابك في وَظِيف', `
       <div dir="rtl" style="font-family:Tajawal,sans-serif;max-width:480px;margin:0 auto;padding:40px;background:#0a0a0a;border-radius:20px;border:1px solid rgba(212,168,83,0.1);">
         <div style="text-align:center;margin-bottom:30px;">
-          <img src="http://localhost:3000/uploads/wazef.png" alt="وَظِيف" style="width:180px;height:auto;border-radius:10px;display:block;margin:0 auto 14px;">
+          <img src="${BASE_URL}/uploads/wazef.png" alt="وَظِيف" style="width:180px;height:auto;border-radius:10px;display:block;margin:0 auto 14px;">
         </div>
         <h2 style="color:#f5f0e8;text-align:center;font-size:18px;margin-bottom:10px;">كود التحقق الجديد</h2>
         <p style="color:#888;text-align:center;font-size:14px;margin-bottom:24px;">أدخل الكود التالي لإتمام التسجيل:</p>

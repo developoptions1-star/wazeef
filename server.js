@@ -43,15 +43,25 @@ function sanitize(str) {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
+// Data directory - use /tmp if __dirname is not writable (e.g. SnapDeploy containers)
+let dataDir = __dirname;
+try {
+  const testFile = path.join(__dirname, '.write-test');
+  fs.writeFileSync(testFile, 'test');
+  fs.unlinkSync(testFile);
+} catch (e) {
+  dataDir = '/tmp';
+}
+
+// Ensure directories exist
+const uploadsDir = path.join(dataDir, 'uploads');
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+
 // Middleware
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// Ensure directories exist
-const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+app.use('/uploads', express.static(path.join(dataDir, 'uploads')));
 
 // Multer for audio uploads
 const storage = multer.diskStorage({
@@ -61,7 +71,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
 
 // Database setup
-const dbPath = path.join(__dirname, 'app.db');
+const dbPath = path.join(dataDir, 'app.db');
 const db = new Database(dbPath);
 db.pragma('journal_mode = WAL');
 

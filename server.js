@@ -10,6 +10,8 @@ const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 
 const app = express();
+// Behind Velixir/proxy - needed for rate-limit IP detection + correct protocol
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'sss_super_secret_key_2024';
 const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
@@ -223,6 +225,22 @@ const emailTransporter = nodemailer.createTransport({
 
 async function sendEmail(to, subject, html) {
   try {
+    // Prefer Brevo HTTP API (port 443) when key is set - works on hosts that block SMTP ports
+    if (process.env.BREVO_API_KEY) {
+      const r = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'api-key': process.env.BREVO_API_KEY },
+        body: JSON.stringify({
+          sender: { name: 'وَظِيف', email: SMTP_USER },
+          to: [{ email: to }],
+          subject,
+          htmlContent: html
+        })
+      });
+      if (!r.ok) throw new Error('Brevo HTTP ' + r.status + ': ' + (await r.text()).slice(0, 200));
+      console.log('Email sent to:', to);
+      return;
+    }
     await emailTransporter.sendMail({
       from: `"وَظِيف" <${SMTP_USER}>`,
       to,

@@ -514,8 +514,12 @@ app.post('/api/applications/chunk', authMiddleware, (req, res) => {
 
 // Shared: re-record update OR rejection check OR fresh insert
 function processApplication(userId, audioFile, language) {
-  const existing = db.prepare("SELECT id FROM applications WHERE user_id = ? AND rerecord_request = 1 AND status = 'pending'").get(userId);
+  const existing = db.prepare("SELECT id, audio_file FROM applications WHERE user_id = ? AND rerecord_request = 1 AND status = 'pending'").get(userId);
   if (existing) {
+    // Delete the old recording so it doesn't stay orphaned on disk
+    if (existing.audio_file && existing.audio_file !== audioFile) {
+      try { fs.unlinkSync(path.join(uploadsDir, existing.audio_file)); } catch (e) {}
+    }
     db.prepare('UPDATE applications SET audio_file = ?, language = ?, rerecord_request = 0 WHERE id = ?').run(audioFile, language, existing.id);
     return { id: existing.id };
   }
@@ -585,6 +589,11 @@ app.put('/api/admin/applications/:id/approve', authMiddleware, adminMiddleware, 
       SELECT a.*, u.name as user_name, u.email as user_email
       FROM applications a JOIN users u ON a.user_id = u.id WHERE a.id = ?
     `).get(req.params.id);
+    // Recording served its purpose (evaluation) - delete it to save disk, keep all data/stats
+    if (app && app.audio_file) {
+      try { fs.unlinkSync(path.join(uploadsDir, app.audio_file)); } catch (e) {}
+      db.prepare('UPDATE applications SET audio_file = NULL WHERE id = ?').run(req.params.id);
+    }
     if (app && app.user_email) {
       const html = `
         <div dir="rtl" style="font-family:'Tajawal',Arial,sans-serif;max-width:600px;margin:0 auto;padding:40px 30px;background:#0a0a0a;color:#f5f0e8;border-radius:20px;border:1px solid rgba(212,168,83,0.1);">

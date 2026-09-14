@@ -1184,8 +1184,8 @@ app.get('/api/user/jobs', authMiddleware, (req, res) => {
 app.post('/api/user/select-job', authMiddleware, (req, res) => {
   try {
     const { job_id } = req.body;
-    const existing = db.prepare("SELECT id FROM selections WHERE user_id = ? AND job_id = ?").get(req.user.id, job_id);
-    if (existing) return res.status(400).json({ error: 'Already selected' });
+    const active = db.prepare("SELECT id FROM selections WHERE user_id = ? AND status != 'cancelled'").get(req.user.id);
+    if (active) return res.status(400).json({ error: 'لقد قمت باختيار وظيفة بالفعل ولا يمكنك اختيار أكثر من وظيفة واحدة' });
     const result = db.prepare('INSERT INTO selections (user_id, job_id, status) VALUES (?, ?, ?)').run(req.user.id, job_id, 'selected');
     res.json({ id: result.lastInsertRowid });
   } catch (e) {

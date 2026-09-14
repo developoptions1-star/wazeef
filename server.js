@@ -629,6 +629,12 @@ app.put('/api/admin/applications/:id/reject', authMiddleware, adminMiddleware, (
       FROM applications a JOIN users u ON a.user_id = u.id WHERE a.id = ?
     `).get(req.params.id);
 
+    // Rejected recording is no longer needed - delete it to save disk
+    if (app && app.audio_file) {
+      try { fs.unlinkSync(path.join(uploadsDir, app.audio_file)); } catch (e) {}
+      db.prepare('UPDATE applications SET audio_file = NULL WHERE id = ?').run(req.params.id);
+    }
+
     if (app && app.user_email) {
       const html = `
         <div dir="rtl" style="font-family:'Tajawal',Arial,sans-serif;max-width:600px;margin:0 auto;padding:40px 30px;background:#0a0a0a;color:#f5f0e8;border-radius:20px;border:1px solid rgba(212,168,83,0.1);">
@@ -669,6 +675,12 @@ app.put('/api/admin/applications/:id/allow-reapply', authMiddleware, adminMiddle
       SELECT a.*, u.name as user_name, u.email as user_email
       FROM applications a JOIN users u ON a.user_id = u.id WHERE a.id = ?
     `).get(req.params.id);
+
+    // Old recording no longer needed (user will submit a new one) - delete it
+    if (app && app.audio_file) {
+      try { fs.unlinkSync(path.join(uploadsDir, app.audio_file)); } catch (e) {}
+      db.prepare('UPDATE applications SET audio_file = NULL WHERE id = ?').run(req.params.id);
+    }
 
     if (app && app.user_email) {
       const html = `
@@ -1040,18 +1052,21 @@ app.put('/api/admin/selections/:id', authMiddleware, adminMiddleware, (req, res)
             </div>
           `);
         }
-        // Send applicant data to the company email automatically on confirm (once per selection)
+        // Send applicant data to the company email automatically on confirm (once per selection).
+        // Atomic claim first: concurrent confirms can't both pass (single UPDATE claims the flag).
         if (sel.company_email && !sel.company_emailed) {
-          const fullUser = db.prepare('SELECT * FROM users WHERE id = ?').get(sel.user_id);
-          if (fullUser) {
-            sendApplicantToCompany(sel.company_email, fullUser, {
-              position: sel.position,
-              interview_time: sel.interview_time,
-              salary_min: sel.salary_min,
-              salary_max: sel.salary_max,
-              description: sel.description
-            });
-            db.prepare('UPDATE selections SET company_emailed = 1 WHERE id = ?').run(req.params.id);
+          const claimed = db.prepare('UPDATE selections SET company_emailed = 1 WHERE id = ? AND company_emailed = 0').run(req.params.id);
+          if (claimed.changes > 0) {
+            const fullUser = db.prepare('SELECT * FROM users WHERE id = ?').get(sel.user_id);
+            if (fullUser) {
+              sendApplicantToCompany(sel.company_email, fullUser, {
+                position: sel.position,
+                interview_time: sel.interview_time,
+                salary_min: sel.salary_min,
+                salary_max: sel.salary_max,
+                description: sel.description
+              });
+            }
           }
         }
       }
@@ -1139,6 +1154,11 @@ app.put('/api/admin/selections/:id/allow-reapply', authMiddleware, adminMiddlewa
     const app_row = db.prepare('SELECT * FROM applications WHERE user_id = ? ORDER BY created_at DESC LIMIT 1').get(sel.user_id);
     if (app_row) {
       db.prepare("UPDATE applications SET status = 'pending', rejection_date = NULL, rejection_reason = NULL, rerecord_request = 1 WHERE id = ?").run(app_row.id);
+      // Old recording no longer needed (user will submit a new one)
+      if (app_row.audio_file) {
+        try { fs.unlinkSync(path.join(uploadsDir, app_row.audio_file)); } catch (e) {}
+        db.prepare('UPDATE applications SET audio_file = NULL WHERE id = ?').run(app_row.id);
+      }
     }
 
     saveNotification(sel.user_id, null, 'reapply', 'تم السماح لك بالتقديم مجدداً', 'يمكنك الآن تسجيل صوتك مرة أخرى والتقديم على وظائف.');

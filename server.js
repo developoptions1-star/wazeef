@@ -60,7 +60,7 @@ const uploadsDir = path.join(dataDir, 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
 // Middleware
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 app.use('/uploads', express.static(path.join(dataDir, 'uploads')));
@@ -408,9 +408,25 @@ app.post('/api/reset-password', authLimiter, (req, res) => {
 });
 
 // ===== APPLICATION ROUTES =====
-app.post('/api/applications', authMiddleware, upload.single('audio'), (req, res) => {
+// Accept audio as multipart file (local/dev) OR base64 JSON (hosts whose proxy stalls multipart)
+function saveBase64Audio(dataUrl) {
+  if (!dataUrl || typeof dataUrl !== 'string') return null;
+  const m = dataUrl.match(/^data:audio\/\w+;base64,(.+)$/) || dataUrl.match(/^([A-Za-z0-9+/=]+)$/);
+  const b64 = m ? m[1] : dataUrl;
+  const buf = Buffer.from(b64, 'base64');
+  if (!buf.length || buf.length > 10 * 1024 * 1024) return null;
+  if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+  const filename = Date.now() + '-recording.webm';
+  fs.writeFileSync(path.join(uploadsDir, filename), buf);
+  return filename;
+}
+app.post('/api/applications', authMiddleware, (req, res, next) => {
+  if (req.is('multipart/*')) return upload.single('audio')(req, res, next);
+  next();
+}, (req, res) => {
   try {
-    const audioFile = req.file ? req.file.filename : null;
+    let audioFile = req.file ? req.file.filename : null;
+    if (!audioFile && req.body.audio) audioFile = saveBase64Audio(req.body.audio);
     const language = req.body.language || null;
 
     // Check re-record request first

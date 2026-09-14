@@ -1381,9 +1381,9 @@ app.get('/api/agent/stats', authMiddleware, (req, res) => {
       WHERE u.referred_by = ? AND a.status = 'rejected'
     `).get(agentId).c;
 
-    // Earnings data
+    // Earnings data (agent's own amounts only - company earnings never exposed to agents)
     const earnings = db.prepare(`
-      SELECT s.amount as company_amount, s.agent_amount, s.created_at,
+      SELECT s.agent_amount, s.created_at,
         j.company_name, j.position, u.name as user_name
       FROM selections s
       JOIN users u ON s.user_id = u.id
@@ -1393,7 +1393,6 @@ app.get('/api/agent/stats', authMiddleware, (req, res) => {
     `).all(agentId);
 
     const totalAgentEarnings = earnings.reduce((sum, e) => sum + (e.agent_amount || 0), 0);
-    const totalCompanyEarnings = earnings.reduce((sum, e) => sum + (e.company_amount || 0), 0);
 
     // Date-based earnings
     const now = new Date();
@@ -1410,7 +1409,7 @@ app.get('/api/agent/stats', authMiddleware, (req, res) => {
     const monthHired = earnings.filter(e => e.created_at >= monthStart).length;
 
     const frozenSelections = db.prepare(`
-      SELECT s.agent_amount, s.amount, s.frozen_deadline, s.created_at,
+      SELECT s.agent_amount, s.frozen_deadline, s.created_at,
         j.company_name, j.position, u.name as user_name
       FROM selections s
       JOIN users u ON s.user_id = u.id
@@ -1420,7 +1419,6 @@ app.get('/api/agent/stats', authMiddleware, (req, res) => {
     `).all(agentId);
 
     const frozenTotal = frozenSelections.reduce((sum, f) => sum + (f.agent_amount || 0), 0);
-    const frozenCompanyTotal = frozenSelections.reduce((sum, f) => sum + (f.amount || 0), 0);
 
     const referredUsers = db.prepare(`
       SELECT u.id, u.name, u.email, u.phone, u.created_at,
@@ -1433,7 +1431,6 @@ app.get('/api/agent/stats', authMiddleware, (req, res) => {
         (SELECT status FROM selections WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as sel_status,
         (SELECT apology FROM selections WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as sel_apology,
         (SELECT is_frozen FROM selections WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as sel_frozen,
-        (SELECT amount FROM selections WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as sel_amount,
         (SELECT j2.company_name FROM selections s2 JOIN jobs j2 ON s2.job_id = j2.id WHERE s2.user_id = u.id ORDER BY s2.created_at DESC LIMIT 1) as sel_company
       FROM users u
       WHERE u.referred_by = ?
@@ -1441,10 +1438,10 @@ app.get('/api/agent/stats', authMiddleware, (req, res) => {
     `).all(agentId);
 
     res.json({ totalReferred, withApplication, hired, pending, approved, rejected, referredUsers,
-      earnings, totalAgentEarnings, totalCompanyEarnings,
+      earnings, totalAgentEarnings,
       todayEarnings, weekEarnings, monthEarnings,
       todayHired, weekHired, monthHired,
-      frozenTotal, frozenCompanyTotal, frozenSelections
+      frozenTotal, frozenSelections
     });
   } catch (e) {
     res.status(500).json({ error: e.message });

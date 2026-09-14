@@ -65,19 +65,13 @@ app.use('/uploads', express.static(path.join(dataDir, 'uploads')));
 
 // Multer for audio uploads
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadsDir),
+  destination: (req, file, cb) => {
+    if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+    cb(null, uploadsDir);
+  },
   filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
 });
 const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
-
-// Multer error handler
-app.use((err, req, res, next) => {
-  if (err instanceof multer.MulterError) {
-    console.error('Multer error:', err.message);
-    return res.status(400).json({ error: 'خطأ في رفع الملف: ' + err.message });
-  }
-  next(err);
-});
 
 // Database setup
 const dbPath = path.join(dataDir, 'app.db');
@@ -170,11 +164,11 @@ db.exec(`
 `);
 
 // Migration: add agent_amount column if missing
-try { db.prepare('ALTER TABLE selections ADD COLUMN agent_amount REAL DEFAULT 0'); } catch(e) {}
+try { db.exec('ALTER TABLE selections ADD COLUMN agent_amount REAL DEFAULT 0'); } catch(e) {}
 // Migration: add rerecord_request column if missing
-try { db.prepare('ALTER TABLE applications ADD COLUMN rerecord_request INTEGER DEFAULT 0'); } catch(e) {}
+try { db.exec('ALTER TABLE applications ADD COLUMN rerecord_request INTEGER DEFAULT 0'); } catch(e) {}
 // Migration: add rejection_date column if missing
-try { db.prepare('ALTER TABLE applications ADD COLUMN rejection_date DATETIME'); } catch(e) {}
+try { db.exec('ALTER TABLE applications ADD COLUMN rejection_date DATETIME'); } catch(e) {}
 // Migration: add rejection_reason column if missing
 try { db.exec('ALTER TABLE applications ADD COLUMN rejection_reason TEXT'); } catch(e) {}
 // Migration: add user profile columns if missing
@@ -1514,6 +1508,15 @@ app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'public', 
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 app.get('/select-job', (req, res) => res.redirect('/'));
 app.get('/agent', (req, res) => res.sendFile(path.join(__dirname, 'public', 'agent.html')));
+
+// Multer error handler (must be after routes)
+app.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    console.error('Multer error:', err.message);
+    return res.status(400).json({ error: 'خطأ في رفع الملف: ' + err.message });
+  }
+  next(err);
+});
 
 // Global error handler - hide internal errors
 app.use((err, req, res, next) => {

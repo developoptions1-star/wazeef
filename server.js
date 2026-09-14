@@ -58,6 +58,15 @@ try {
 // Ensure directories exist
 const uploadsDir = path.join(dataDir, 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+// Clean stale chunked-upload temp files (>1h)
+try {
+  fs.readdirSync(uploadsDir)
+    .filter(f => f.startsWith('tmp_') && f.endsWith('.part'))
+    .forEach(f => {
+      const p = path.join(uploadsDir, f);
+      if (Date.now() - fs.statSync(p).mtimeMs > 3600000) fs.unlinkSync(p);
+    });
+} catch (e) {}
 
 // Middleware
 app.use(express.json({ limit: '10mb' }));
@@ -427,39 +436,67 @@ app.post('/api/applications', authMiddleware, (req, res, next) => {
   try {
     let audioFile = req.file ? req.file.filename : null;
     if (!audioFile && req.body.audio) audioFile = saveBase64Audio(req.body.audio);
-    const language = req.body.language || null;
-
-    // Check re-record request first
-    const existing = db.prepare("SELECT id FROM applications WHERE user_id = ? AND rerecord_request = 1 AND status = 'pending'").get(req.user.id);
-    if (existing) {
-      db.prepare('UPDATE applications SET audio_file = ?, language = ?, rerecord_request = 0 WHERE id = ?').run(audioFile, language, existing.id);
-      return res.json({ id: existing.id, status: 'pending' });
-    }
-
-    // Check 1-month restriction for the same language after rejection
-    if (language) {
-      const restricted = db.prepare(`
-        SELECT id, rejection_date FROM applications
-        WHERE user_id = ? AND language = ? AND status = 'rejected' AND rejection_date IS NOT NULL
-        ORDER BY rejection_date DESC LIMIT 1
-      `).get(req.user.id, language);
-
-      if (restricted && restricted.rejection_date) {
-        const rejectDate = new Date(restricted.rejection_date);
-        const oneMonthLater = new Date(rejectDate.getTime() + 30 * 24 * 60 * 60 * 1000);
-        if (new Date() < oneMonthLater) {
-          const remaining = Math.ceil((oneMonthLater - new Date()) / (24 * 60 * 60 * 1000));
-          return res.status(400).json({ error: `تم رفضك لهذه اللغة. يجب الانتظار ${remaining} يوماً حتى تتمكن من التقديم مرة أخرى. تدرب وحسّن مستواك أولاً.` });
-        }
-      }
-    }
-
-    const result = db.prepare('INSERT INTO applications (user_id, audio_file, language) VALUES (?, ?, ?)').run(req.user.id, audioFile, language);
-    res.json({ id: result.lastInsertRowid, status: 'pending' });
+    const r = processApplication(req.user.id, audioFile, req.body.language || null);
+    if (r.error) return res.status(r.status || 400).json({ error: r.error });
+    res.json({ id: r.id, status: 'pending' });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
+
+// Chunked upload: bodies > ~10KB stall on some proxies, so the client sends
+// ~6KB base64 pieces that we reassemble here. Same application logic.
+app.post('/api/applications/chunk', authMiddleware, (req, res) => {
+  try {
+    const { uploadId, index, total, chunk, language } = req.body;
+    if (!/^[A-Za-z0-9_-]{8,64}$/.test(uploadId || '')) return res.status(400).json({ error: 'معرف رفع غير صالح' });
+    const idx = parseInt(index), tot = parseInt(total);
+    if (isNaN(idx) || isNaN(tot) || idx < 0 || tot <= 0 || idx >= tot || tot > 2000) return res.status(400).json({ error: 'بيانات غير صالحة' });
+    if (!chunk || typeof chunk !== 'string' || chunk.length > 8000) return res.status(400).json({ error: 'بيانات غير صالحة' });
+    if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+    const partPath = path.join(uploadsDir, 'tmp_' + uploadId + '.part');
+    if (idx === 0 && fs.existsSync(partPath)) fs.unlinkSync(partPath);
+    fs.appendFileSync(partPath, chunk);
+    if (idx < tot - 1) return res.json({ received: idx + 1, total: tot });
+    const b64 = fs.readFileSync(partPath, 'utf8');
+    fs.unlinkSync(partPath);
+    const buf = Buffer.from(b64, 'base64');
+    if (!buf.length || buf.length > 10 * 1024 * 1024) return res.status(400).json({ error: 'حجم الملف غير صالح' });
+    const filename = Date.now() + '-recording.webm';
+    fs.writeFileSync(path.join(uploadsDir, filename), buf);
+    const r = processApplication(req.user.id, filename, language || null);
+    if (r.error) return res.status(r.status || 400).json({ error: r.error });
+    res.json({ id: r.id, status: 'pending' });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Shared: re-record update OR rejection check OR fresh insert
+function processApplication(userId, audioFile, language) {
+  const existing = db.prepare("SELECT id FROM applications WHERE user_id = ? AND rerecord_request = 1 AND status = 'pending'").get(userId);
+  if (existing) {
+    db.prepare('UPDATE applications SET audio_file = ?, language = ?, rerecord_request = 0 WHERE id = ?').run(audioFile, language, existing.id);
+    return { id: existing.id };
+  }
+  if (language) {
+    const restricted = db.prepare(`
+      SELECT id, rejection_date FROM applications
+      WHERE user_id = ? AND language = ? AND status = 'rejected' AND rejection_date IS NOT NULL
+      ORDER BY rejection_date DESC LIMIT 1
+    `).get(userId, language);
+    if (restricted && restricted.rejection_date) {
+      const rejectDate = new Date(restricted.rejection_date);
+      const oneMonthLater = new Date(rejectDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+      if (new Date() < oneMonthLater) {
+        const remaining = Math.ceil((oneMonthLater - new Date()) / (24 * 60 * 60 * 1000));
+        return { error: `تم رفضك لهذه اللغة. يجب الانتظار ${remaining} يوماً حتى تتمكن من التقديم مرة أخرى. تدرب وحسّن مستواك أولاً.`, status: 400 };
+      }
+    }
+  }
+  const result = db.prepare('INSERT INTO applications (user_id, audio_file, language) VALUES (?, ?, ?)').run(userId, audioFile, language);
+  return { id: result.lastInsertRowid };
+}
 
 app.get('/api/applications/my', authMiddleware, (req, res) => {
   try {

@@ -695,7 +695,7 @@
         </div>
       </div>
       <div class="form-group"><label>وصف إضافي</label><textarea id="job-desc" placeholder="تفاصيل إضافية" autocomplete="off"></textarea></div>
-      <div class="form-group"><label>جيميل الشركة (اختياري - لإرسال بيانات المتقدم)</label><input type="email" id="job-company-email" placeholder="example@company.com" autocomplete="off" style="direction:ltr;text-align:left;"></div>
+      <div class="form-group"><label>جيميل الشركة (اختياري - تُرسل بيانات المتقدم تلقائياً بعد التثبيت)</label><input type="email" id="job-company-email" placeholder="example@company.com" autocomplete="off" style="direction:ltr;text-align:left;"></div>
       <div class="btn-row" style="margin-top:0;margin-bottom:20px;">
         <button class="btn-submit" onclick="addJobToList()" style="flex:1;">+ إضافة وظيفة للقائمة</button>
       </div>
@@ -1299,7 +1299,7 @@
     async function copyUserData(selId, el) {
       const sel = cachedSelections.find(s => s.id === selId);
       if (!sel) return;
-      const militaryMap = { 'exempt': 'Applying for military exemption', 'sole_provider': 'Applying for military exemption as the sole family provider', 'postponed': 'Postponed', 'served': 'Served' };
+      const militaryMap = { 'na': 'لا ينطبق', 'exempt': 'Applying for military exemption', 'sole_provider': 'Applying for military exemption as the sole family provider', 'postponed': 'Postponed', 'served': 'Served' };
       const cityMap = { 'Cairo': 'Cairo', 'Alex': 'Alex' };
       const text = `● Could you please fill the below details:\n* Triple Name : ${sel.user_name || ''}\n* Phone number : ${sel.user_phone || ''}\n* Gmail : ${sel.user_email || ''}\n* Nationality : ${sel.nationality || ''}\n* Cairo or Alex site : ${cityMap[sel.city] || sel.city || ''}\n* Language you applied for : ${getLangName(sel.user_language)}\n* Age : ${sel.age || ''}\n* college : ${sel.college || ''}\n* Grad or Undergrad : ${sel.education_level === 'graduate' ? 'Grad' : sel.education_level === 'undergraduate' ? 'Undergrad' : ''}\n* Military Status : ${militaryMap[sel.military_status] || sel.military_status || ''}\n* Had you applied for (name of the company)in the last 3 months ? No\n* Your experience in call center or telesales or cold calling (if it exists) ? ${sel.call_center_experience === 'yes' ? 'Yes' : sel.call_center_experience === 'no' ? 'No' : ''}\nnational ID:${sel.national_id || ''}`;
       const original = el.innerHTML;
@@ -1321,7 +1321,7 @@
     function copyAppData(appId, el) {
       const a = allApps.find(x => x.id === appId);
       if (!a) return;
-      const militaryMap = { 'exempt': 'Applying for military exemption', 'sole_provider': 'Applying for military exemption as the sole family provider', 'postponed': 'Postponed', 'served': 'Served' };
+      const militaryMap = { 'na': 'لا ينطبق', 'exempt': 'Applying for military exemption', 'sole_provider': 'Applying for military exemption as the sole family provider', 'postponed': 'Postponed', 'served': 'Served' };
       const cityMap = { 'Cairo': 'Cairo', 'Alex': 'Alex' };
       const text = `● Could you please fill the below details:\n* Triple Name : ${a.user_name || ''}\n* Phone number : ${a.user_phone || ''}\n* Gmail : ${a.user_email || ''}\n* Nationality : ${a.nationality || ''}\n* Cairo or Alex site : ${cityMap[a.city] || a.city || ''}\n* Language you applied for : ${getLangName(a.language || a.user_language)}\n* Age : ${a.age || ''}\n* college : ${a.college || ''}\n* Grad or Undergrad : ${a.education_level === 'graduate' ? 'Grad' : a.education_level === 'undergraduate' ? 'Undergrad' : ''}\n* Military Status : ${militaryMap[a.military_status] || a.military_status || ''}\n* Had you applied for (name of the company)in the last 3 months ? No\n* Your experience in call center or telesales or cold calling (if it exists) ? ${a.call_center_experience === 'yes' ? 'Yes' : a.call_center_experience === 'no' ? 'No' : ''}\nnational ID:${a.national_id || ''}`;
       const orig = el.innerHTML;

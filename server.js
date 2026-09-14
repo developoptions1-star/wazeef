@@ -192,6 +192,7 @@ try { db.exec('ALTER TABLE users ADD COLUMN college TEXT'); } catch(e) {}
 try { db.exec('ALTER TABLE users ADD COLUMN education_level TEXT'); } catch(e) {}
 try { db.exec('ALTER TABLE users ADD COLUMN military_status TEXT'); } catch(e) {}
 try { db.exec('ALTER TABLE users ADD COLUMN call_center_experience TEXT'); } catch(e) {}
+try { db.exec('ALTER TABLE users ADD COLUMN gender TEXT'); } catch(e) {}
 // Migration: add email verification columns
   try { db.exec('ALTER TABLE users ADD COLUMN verification_code TEXT'); } catch(e) {}
   try { db.exec('ALTER TABLE users ADD COLUMN email_verified INTEGER DEFAULT 0'); } catch(e) {}
@@ -203,6 +204,7 @@ try { db.exec('ALTER TABLE selections ADD COLUMN is_frozen INTEGER DEFAULT 1'); 
 try { db.exec('ALTER TABLE selections ADD COLUMN unfrozen_at DATETIME'); } catch(e) {}
 try { db.exec('ALTER TABLE selections ADD COLUMN frozen_deadline DATETIME'); } catch(e) {}
 try { db.exec('ALTER TABLE selections ADD COLUMN apology TEXT'); } catch(e) {}
+try { db.exec('ALTER TABLE selections ADD COLUMN company_emailed INTEGER DEFAULT 0'); } catch(e) {}
 try { db.exec('ALTER TABLE jobs ADD COLUMN company_email TEXT'); } catch(e) {}
 
 // Notifications table
@@ -282,6 +284,44 @@ function saveNotification(userId, agentId, type, title, message) {
   } catch (e) {
     console.log('Notification save error:', e.message);
   }
+}
+
+// Sends applicant data to the company email AFTER admin confirms the selection.
+// Called only from the confirm endpoint, once per selection (company_emailed flag).
+function sendApplicantToCompany(compEmail, u, job) {
+  const jobHTML = `
+    <div style="padding:12px;background:rgba(212,168,83,0.06);border:1px solid rgba(212,168,83,0.1);border-radius:8px;margin-bottom:8px;">
+      <strong style="color:#d4a853;">${job.position || ''}</strong><br>
+      ${job.interview_time ? 'وقت المقابلة: ' + job.interview_time + '<br>' : ''}
+      ${job.salary_min || job.salary_max ? `المرتب: ${job.salary_min && job.salary_max ? job.salary_min + ' - ' + job.salary_max + ' ج' : job.salary_min ? 'من ' + job.salary_min + ' ج' : 'حتى ' + job.salary_max + ' ج'}<br>` : ''}
+      ${job.description ? 'التفاصيل: ' + job.description : ''}
+    </div>`;
+  const html = `
+    <div dir="rtl" style="font-family:'Tajawal',sans-serif;max-width:600px;margin:0 auto;">
+      <h2 style="color:#d4a853;text-align:center;">بيانات متقدم لوظيفة</h2>
+      <p>مرحباً،</p>
+      <p>تم تعيين متقدم لوظيفة في شركتكم عبر منصة <strong style="color:#d4a853;">وَظِيف</strong>. فيما بيانات المتقدم والوظيفة:</p>
+      <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:20px;margin:20px 0;">
+        <h3 style="color:#d4a853;margin-bottom:12px;">بيانات المتقدم:</h3>
+        <table style="width:100%;color:#ccc;font-size:14px;border-collapse:collapse;">
+          <tr><td style="padding:6px 0;color:#94a3b8;">الاسم</td><td style="padding:6px 0;font-weight:700;color:#f0d78c;">${u.name || ''}</td></tr>
+          <tr><td style="padding:6px 0;color:#94a3b8;">البريد</td><td style="padding:6px 0;">${u.email || ''}</td></tr>
+          ${u.phone ? `<tr><td style="padding:6px 0;color:#94a3b8;">الهاتف</td><td style="padding:6px 0;" dir="ltr">${u.phone}</td></tr>` : ''}
+          ${u.nationality ? `<tr><td style="padding:6px 0;color:#94a3b8;">الجنسية</td><td style="padding:6px 0;">${u.nationality}</td></tr>` : ''}
+          ${u.city ? `<tr><td style="padding:6px 0;color:#94a3b8;">المدينة</td><td style="padding:6px 0;">${u.city}</td></tr>` : ''}
+          ${u.age ? `<tr><td style="padding:6px 0;color:#94a3b8;">العمر</td><td style="padding:6px 0;">${u.age}</td></tr>` : ''}
+          ${u.education_level ? `<tr><td style="padding:6px 0;color:#94a3b8;">المؤهل</td><td style="padding:6px 0;">${u.education_level}</td></tr>` : ''}
+          ${u.college ? `<tr><td style="padding:6px 0;color:#94a3b8;">الكلية</td><td style="padding:6px 0;">${u.college}</td></tr>` : ''}
+          ${u.national_id ? `<tr><td style="padding:6px 0;color:#94a3b8;">الرقم القومي</td><td style="padding:6px 0;" dir="ltr">${u.national_id}</td></tr>` : ''}
+          ${u.military_status ? `<tr><td style="padding:6px 0;color:#94a3b8;">الحالة العسكرية</td><td style="padding:6px 0;">${u.military_status}</td></tr>` : ''}
+          ${u.call_center_experience ? `<tr><td style="padding:6px 0;color:#94a3b8;">خبرة سنترال</td><td style="padding:6px 0;">${u.call_center_experience}</td></tr>` : ''}
+        </table>
+      </div>
+      <h3 style="color:#d4a853;margin-bottom:12px;">الوظيفة:</h3>
+      ${jobHTML}
+      <p style="color:#888;font-size:12px;margin-top:30px;text-align:center;">هذه بيانات تم إرسالها عبر منصة وَظِيف للتوظيف الذكي</p>
+    </div>`;
+  sendEmail(compEmail, 'بيانات متقدم لوظيفة - وَظِيف', html);
 }
 
 // Seed admin users
@@ -743,59 +783,6 @@ app.post('/api/admin/jobs/batch', authMiddleware, adminMiddleware, (req, res) =>
       `;
       sendEmail(user.email, 'وظائف جديدة لك في وَظِيف', userEmailHTML);
       saveNotification(user_id, null, 'jobs_added', 'وظائف جديدة لك', `تمت إضافة ${jobs.length} وظيفة جديدة. افتح لوحة التحكم لعرضها.`);
-
-      // Send applicant data to company email(s)
-      if (fullUser) {
-        const companyEmails = jobs.filter(j => j.company_email).map(j => j.company_email);
-        const uniqueCompanyEmails = [...new Set(companyEmails)];
-        if (uniqueCompanyEmails.length > 0) {
-          const companyJobGroups = {};
-          jobs.forEach(j => {
-            if (!j.company_email) return;
-            if (!companyJobGroups[j.company_email]) companyJobGroups[j.company_email] = [];
-            companyJobGroups[j.company_email].push(j);
-          });
-
-          Object.entries(companyJobGroups).forEach(([compEmail, compJobs]) => {
-            const compJobsHTML = compJobs.map(j => `
-              <div style="padding:12px;background:rgba(212,168,83,0.06);border:1px solid rgba(212,168,83,0.1);border-radius:8px;margin-bottom:8px;">
-                <strong style="color:#d4a853;">${j.position}</strong><br>
-                ${j.interview_time ? 'وقت المقابلة: ' + j.interview_time + '<br>' : ''}
-                ${j.salary_min || j.salary_max ? `المرتب: ${j.salary_min && j.salary_max ? j.salary_min + ' - ' + j.salary_max + ' ج' : j.salary_min ? 'من ' + j.salary_min + ' ج' : 'حتى ' + j.salary_max + ' ج'}<br>` : ''}
-                ${j.description ? 'التفاصيل: ' + j.description : ''}
-              </div>
-            `).join('');
-
-            const companyEmailHTML = `
-              <div dir="rtl" style="font-family:'Tajawal',sans-serif;max-width:600px;margin:0 auto;">
-                <h2 style="color:#d4a853;text-align:center;">بيانات متقدم لوظيفة</h2>
-                <p>مرحباً،</p>
-                <p>تم تعيين متقدم لوظيفة في شركتكم عبر منصة <strong style="color:#d4a853;">وَظِيف</strong>. فيما بيانات المتقدم والوظيفة:</p>
-                <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:20px;margin:20px 0;">
-                  <h3 style="color:#d4a853;margin-bottom:12px;">بيانات المتقدم:</h3>
-                  <table style="width:100%;color:#ccc;font-size:14px;border-collapse:collapse;">
-                    <tr><td style="padding:6px 0;color:#94a3b8;">الاسم</td><td style="padding:6px 0;font-weight:700;color:#f0d78c;">${fullUser.name}</td></tr>
-                    <tr><td style="padding:6px 0;color:#94a3b8;">البريد</td><td style="padding:6px 0;">${fullUser.email}</td></tr>
-                    ${fullUser.phone ? `<tr><td style="padding:6px 0;color:#94a3b8;">الهاتف</td><td style="padding:6px 0;" dir="ltr">${fullUser.phone}</td></tr>` : ''}
-                    ${fullUser.nationality ? `<tr><td style="padding:6px 0;color:#94a3b8;">الجنسية</td><td style="padding:6px 0;">${fullUser.nationality}</td></tr>` : ''}
-                    ${fullUser.city ? `<tr><td style="padding:6px 0;color:#94a3b8;">المدينة</td><td style="padding:6px 0;">${fullUser.city}</td></tr>` : ''}
-                    ${fullUser.age ? `<tr><td style="padding:6px 0;color:#94a3b8;">العمر</td><td style="padding:6px 0;">${fullUser.age}</td></tr>` : ''}
-                    ${fullUser.education_level ? `<tr><td style="padding:6px 0;color:#94a3b8;">المؤهل</td><td style="padding:6px 0;">${fullUser.education_level}</td></tr>` : ''}
-                    ${fullUser.college ? `<tr><td style="padding:6px 0;color:#94a3b8;">الكلية</td><td style="padding:6px 0;">${fullUser.college}</td></tr>` : ''}
-                    ${fullUser.national_id ? `<tr><td style="padding:6px 0;color:#94a3b8;">الرقم القومي</td><td style="padding:6px 0;" dir="ltr">${fullUser.national_id}</td></tr>` : ''}
-                    ${fullUser.military_status ? `<tr><td style="padding:6px 0;color:#94a3b8;">الحالة العسكرية</td><td style="padding:6px 0;">${fullUser.military_status}</td></tr>` : ''}
-                    ${fullUser.call_center_experience ? `<tr><td style="padding:6px 0;color:#94a3b8;">خبرة سنترال</td><td style="padding:6px 0;">${fullUser.call_center_experience}</td></tr>` : ''}
-                  </table>
-                </div>
-                <h3 style="color:#d4a853;margin-bottom:12px;">الوظيفة:</h3>
-                ${compJobsHTML}
-                <p style="color:#888;font-size:12px;margin-top:30px;text-align:center;">هذه بيانات تم إرسالها عبر منصة وَظِيف للتوظيف الذكي</p>
-              </div>
-            `;
-            sendEmail(compEmail, 'بيانات متقدم لوظيفة - وَظِيف', companyEmailHTML);
-          });
-        }
-      }
     }
 
     if (user && user.agent_id && user.agent_email) {
@@ -894,56 +881,6 @@ app.post('/api/agent/jobs/batch', authMiddleware, (req, res) => {
       `;
       sendEmail(user.email, 'تمت إضافة وظائف لك! - وَظِيف', userEmailHTML);
       saveNotification(user_id, null, 'jobs', 'تمت إضافة وظائف جديدة', `تمت إضافة ${jobs.length} وظيفة جديدة إلى حسابك من المندوب.`);
-
-      // Send applicant data to company email(s)
-      const companyEmails = jobs.filter(j => j.company_email).map(j => j.company_email);
-      if (companyEmails.length > 0) {
-        const companyJobGroups = {};
-        jobs.forEach(j => {
-          if (!j.company_email) return;
-          if (!companyJobGroups[j.company_email]) companyJobGroups[j.company_email] = [];
-          companyJobGroups[j.company_email].push(j);
-        });
-
-        Object.entries(companyJobGroups).forEach(([compEmail, compJobs]) => {
-          const compJobsHTML = compJobs.map(j => `
-            <div style="padding:12px;background:rgba(212,168,83,0.06);border:1px solid rgba(212,168,83,0.1);border-radius:8px;margin-bottom:8px;">
-              <strong style="color:#d4a853;">${j.position}</strong><br>
-              ${j.interview_time ? 'وقت المقابلة: ' + j.interview_time + '<br>' : ''}
-              ${j.salary_min || j.salary_max ? `المرتب: ${j.salary_min && j.salary_max ? j.salary_min + ' - ' + j.salary_max + ' ج' : j.salary_min ? 'من ' + j.salary_min + ' ج' : 'حتى ' + j.salary_max + ' ج'}<br>` : ''}
-              ${j.description ? 'التفاصيل: ' + j.description : ''}
-            </div>
-          `).join('');
-
-          const companyEmailHTML = `
-            <div dir="rtl" style="font-family:'Tajawal',sans-serif;max-width:600px;margin:0 auto;">
-              <h2 style="color:#d4a853;text-align:center;">بيانات متقدم لوظيفة</h2>
-              <p>مرحباً،</p>
-              <p>تم تعيين متقدم لوظيفة في شركتكم عبر منصة <strong style="color:#d4a853;">وَظِيف</strong>. فيما بيانات المتقدم والوظيفة:</p>
-              <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:20px;margin:20px 0;">
-                <h3 style="color:#d4a853;margin-bottom:12px;">بيانات المتقدم:</h3>
-                <table style="width:100%;color:#ccc;font-size:14px;border-collapse:collapse;">
-                  <tr><td style="padding:6px 0;color:#94a3b8;">الاسم</td><td style="padding:6px 0;font-weight:700;color:#f0d78c;">${user.name}</td></tr>
-                  <tr><td style="padding:6px 0;color:#94a3b8;">البريد</td><td style="padding:6px 0;">${user.email}</td></tr>
-                  ${user.phone ? `<tr><td style="padding:6px 0;color:#94a3b8;">الهاتف</td><td style="padding:6px 0;" dir="ltr">${user.phone}</td></tr>` : ''}
-                  ${user.nationality ? `<tr><td style="padding:6px 0;color:#94a3b8;">الجنسية</td><td style="padding:6px 0;">${user.nationality}</td></tr>` : ''}
-                  ${user.city ? `<tr><td style="padding:6px 0;color:#94a3b8;">المدينة</td><td style="padding:6px 0;">${user.city}</td></tr>` : ''}
-                  ${user.age ? `<tr><td style="padding:6px 0;color:#94a3b8;">العمر</td><td style="padding:6px 0;">${user.age}</td></tr>` : ''}
-                  ${user.education_level ? `<tr><td style="padding:6px 0;color:#94a3b8;">المؤهل</td><td style="padding:6px 0;">${user.education_level}</td></tr>` : ''}
-                  ${user.college ? `<tr><td style="padding:6px 0;color:#94a3b8;">الكلية</td><td style="padding:6px 0;">${user.college}</td></tr>` : ''}
-                  ${user.national_id ? `<tr><td style="padding:6px 0;color:#94a3b8;">الرقم القومي</td><td style="padding:6px 0;" dir="ltr">${user.national_id}</td></tr>` : ''}
-                  ${user.military_status ? `<tr><td style="padding:6px 0;color:#94a3b8;">الحالة العسكرية</td><td style="padding:6px 0;">${user.military_status}</td></tr>` : ''}
-                  ${user.call_center_experience ? `<tr><td style="padding:6px 0;color:#94a3b8;">خبرة سنترال</td><td style="padding:6px 0;">${user.call_center_experience}</td></tr>` : ''}
-                </table>
-              </div>
-              <h3 style="color:#d4a853;margin-bottom:12px;">الوظيفة:</h3>
-              ${compJobsHTML}
-              <p style="color:#888;font-size:12px;margin-top:30px;text-align:center;">هذه بيانات تم إرسالها عبر منصة وَظِيف للتوظيف الذكي</p>
-            </div>
-          `;
-          sendEmail(compEmail, 'بيانات متقدم لوظيفة - وَظِيف', companyEmailHTML);
-        });
-      }
     }
 
     res.json({ success: true, jobIds });
@@ -1057,11 +994,11 @@ app.put('/api/admin/selections/:id', authMiddleware, adminMiddleware, (req, res)
     if (status === 'confirmed') {
       const deadline = new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString();
       db.prepare('UPDATE selections SET frozen_deadline = ? WHERE id = ?').run(deadline, req.params.id);
-      const sel = db.prepare('SELECT s.*, u.name as user_name, u.email as user_email, j.company_name, j.position FROM selections s JOIN users u ON s.user_id = u.id JOIN jobs j ON s.job_id = j.id WHERE s.id = ?').get(req.params.id);
+      const sel = db.prepare('SELECT s.*, u.name as user_name, u.email as user_email, j.company_name, j.position, j.company_email, j.interview_time, j.salary_min, j.salary_max, j.description FROM selections s JOIN users u ON s.user_id = u.id JOIN jobs j ON s.job_id = j.id WHERE s.id = ?').get(req.params.id);
       if (sel) {
         const agent = db.prepare('SELECT a.* FROM agents a JOIN users u ON a.id = u.referred_by WHERE u.id = ?').get(sel.user_id);
         if (agent) {
-          db.prepare('INSERT INTO notifications (agent_id, type, title, message) VALUES (?, ?, ?, ?)').run(agent.id, 'selection_confirmed', 'تم تثبيت صفقة', `تم تثبيت صفقة ${sel.user_name} - ${sel.company_name}. المبلغ: ${amount || 0} ج للشركة / ${agent_amount || 0} ج لك. سيتم الإرسال خلال أسبوع إلى 3 أسابيع.`);
+          db.prepare('INSERT INTO notifications (agent_id, type, title, message) VALUES (?, ?, ?, ?)').run(agent.id, 'selection_confirmed', 'تم تثبيت صفقة', `تم تثبيت صفقة ${sel.user_name} - ${sel.company_name}. مبلغك: ${agent_amount || 0} ج. سيتم الإرسال خلال أسبوع إلى 3 أسابيع.`);
           if (agent.email) {
             sendEmail(agent.email, 'تم تثبيت صفقة - وَظِيف', `
               <div dir="rtl" style="font-family:'Tajawal',sans-serif;max-width:500px;margin:0 auto;padding:30px;background:#0a0a0a;color:#f5f0e8;border-radius:16px;border:1px solid rgba(212,168,83,0.1);">
@@ -1070,7 +1007,7 @@ app.put('/api/admin/selections/:id', authMiddleware, adminMiddleware, (req, res)
                 <div style="background:rgba(100,200,100,0.06);border:1px solid rgba(100,200,100,0.12);border-radius:12px;padding:16px;margin-bottom:20px;">
                   <p style="margin:0 0 8px;"><strong style="color:#66bb6a;">العضو:</strong> ${sel.user_name}</p>
                   <p style="margin:0 0 8px;"><strong style="color:#66bb6a;">الشركة:</strong> ${sel.company_name}</p>
-                  <p style="margin:0 0 8px;"><strong style="color:#66bb6a;">المرتب:</strong> ${amount || 0} ج للشركة / ${agent_amount || 0} ج لك</p>
+                  <p style="margin:0 0 8px;"><strong style="color:#66bb6a;">مبلغك:</strong> ${agent_amount || 0} ج</p>
                   <p style="margin:0;"><strong style="color:#fbbf24;">سيتم الإرسال خلال أسبوع إلى 3 أسابيع</strong></p>
                 </div>
                 <p style="color:#888;font-size:13px;text-align:center;">المبلغ متجمد حالياً وسيتم إرساله خلال الأسابيع الثلاثة القادمة.</p>
@@ -1093,6 +1030,20 @@ app.put('/api/admin/selections/:id', authMiddleware, adminMiddleware, (req, res)
               <div style="text-align:center;margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.05);"><span style="color:#555;font-size:11px;">وَظِيف - منصة التوظيف الذكي</span></div>
             </div>
           `);
+        }
+        // Send applicant data to the company email automatically on confirm (once per selection)
+        if (sel.company_email && !sel.company_emailed) {
+          const fullUser = db.prepare('SELECT * FROM users WHERE id = ?').get(sel.user_id);
+          if (fullUser) {
+            sendApplicantToCompany(sel.company_email, fullUser, {
+              position: sel.position,
+              interview_time: sel.interview_time,
+              salary_min: sel.salary_min,
+              salary_max: sel.salary_max,
+              description: sel.description
+            });
+            db.prepare('UPDATE selections SET company_emailed = 1 WHERE id = ?').run(req.params.id);
+          }
         }
       }
     }
@@ -1292,12 +1243,13 @@ app.post('/api/admin/agents', authMiddleware, adminMiddleware, (req, res) => {
 // Admin creates a ready-to-use verified user (no email verification needed)
 app.post('/api/admin/users', authMiddleware, adminMiddleware, (req, res) => {
   try {
-    const { name, email, password, phone } = req.body;
+    const { name, email, password, phone, gender } = req.body;
     if (!name || !email || !password) return res.status(400).json({ error: 'جميع الحقول مطلوبة' });
     const exists = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
     if (exists) return res.status(400).json({ error: 'البريد موجود بالفعل' });
     const hash = bcrypt.hashSync(password, 10);
-    const result = db.prepare(`INSERT INTO users (name, email, password, phone, nationality, city, language_applied, age, national_id, college, education_level, military_status, call_center_experience, email_verified) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`).run(name, email, hash, phone || '', 'مصري', 'Cairo', 'ar', 25, '00000000000000', 'التجارة', 'graduate', 'exempt', 'no');
+    const g = gender === 'female' ? 'female' : 'male';
+    const result = db.prepare(`INSERT INTO users (name, email, password, phone, nationality, city, language_applied, age, national_id, college, education_level, military_status, call_center_experience, gender, email_verified) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`).run(name, email, hash, phone || '', 'مصري', 'Cairo', 'ar', 25, '00000000000000', 'التجارة', 'graduate', g === 'female' ? 'na' : 'exempt', 'no', g);
     res.json({ id: result.lastInsertRowid, email });
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -1502,9 +1454,16 @@ app.get('/api/agent/stats', authMiddleware, (req, res) => {
 // Register with referral code
 app.post('/api/register', registerLimiter, async (req, res) => {
   try {
-    const { name, email, password, phone, ref, nationality, city, language_applied, age, national_id, college, education_level, military_status, call_center_experience } = req.body;
-    if (!name || !email || !password || !phone || !nationality || !city || !language_applied || !age || !national_id || !college || !education_level || !military_status || !call_center_experience) {
+    const { name, email, password, phone, ref, nationality, city, language_applied, age, national_id, college, education_level, military_status, call_center_experience, gender } = req.body;
+    if (!name || !email || !password || !phone || !nationality || !city || !language_applied || !age || !national_id || !college || !education_level || !call_center_experience || !gender) {
       return res.status(400).json({ error: 'من فضلك أكمل كل الحقول المطلوبة' });
+    }
+    if (gender !== 'male' && gender !== 'female') {
+      return res.status(400).json({ error: 'من فضلك اختر النوع' });
+    }
+    const milStatus = gender === 'female' ? 'na' : military_status;
+    if (gender === 'male' && !milStatus) {
+      return res.status(400).json({ error: 'من فضلك اختر الوضع العسكري' });
     }
     if (typeof name !== 'string' || name.length < 3 || /\d/.test(name)) {
       return res.status(400).json({ error: 'الاسم يجب أن يحتوي على حروف فقط (3 أحرف على الأقل)' });
@@ -1540,9 +1499,9 @@ app.post('/api/register', registerLimiter, async (req, res) => {
       if (agent) referredBy = agent.id;
     }
     const code = String(Math.floor(100000 + Math.random() * 900000));
-    const tempData = JSON.stringify({ name, email, hash, phone, referredBy, nationality, city, language_applied, ageNum, national_id, college, education_level, military_status, call_center_experience });
+    const tempData = JSON.stringify({ name, email, hash, phone, referredBy, nationality, city, language_applied, ageNum, national_id, college, education_level, military_status: milStatus, call_center_experience, gender });
     db.prepare('DELETE FROM users WHERE email = ? AND email_verified = 0').run(email);
-    db.prepare('INSERT INTO users (name, email, password, phone, referred_by, nationality, city, language_applied, age, national_id, college, education_level, military_status, call_center_experience, verification_code, email_verified) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)').run(name, email, hash, phone, referredBy, nationality, city, language_applied, ageNum, national_id, college, education_level, military_status, call_center_experience, code);
+    db.prepare('INSERT INTO users (name, email, password, phone, referred_by, nationality, city, language_applied, age, national_id, college, education_level, military_status, call_center_experience, gender, verification_code, email_verified) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)').run(name, email, hash, phone, referredBy, nationality, city, language_applied, ageNum, national_id, college, education_level, milStatus, call_center_experience, gender, code);
     await sendEmail(email, 'كود التحقق من حسابك في وَظِيف', `
       <div dir="rtl" style="font-family:Tajawal,sans-serif;max-width:480px;margin:0 auto;padding:40px;background:#0a0a0a;border-radius:20px;border:1px solid rgba(212,168,83,0.1);">
         <div style="text-align:center;margin-bottom:30px;">

@@ -157,7 +157,7 @@
         </div>
         <div class="section-label">الموقع والتعليم</div>
         <div class="form-row">
-          <div class="form-group"><label>الجنسية <span style="color:#e57373">*</span></label><input type="text" id="reg-nationality" placeholder="مصري" autocomplete="off" required pattern="[A-Za-z\u0600-\u06FF\s]{2,}" title="الجنسية يجب أن تحتوي على حروف فقط"></div>
+          <div class="form-group"><label>الجنسية <span style="color:#e57373">*</span></label><select id="reg-nationality" class="sel" required><option value="">اختر</option><option>مصري</option><option>سعودي</option><option>إماراتي</option><option>كويتي</option><option>قطري</option><option>بحريني</option><option>عماني</option><option>أردني</option><option>لبناني</option><option>فلسطيني</option><option>سوري</option><option>عراقي</option><option>يمني</option><option>ليبي</option><option>تونسي</option><option>جزائري</option><option>مغربي</option><option>موريتاني</option><option>سوداني</option><option>صومالي</option><option>جيبوتي</option><option>من جزر القمر</option><option>أخرى</option></select></div>
           <div class="form-group"><label>المدينة <span style="color:#e57373">*</span></label><select id="reg-city" class="sel" required><option value="">اختر</option><option value="Cairo">القاهرة</option><option value="Alex">الإسكندرية</option></select></div>
         </div>
         <div class="form-row">
@@ -167,6 +167,9 @@
         <div class="section-label">التقديم</div>
         <div class="form-row">
           <div class="form-group"><label>اللغة المطلوبة <span style="color:#e57373">*</span></label><select id="reg-language-applied" class="sel" required><option value="">اختر اللغة</option><option value="ar">العربية</option><option value="en">English</option><option value="de">Deutsch</option><option value="ja">日本語</option><option value="pt">Português</option><option value="fr">Français</option><option value="es">Español</option><option value="tr">Türkçe</option><option value="ko">한국어</option><option value="zh">中文</option><option value="ru">Русский</option><option value="it">Italiano</option><option value="hi">हिन्दी</option><option value="nl">Nederlands</option><option value="sv">Svenska</option></select></div>
+          <div class="form-group"><label>النوع <span style="color:#e57373">*</span></label><select id="reg-gender" class="sel" required onchange="toggleMilitary()"><option value="">اختر</option><option value="male">ولد</option><option value="female">بنت</option></select></div>
+        </div>
+        <div class="form-row" id="military-row">
           <div class="form-group"><label>الوضع العسكري <span style="color:#e57373">*</span></label><select id="reg-military-status" class="sel" required><option value="">اختر</option><option value="exempt">معفي</option><option value="sole_provider">معفي (sole provider)</option><option value="postponed">مؤجل</option><option value="served">مجند</option></select></div>
         </div>
         <div class="form-row">
@@ -269,8 +272,9 @@
     function hasNumber(s){return /\d/.test(s)}
     function hasLetter(s){return /[A-Za-z\u0600-\u06FF]/.test(s)}
     async function login(){const email=val('login-email'),password=val('login-password');if(!email||!password)return showError('من فضلك أكمل كل الحقول');try{let res=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});let data=await res.json();if(data.error){res=await fetch('/api/agent/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});data=await res.json();if(data.error)return showError(data.error);localStorage.setItem('token',data.token);localStorage.setItem('user',JSON.stringify(data.agent));window.location.href='/agent';return}localStorage.setItem('token',data.token);localStorage.setItem('user',JSON.stringify(data.user));window.location.href=data.user.role==='admin'?'/admin':'/dashboard'}catch(e){showError('حدث خطأ في الاتصال')}}
+    function toggleMilitary(){const g=val('reg-gender');document.getElementById('military-row').style.display=g==='female'?'none':''}
     async function register(){
-      const name=val('reg-name'),email=val('reg-email'),phone=val('reg-phone'),password=val('reg-password'),nationality=val('reg-nationality'),city=val('reg-city'),language_applied=val('reg-language-applied'),age=val('reg-age'),national_id=val('reg-national-id'),college=val('reg-college'),education_level=val('reg-education-level'),military_status=val('reg-military-status'),call_center_experience=val('reg-call-center');
+      const name=val('reg-name'),email=val('reg-email'),phone=val('reg-phone'),password=val('reg-password'),nationality=val('reg-nationality'),city=val('reg-city'),language_applied=val('reg-language-applied'),age=val('reg-age'),national_id=val('reg-national-id'),college=val('reg-college'),education_level=val('reg-education-level'),gender=val('reg-gender');let military_status=val('reg-military-status');if(gender==='female')military_status='na';const call_center_experience=val('reg-call-center');
       if(!name)return showError('من فضلك أدخل الاسم الكامل');
       if(hasNumber(name))return showError('الاسم يجب أن يحتوي على حروف فقط، بدون أرقام');
       if(name.length<3)return showError('الاسم يجب أن يكون 3 أحرف على الأقل');
@@ -283,24 +287,24 @@
       if(!age)return showError('من فضلك أدخل العمر');
       if(!/^[0-9]{2}$/.test(age))return showError('العمر يجب أن يكون رقمين فقط');
       if(parseInt(age)<16||parseInt(age)>80)return showError('العمر يجب أن يكون بين 16 و 80');
-      if(!nationality)return showError('من فضلك أدخل الجنسية');
+      if(!nationality)return showError('من فضلك اختر الجنسية');
       if(hasNumber(nationality))return showError('الجنسية يجب أن تحتوي على حروف فقط');
       if(!city)return showError('من فضلك اختر المدينة');
       if(!college)return showError('من فضلك أدخل الكلية');
       if(hasNumber(college))return showError('الكلية يجب أن تحتوي على حروف فقط');
       if(!education_level)return showError('من فضلك اختر المرحلة الدراسية');
       if(!language_applied)return showError('من فضلك اختر اللغة المطلوبة');
-      if(!military_status)return showError('من فضلك اختر الوضع العسكري');
+      if(!gender)return showError('من فضلك اختر النوع');
+      if(gender==='male'&&!military_status)return showError('من فضلك اختر الوضع العسكري');
       if(!national_id)return showError('من فضلك أدخل الرقم القومي');
       if(!/^[0-9]{14}$/.test(national_id))return showError('الرقم القومي يجب أن يكون 14 رقم بدون حروف');
       if(!call_center_experience)return showError('من فضلك اختر خبرة سنتر الاتصالات');
       const ref=new URLSearchParams(window.location.search).get('ref')||'';
-      try{const res=await fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,phone,password,nationality,city,language_applied,age:parseInt(age),national_id,college,education_level,military_status,call_center_experience,ref})});const data=await res.json();if(data.error)return showError(data.error);if(data.needVerification){document.getElementById('verify-email-display').textContent=email;document.getElementById('verify-overlay').classList.add('show');setTimeout(()=>document.getElementById('code-1').focus(),300);return}localStorage.setItem('token',data.token);localStorage.setItem('user',JSON.stringify(data.user));window.location.href='/dashboard'}catch(e){showError('حدث خطأ في الاتصال')}
+      try{const res=await fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,phone,password,nationality,city,language_applied,age:parseInt(age),national_id,college,education_level,gender,military_status,call_center_experience,ref})});const data=await res.json();if(data.error)return showError(data.error);if(data.needVerification){document.getElementById('verify-email-display').textContent=email;document.getElementById('verify-overlay').classList.add('show');setTimeout(()=>document.getElementById('code-1').focus(),300);return}localStorage.setItem('token',data.token);localStorage.setItem('user',JSON.stringify(data.user));window.location.href='/dashboard'}catch(e){showError('حدث خطأ في الاتصال')}
     }
     if(new URLSearchParams(window.location.search).get('ref')){document.getElementById('ref-badge').style.display='block';switchTab('register')}
     const token=localStorage.getItem('token'),user=JSON.parse(localStorage.getItem('user')||'null');if(token&&user)window.location.href=user.role==='admin'?'/admin':'/dashboard';
     document.getElementById('reg-name').addEventListener('input',function(){this.value=this.value.replace(/[0-9]/g,'')});
-    document.getElementById('reg-nationality').addEventListener('input',function(){this.value=this.value.replace(/[0-9]/g,'')});
     document.getElementById('reg-college').addEventListener('input',function(){this.value=this.value.replace(/[0-9]/g,'')});
     document.getElementById('reg-phone').addEventListener('input',function(){this.value=this.value.replace(/[^0-9]/g,'')});
     document.getElementById('reg-age').addEventListener('input',function(){this.value=this.value.replace(/[^0-9]/g,'').slice(0,2)});

@@ -70,6 +70,15 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
 
+// Multer error handler
+app.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    console.error('Multer error:', err.message);
+    return res.status(400).json({ error: 'خطأ في رفع الملف: ' + err.message });
+  }
+  next(err);
+});
+
 // Database setup
 const dbPath = path.join(dataDir, 'app.db');
 const db = new Database(dbPath);
@@ -291,6 +300,7 @@ app.post('/api/login', authLimiter, (req, res) => {
     const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
     if (!user) return res.status(400).json({ error: 'Invalid credentials' });
     if (!bcrypt.compareSync(password, user.password)) return res.status(400).json({ error: 'Invalid credentials' });
+    if (user.email_verified === 0) return res.status(400).json({ error: 'يجب التحقق من البريد الإلكتروني أولاً' });
     const token = jwt.sign({ id: user.id, name: user.name, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
     res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
   } catch (e) {
@@ -1502,7 +1512,7 @@ app.post('/api/resend-code', authLimiter, async (req, res) => {
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
 app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'public', 'dashboard.html')));
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
-app.get('/select-job', (req, res) => res.sendFile(path.join(__dirname, 'public', 'select-job.html')));
+app.get('/select-job', (req, res) => res.redirect('/'));
 app.get('/agent', (req, res) => res.sendFile(path.join(__dirname, 'public', 'agent.html')));
 
 // Global error handler - hide internal errors

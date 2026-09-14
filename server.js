@@ -224,9 +224,9 @@ const emailTransporter = nodemailer.createTransport({
 });
 
 async function sendEmail(to, subject, html) {
-  try {
-    // Prefer Brevo HTTP API (port 443) when key is set - works on hosts that block SMTP ports
-    if (process.env.BREVO_API_KEY) {
+  // 1) Brevo HTTP API (port 443) when key is set - works on hosts that block SMTP
+  if (process.env.BREVO_API_KEY) {
+    try {
       const r = await fetch('https://api.brevo.com/v3/smtp/email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'api-key': process.env.BREVO_API_KEY },
@@ -240,17 +240,31 @@ async function sendEmail(to, subject, html) {
       if (!r.ok) throw new Error('Brevo HTTP ' + r.status + ': ' + (await r.text()).slice(0, 200));
       console.log('Email sent to:', to);
       return;
+    } catch (e) {
+      console.log('Brevo failed, trying SMTP:', e.message.split('\n')[0]);
     }
-    await emailTransporter.sendMail({
-      from: `"وَظِيف" <${SMTP_USER}>`,
-      to,
-      subject,
-      html
-    });
-    console.log('Email sent to:', to);
-  } catch (e) {
-    console.log('Email send error:', e.message);
   }
+  // 2) Gmail SMTP: try 587 (STARTTLS) then 465 - whichever is open
+  const attempts = [
+    { host: 'smtp.gmail.com', port: 587, secure: false },
+    { host: 'smtp.gmail.com', port: 465, secure: true }
+  ];
+  for (const cfg of attempts) {
+    try {
+      const t = nodemailer.createTransport({
+        ...cfg,
+        auth: { user: SMTP_USER, pass: SMTP_PASS },
+        connectionTimeout: 8000,
+        socketTimeout: 10000
+      });
+      await t.sendMail({ from: `"وَظِيف" <${SMTP_USER}>`, to, subject, html });
+      console.log('Email sent to:', to);
+      return;
+    } catch (e) {
+      console.log(`SMTP ${cfg.port} failed:`, (e.message || '').split('\n')[0]);
+    }
+  }
+  console.log('Email send error: all methods failed for', to);
 }
 
 function saveNotification(userId, agentId, type, title, message) {

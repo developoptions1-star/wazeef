@@ -211,18 +211,20 @@ db.exec(`
 `);
 
 // Email transporter
+const SMTP_USER = process.env.SMTP_USER || 'mohamedfaron297@gmail.com';
+const SMTP_PASS = process.env.SMTP_PASS || 'ushf stxg rmgp xhig';
 const emailTransporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: 'mohamedfaron297@gmail.com',
-    pass: 'ushf stxg rmgp xhig'
+    user: SMTP_USER,
+    pass: SMTP_PASS
   }
 });
 
 async function sendEmail(to, subject, html) {
   try {
     await emailTransporter.sendMail({
-      from: '"وَظِيف" <mohamedfaron297@gmail.com>',
+      from: `"وَظِيف" <${SMTP_USER}>`,
       to,
       subject,
       html

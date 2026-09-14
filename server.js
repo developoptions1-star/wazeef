@@ -1289,6 +1289,21 @@ app.post('/api/admin/agents', authMiddleware, adminMiddleware, (req, res) => {
   }
 });
 
+// Admin creates a ready-to-use verified user (no email verification needed)
+app.post('/api/admin/users', authMiddleware, adminMiddleware, (req, res) => {
+  try {
+    const { name, email, password, phone } = req.body;
+    if (!name || !email || !password) return res.status(400).json({ error: 'جميع الحقول مطلوبة' });
+    const exists = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
+    if (exists) return res.status(400).json({ error: 'البريد موجود بالفعل' });
+    const hash = bcrypt.hashSync(password, 10);
+    const result = db.prepare(`INSERT INTO users (name, email, password, phone, nationality, city, language_applied, age, national_id, college, education_level, military_status, call_center_experience, email_verified) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`).run(name, email, hash, phone || '', 'مصري', 'Cairo', 'ar', 25, '00000000000000', 'التجارة', 'graduate', 'exempt', 'no');
+    res.json({ id: result.lastInsertRowid, email });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.get('/api/admin/agents', authMiddleware, adminMiddleware, (req, res) => {
   try {
     const agents = db.prepare('SELECT id, name, email, phone, referral_code, is_active, created_at FROM agents ORDER BY created_at DESC').all();

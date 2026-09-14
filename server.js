@@ -86,6 +86,17 @@ const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
 
 // Database setup
 const dbPath = path.join(dataDir, 'app.db');
+// Apply pending restore (uploaded via /api/admin/restore) before opening DB
+const pendingRestore = path.join(dataDir, 'restore.pending.db');
+if (fs.existsSync(pendingRestore)) {
+  try {
+    if (fs.existsSync(dbPath)) fs.copyFileSync(dbPath, dbPath + '.bak');
+    for (const ext of ['-wal', '-shm', '-journal']) { try { fs.unlinkSync(dbPath + ext); } catch (e) {} }
+    fs.copyFileSync(pendingRestore, dbPath);
+    fs.unlinkSync(pendingRestore);
+    console.log('Database restored from uploaded backup');
+  } catch (e) { console.log('Restore failed:', e.message); }
+}
 const db = new Database(dbPath);
 db.pragma('journal_mode = WAL');
 
@@ -234,19 +245,22 @@ const emailTransporter = nodemailer.createTransport({
   }
 });
 
-async function sendEmail(to, subject, html) {
+async function sendEmail(to, subject, html, attachments) {
+  const files = (attachments || []).map(a => ({ filename: a.filename, content: a.content }));
   // 1) Brevo HTTP API (port 443) when key is set - works on hosts that block SMTP
   if (process.env.BREVO_API_KEY) {
     try {
+      const payload = {
+        sender: { name: 'وَظِيف', email: SMTP_USER },
+        to: [{ email: to }],
+        subject,
+        htmlContent: html
+      };
+      if (files.length) payload.attachment = files.map(a => ({ content: a.content, name: a.filename }));
       const r = await fetch('https://api.brevo.com/v3/smtp/email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'api-key': process.env.BREVO_API_KEY },
-        body: JSON.stringify({
-          sender: { name: 'وَظِيف', email: SMTP_USER },
-          to: [{ email: to }],
-          subject,
-          htmlContent: html
-        })
+        body: JSON.stringify(payload)
       });
       if (!r.ok) throw new Error('Brevo HTTP ' + r.status + ': ' + (await r.text()).slice(0, 200));
       console.log('Email sent to:', to);
@@ -268,7 +282,9 @@ async function sendEmail(to, subject, html) {
         connectionTimeout: 8000,
         socketTimeout: 10000
       });
-      await t.sendMail({ from: `"وَظِيف" <${SMTP_USER}>`, to, subject, html });
+      const msg = { from: `"وَظِيف" <${SMTP_USER}>`, to, subject, html };
+      if (files.length) msg.attachments = files.map(a => ({ filename: a.filename, content: Buffer.from(a.content, 'base64') }));
+      await t.sendMail(msg);
       console.log('Email sent to:', to);
       return;
     } catch (e) {
@@ -277,6 +293,32 @@ async function sendEmail(to, subject, html) {
   }
   console.log('Email send error: all methods failed for', to);
 }
+
+// Daily database backup emailed to the owner (survives redeploys/restarts)
+async function backupDatabase(manual) {
+  try {
+    const tmp = path.join(dataDir, 'backup-tmp.db');
+    db.exec(`VACUUM INTO '${tmp.replace(/'/g, "''")}'`);
+    const size = fs.statSync(tmp).size;
+    if (size > 20 * 1024 * 1024) {
+      try { fs.unlinkSync(tmp); } catch (e) {}
+      console.log('Backup skipped: DB too large (' + size + ')');
+      return { ok: false, error: 'too large' };
+    }
+    const b64 = fs.readFileSync(tmp).toString('base64');
+    fs.unlinkSync(tmp);
+    const when = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    await sendEmail(SMTP_USER, 'نسخة احتياطية - وَظِيف ' + when,
+      `<div dir="rtl" style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:30px;"><h2>نسخة احتياطية ${manual ? 'يدوية' : 'تلقائية'}</h2><p>التاريخ: ${when}</p><p>الحجم: ${(size / 1024).toFixed(1)} KB</p><p>احتفظ بهذا الملف - يمكن استرجاعه من لوحة الأدمن.</p></div>`,
+      [{ filename: `wazeef-backup-${Date.now()}.db`, content: b64 }]);
+    console.log('Backup emailed, size:', size);
+    return { ok: true, size };
+  } catch (e) {
+    console.log('Backup failed:', e.message);
+    return { ok: false, error: e.message };
+  }
+}
+setInterval(() => backupDatabase(false), 24 * 60 * 60 * 1000);
 
 function saveNotification(userId, agentId, type, title, message) {
   try {
@@ -1280,6 +1322,45 @@ app.post('/api/admin/users', authMiddleware, adminMiddleware, (req, res) => {
     const g = gender === 'female' ? 'female' : 'male';
     const result = db.prepare(`INSERT INTO users (name, email, password, phone, nationality, city, language_applied, age, national_id, college, education_level, military_status, call_center_experience, gender, email_verified) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`).run(name, email, hash, phone || '', 'مصري', 'Cairo', 'ar', 25, '00000000000000', 'التجارة', 'graduate', g === 'female' ? 'na' : 'exempt', 'no', g);
     res.json({ id: result.lastInsertRowid, email });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Manual database backup (emailed to owner)
+app.post('/api/admin/backup', authMiddleware, adminMiddleware, async (req, res) => {
+  const r = await backupDatabase(true);
+  res.json(r);
+});
+
+const restoreUpload = multer({ storage, limits: { fileSize: 25 * 1024 * 1024 } });
+
+// Restore database from uploaded backup file (applies on restart)
+app.post('/api/admin/restore', authMiddleware, adminMiddleware, restoreUpload.single('backup'), (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'من فضلك اختر ملف النسخة' });
+    const p = req.file.path;
+    const fd = fs.openSync(p, 'r');
+    const head = Buffer.alloc(16);
+    fs.readSync(fd, head, 0, 16, 0);
+    fs.closeSync(fd);
+    if (head.toString('latin1', 0, 16) !== 'SQLite format 3\0') {
+      fs.unlinkSync(p);
+      return res.status(400).json({ error: 'الملف ليس قاعدة بيانات صالحة' });
+    }
+    const t = new Database(p, { readonly: true });
+    try {
+      const ok = t.prepare('PRAGMA integrity_check').get();
+      const hasUsers = t.prepare("SELECT COUNT(*) as c FROM sqlite_master WHERE type='table' AND name='users'").get().c;
+      if (!ok || ok.integrity_check !== 'ok' || !hasUsers) throw new Error('bad db');
+    } finally {
+      t.close();
+    }
+    const dest = path.join(dataDir, 'restore.pending.db');
+    if (fs.existsSync(dest)) fs.unlinkSync(dest);
+    fs.renameSync(p, dest);
+    res.json({ success: true, message: 'تم قبول النسخة، سيتم الاسترجاع بعد إعادة التشغيل' });
+    setTimeout(() => process.exit(0), 800);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

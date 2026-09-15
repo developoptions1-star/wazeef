@@ -1793,17 +1793,19 @@ app.post('/api/resend-code', authLimiter, async (req, res) => {
 // Serve pages
 function servePage(page) {
   return (req, res) => {
-    const filePath = path.join(__dirname, 'public', page);
-    if (fs.existsSync(filePath)) {
-      res.sendFile(filePath);
-    } else {
-      const altPath = path.join(process.cwd(), 'public', page);
-      if (fs.existsSync(altPath)) {
-        res.sendFile(altPath);
+    try {
+      const filePath = path.join(__dirname, 'public', page);
+      const filePath2 = path.join(process.cwd(), 'public', page);
+      const finalPath = fs.existsSync(filePath) ? filePath : (fs.existsSync(filePath2) ? filePath2 : null);
+      if (finalPath) {
+        res.sendFile(finalPath);
       } else {
-        console.error('File not found:', filePath, '| cwd:', process.cwd(), '| dirlist:', fs.readdirSync(__dirname).join(', '));
-        res.status(500).json({ error: 'الصفحة غير موجودة', debug: { dir: __dirname, cwd: process.cwd(), files: fs.readdirSync(__dirname) } });
+        console.error('Page not found:', page, '| paths tried:', filePath, filePath2);
+        res.status(500).json({ error: 'الصفحة غير موجودة', debug: { __dirname, cwd: process.cwd(), page, files: fs.readdirSync(__dirname) } });
       }
+    } catch (e) {
+      console.error('servePage error:', e.message);
+      res.status(500).json({ error: 'خطأ في تحميل الصفحة' });
     }
   };
 }

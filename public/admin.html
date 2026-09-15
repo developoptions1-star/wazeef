@@ -600,6 +600,7 @@
       <div class="tab-btn" onclick="switchSection('selections', this)">الاختيارات</div>
       <div class="tab-btn" onclick="switchSection('finance', this)">المالية</div>
       <div class="tab-btn" onclick="switchSection('agents', this)">المندوبين</div>
+      <div class="tab-btn" onclick="switchSection('companies', this)">الشركات</div>
     </div>
 
     <div id="applications-section" class="section active">
@@ -676,6 +677,38 @@
       <div class="table-container glass">
         <div id="agents-list"></div>
       </div>
+      <div style="margin-top:30px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <div class="section-title" style="margin-bottom:0;"><div class="dot"></div>ترتيب المندوبين</div>
+          <div style="display:flex;gap:10px;align-items:center;">
+            <select id="ranking-period" class="filter-input" onchange="loadRankings()" style="min-width:180px;">
+              <option value="month">الشهر الحالي</option>
+              <option value="3months">آخر 3 شهور</option>
+              <option value="4months">آخر 4 شهور</option>
+              <option value="year">أفضل 3 في السنة</option>
+              <option value="all">كل الوقت</option>
+            </select>
+            <select id="ranking-month" class="filter-input" onchange="loadRankings()" style="min-width:120px;"></select>
+            <select id="ranking-year" class="filter-input" onchange="loadRankings()" style="min-width:100px;"></select>
+          </div>
+        </div>
+        <div class="table-container glass">
+          <div id="rankings-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="companies-section" class="section">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;">
+        <div class="section-title" style="margin-bottom:0;"><div class="dot"></div>الشركات</div>
+        <button onclick="openCompanyModal()" style="padding:10px 24px;font-size:14px;font-weight:700;font-family:'Tajawal',sans-serif;background:linear-gradient(135deg,#b8860b,#d4a853);color:#0a0a0a;border:none;border-radius:12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .2s ease;box-shadow:0 2px 12px rgba(212,168,83,0.15);">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          إضافة شركة
+        </button>
+      </div>
+      <div class="table-container glass">
+        <div id="companies-list"></div>
+      </div>
     </div>
   </div>
 
@@ -684,6 +717,11 @@
       <h2>إضافة وظائف</h2>
       <input type="hidden" id="modal-app-id">
       <input type="hidden" id="modal-user-id">
+      <div class="form-group"><label>اختار من شركة جاهزة (اختياري)</label>
+        <select id="job-company-select" autocomplete="off" onchange="fillCompanyData()" style="width:100%;padding:12px 16px;background:rgba(255,255,255,0.04);border:1.5px solid rgba(255,255,255,0.06);border-radius:12px;color:#e2e8f0;font-family:'Tajawal',sans-serif;font-size:14px;outline:none;">
+          <option value="">-- اكتب يدوي أو اختار شركة --</option>
+        </select>
+      </div>
       <div class="form-group"><label>اسم الشركة</label><input type="text" id="job-company" placeholder="اسم الشركة" autocomplete="off"></div>
       <div class="form-group"><label>اسم الوظيفة</label><input type="text" id="job-position" placeholder="مثال: مطور ويب" autocomplete="off"></div>
       <div class="form-group"><label>وقت المقابلة</label><input type="text" id="job-time" placeholder="مثال: السبت 2 م" autocomplete="off"></div>
@@ -724,6 +762,30 @@
           <input type="text" id="agent-link" readonly style="flex:1;padding:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(212,168,83,0.12);border-radius:10px;color:#d4a853;font-family:monospace;font-size:14px;outline:none;">
           <button class="action-btn add-job" onclick="copyAgentLink()" style="padding:12px 18px;">نسخ</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="company-modal" onclick="if(event.target===this)closeCompanyModal()">
+    <div class="modal" style="width:520px;">
+      <h2 id="company-modal-title">إضافة شركة</h2>
+      <input type="hidden" id="company-edit-id">
+      <div class="form-group"><label>اسم الشركة</label><input type="text" id="company-name" placeholder="اسم الشركة" autocomplete="off"></div>
+      <div class="form-group"><label>اسم الوظيفة</label><input type="text" id="company-position" placeholder="مثال: مطور ويب" autocomplete="off"></div>
+      <div class="form-group"><label>وقت المقابلة</label><input type="text" id="company-interview" placeholder="مثال: السبت 2 م" autocomplete="off"></div>
+      <div class="form-group"><label>المرتب (جنيه) - اختياري</label>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <input type="number" id="company-salary-min" placeholder="الحد الأدنى" autocomplete="off" style="flex:1;">
+          <span style="color:#555;font-size:14px;">-</span>
+          <input type="number" id="company-salary-max" placeholder="الحد الأقصى" autocomplete="off" style="flex:1;">
+        </div>
+      </div>
+      <div class="form-group"><label>وصف الشركة</label><textarea id="company-desc" placeholder="وصف مختصر للشركة والوظيفة" autocomplete="off" style="width:100%;padding:12px 16px;background:rgba(255,255,255,0.04);border:1.5px solid rgba(255,255,255,0.06);border-radius:12px;color:#e2e8f0;font-family:'Tajawal',sans-serif;font-size:14px;min-height:70px;resize:vertical;outline:none;"></textarea></div>
+      <div class="form-group"><label>جيميل الشركة</label><input type="email" id="company-email" placeholder="example@company.com" autocomplete="off" style="direction:ltr;text-align:left;"></div>
+      <div class="form-group"><label>عدد المقاعد المتاحة</label><input type="number" id="company-slots" placeholder="0" autocomplete="off" min="0"></div>
+      <div class="btn-row">
+        <button class="btn-cancel" onclick="closeCompanyModal()">إلغاء</button>
+        <button class="btn-submit" onclick="saveCompany()">حفظ</button>
       </div>
     </div>
   </div>
@@ -1068,11 +1130,41 @@
       pendingJobs = [];
       renderPendingJobs();
       loadJobsInModal(appId);
+      loadCompanyDropdown();
     }
     function closeModal() {
       document.getElementById('job-modal').classList.remove('show');
       pendingJobs = [];
       ['job-company','job-position','job-time','job-salary-min','job-salary-max','job-desc','job-company-email'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = ''; });
+      document.getElementById('job-company-select').value = '';
+    }
+
+    async function loadCompanyDropdown() {
+      try {
+        const res = await fetch('/api/companies', { headers:{'Authorization':`Bearer ${token}`} });
+        const companies = await res.json();
+        const sel = document.getElementById('job-company-select');
+        sel.innerHTML = '<option value="">-- اكتب يدوي أو اختار شركة --</option>';
+        companies.forEach(c => {
+          const remaining = c.available_slots - (c.pending_count || 0) - (c.hired_count || 0);
+          if (remaining > 0) {
+            sel.innerHTML += `<option value="${c.id}" data-name="${c.name}" data-position="${c.position||''}" data-time="${c.interview_time||''}" data-min="${c.salary_min||0}" data-max="${c.salary_max||0}" data-desc="${c.description||''}" data-email="${c.company_email||''}">${c.name} - ${c.position||''} (${remaining} مقعد متاح)</option>`;
+          }
+        });
+      } catch (e) {}
+    }
+
+    function fillCompanyData() {
+      const sel = document.getElementById('job-company-select');
+      const opt = sel.options[sel.selectedIndex];
+      if (!sel.value) return;
+      document.getElementById('job-company').value = opt.dataset.name || '';
+      document.getElementById('job-position').value = opt.dataset.position || '';
+      document.getElementById('job-time').value = opt.dataset.time || '';
+      document.getElementById('job-salary-min').value = opt.dataset.min || '';
+      document.getElementById('job-salary-max').value = opt.dataset.max || '';
+      document.getElementById('job-desc').value = opt.dataset.desc || '';
+      document.getElementById('job-company-email').value = opt.dataset.email || '';
     }
 
     async function loadJobsInModal(appId) {
@@ -1098,9 +1190,12 @@
       const salaryMax = document.getElementById('job-salary-max').value;
       const desc = document.getElementById('job-desc').value;
       const companyEmail = document.getElementById('job-company-email').value;
+      const companySelect = document.getElementById('job-company-select');
+      const companyId = companySelect.value || null;
       if (!company || !position) return alert('من فضلك أكمل البيانات (اسم الشركة + اسم الوظيفة)');
-      pendingJobs.push({ company_name: company, position, interview_time: time, salary_min: salaryMin ? parseFloat(salaryMin) : 0, salary_max: salaryMax ? parseFloat(salaryMax) : 0, description: desc, company_email: companyEmail || '' });
+      pendingJobs.push({ company_id: companyId ? parseInt(companyId) : null, company_name: company, position, interview_time: time, salary_min: salaryMin ? parseFloat(salaryMin) : 0, salary_max: salaryMax ? parseFloat(salaryMax) : 0, description: desc, company_email: companyEmail || '' });
       ['job-company','job-position','job-time','job-salary-min','job-salary-max','job-desc','job-company-email'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+      document.getElementById('job-company-select').value = '';
       renderPendingJobs();
     }
 
@@ -1507,6 +1602,153 @@
       alert('تم نسخ الرابط!');
     }
 
+    // === Company CRUD Functions ===
+    async function loadCompanies() {
+      try {
+        const res = await fetch('/api/admin/companies', { headers:{'Authorization':`Bearer ${token}`} });
+        const companies = await res.json();
+        const list = document.getElementById('companies-list');
+        if (companies.length === 0) { list.innerHTML = '<p style="text-align:center;padding:50px;color:#94a3b8;">لا توجد شركات بعد</p>'; return; }
+        list.innerHTML = `
+          <div class="table-header agents-header">
+            <div>الشركة</div><div>الوظيفة</div><div>المقابلات</div><div>المرتب</div><div>الإيميل</div><div>الطلب/انضموا/المقاعد</div><div>الإجراءات</div>
+          </div>
+          ${companies.map(c => `
+            <div class="agent-row">
+              <div class="agent-identity">
+                <div class="agent-avatar" style="background:linear-gradient(135deg,#d4a853,#b8860b);">${c.name.charAt(0)}</div>
+                <div>
+                  <div class="agent-name">${c.name}</div>
+                  <div class="agent-email" style="font-size:11px;color:#888;">${c.description || ''}</div>
+                </div>
+              </div>
+              <div class="agent-code">${c.position || '-'}</div>
+              <div style="font-size:13px;color:#aaa;">${c.interview_time || '-'}</div>
+              <div style="font-size:13px;color:#aaa;">${(c.salary_min || c.salary_max) ? (c.salary_min && c.salary_max ? c.salary_min + ' - ' + c.salary_max + ' ج' : c.salary_min ? 'من ' + c.salary_min + ' ج' : 'حتى ' + c.salary_max + ' ج') : '-'}</div>
+              <div style="font-size:12px;color:#888;direction:ltr;text-align:left;">${c.company_email || '-'}</div>
+              <div style="font-size:13px;white-space:nowrap;">
+                <span style="color:#fbbf24;font-weight:700;">${c.pending_count || 0}</span>
+                <span style="color:#555;">/</span>
+                <span style="color:#66bb6a;font-weight:700;">${c.hired_count || 0}</span>
+                <span style="color:#555;">/</span>
+                <span style="color:#aaa;">${c.available_slots || 0}</span>
+              </div>
+              <div class="agent-actions">
+                <button class="agent-btn copy" onclick="editCompany(${c.id})">تعديل</button>
+                <button class="agent-btn disable" onclick="deleteCompany(${c.id},'${c.name}')">حذف</button>
+              </div>
+            </div>
+          `).join('')}
+        `;
+      } catch (e) {}
+    }
+
+    function openCompanyModal() {
+      document.getElementById('company-modal-title').textContent = 'إضافة شركة';
+      document.getElementById('company-edit-id').value = '';
+      ['company-name','company-position','company-interview','company-salary-min','company-salary-max','company-desc','company-email','company-slots'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('company-modal').classList.add('show');
+    }
+    function closeCompanyModal() { document.getElementById('company-modal').classList.remove('show'); }
+
+    async function editCompany(id) {
+      try {
+        const res = await fetch('/api/admin/companies', { headers:{'Authorization':`Bearer ${token}`} });
+        const companies = await res.json();
+        const c = companies.find(x => x.id === id);
+        if (!c) return;
+        document.getElementById('company-modal-title').textContent = 'تعديل شركة';
+        document.getElementById('company-edit-id').value = c.id;
+        document.getElementById('company-name').value = c.name || '';
+        document.getElementById('company-position').value = c.position || '';
+        document.getElementById('company-interview').value = c.interview_time || '';
+        document.getElementById('company-salary-min').value = c.salary_min || '';
+        document.getElementById('company-salary-max').value = c.salary_max || '';
+        document.getElementById('company-desc').value = c.description || '';
+        document.getElementById('company-email').value = c.company_email || '';
+        document.getElementById('company-slots').value = c.available_slots || 0;
+        document.getElementById('company-modal').classList.add('show');
+      } catch (e) {}
+    }
+
+    async function saveCompany() {
+      const editId = document.getElementById('company-edit-id').value;
+      const data = {
+        name: document.getElementById('company-name').value,
+        position: document.getElementById('company-position').value,
+        interview_time: document.getElementById('company-interview').value,
+        salary_min: parseFloat(document.getElementById('company-salary-min').value) || 0,
+        salary_max: parseFloat(document.getElementById('company-salary-max').value) || 0,
+        description: document.getElementById('company-desc').value,
+        company_email: document.getElementById('company-email').value,
+        available_slots: parseInt(document.getElementById('company-slots').value) || 0
+      };
+      if (!data.name) return alert('اسم الشركة مطلوب');
+      try {
+        const url = editId ? `/api/admin/companies/${editId}` : '/api/admin/companies';
+        const method = editId ? 'PUT' : 'POST';
+        await fetch(url, { method, headers:{'Authorization':`Bearer ${token}`,'Content-Type':'application/json'}, body:JSON.stringify(data) });
+        closeCompanyModal();
+        loadCompanies();
+      } catch (e) { alert('حدث خطأ'); }
+    }
+
+    async function deleteCompany(id, name) {
+      if (!confirm('هل أنت متأكد من حذف شركة "' + name + '"؟')) return;
+      await fetch(`/api/admin/companies/${id}`, { method:'DELETE', headers:{'Authorization':`Bearer ${token}`} });
+      loadCompanies();
+    }
+
+    // === Agent Rankings ===
+    function initRankingFilters() {
+      const now = new Date();
+      const yearSel = document.getElementById('ranking-year');
+      const monthSel = document.getElementById('ranking-month');
+      for (let y = now.getFullYear(); y >= now.getFullYear() - 2; y--) {
+        yearSel.innerHTML += `<option value="${y}" ${y===now.getFullYear()?'selected':''}>${y}</option>`;
+      }
+      const months = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+      months.forEach((m, i) => {
+        monthSel.innerHTML += `<option value="${i+1}" ${i===now.getMonth()?'selected':''}>${m}</option>`;
+      });
+    }
+
+    async function loadRankings() {
+      try {
+        const period = document.getElementById('ranking-period').value;
+        const year = document.getElementById('ranking-year').value;
+        const month = document.getElementById('ranking-month').value;
+        const res = await fetch(`/api/admin/agent-rankings?period=${period}&year=${year}&month=${month}`, { headers:{'Authorization':`Bearer ${token}`} });
+        const rankings = await res.json();
+        const list = document.getElementById('rankings-list');
+        if (rankings.length === 0) { list.innerHTML = '<p style="text-align:center;padding:40px;color:#94a3b8;">لا توجد بيانات</p>'; return; }
+        const medals = ['🥇','🥈','🥉'];
+        const medalColors = ['#FFD700','#C0C0C0','#CD7F32'];
+        const medalBg = ['rgba(255,215,0,0.08)','rgba(192,192,192,0.08)','rgba(205,127,50,0.08)'];
+        list.innerHTML = `
+          <div class="table-header agents-header">
+            <div>الترتيب</div><div>المندوب</div><div>عدد التوظيف</div><div>كسب الشركه</div><div>كسبه هو</div>
+          </div>
+          ${rankings.filter(a => a.hired > 0).map((a, i) => `
+            <div class="agent-row" style="background:${i < 3 ? medalBg[i] : 'transparent'};">
+              <div style="font-size:28px;width:50px;text-align:center;">${i < 3 ? medals[i] : '<span style="color:#555;font-size:16px;">' + (i+1) + '</span>'}</div>
+              <div class="agent-identity">
+                <div class="agent-avatar" style="background:${i < 3 ? 'linear-gradient(135deg,' + medalColors[i] + ',' + medalColors[i] + ')' : 'linear-gradient(135deg,#d4a853,#b8860b)'};">${a.name.charAt(0)}</div>
+                <div>
+                  <div class="agent-name">${a.name}</div>
+                  <div class="agent-email">${a.email}</div>
+                </div>
+              </div>
+              <div class="agent-stat"><span class="agent-stat-val green" style="font-size:20px;">${a.hired}</span></div>
+              <div class="agent-stat"><span class="agent-stat-val gold" style="font-size:16px;">${a.company_earned.toLocaleString('ar-EG')} ج</span></div>
+              <div class="agent-stat"><span class="agent-stat-val amber" style="font-size:16px;">${a.agent_earned.toLocaleString('ar-EG')} ج</span></div>
+            </div>
+          `).join('')}
+          ${rankings.filter(a => a.hired > 0).length === 0 ? '<p style="text-align:center;padding:40px;color:#94a3b8;">لا يوجد مندوبين להם توظيفات في هذه الفترة</p>' : ''}
+        `;
+      } catch (e) {}
+    }
+
     function openAudioModal(file, userName) {
       const modal = document.getElementById('audio-modal');
       const player = document.getElementById('audio-modal-player');
@@ -1598,7 +1840,7 @@
       document.getElementById('finance-tooltip').style.display = 'none';
     }
 
-    loadStats(); loadApplications(); loadSelections(); loadFinance(); loadAgents();
+    loadStats(); loadApplications(); loadSelections(); loadFinance(); loadAgents(); loadCompanies(); initRankingFilters(); loadRankings();
   </script>
 <!-- Splash Screen -->
 <div id="splash-screen" style="display:none;position:fixed;inset:0;z-index:99999;background:#0a0a0a;flex-direction:column;align-items:center;justify-content:center;">

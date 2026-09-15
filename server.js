@@ -163,11 +163,14 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS companies (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
-    logo TEXT,
+    position TEXT,
     description TEXT,
-    industry TEXT,
-    location TEXT,
-    website TEXT,
+    interview_time TEXT,
+    salary_min REAL DEFAULT 0,
+    salary_max REAL DEFAULT 0,
+    company_email TEXT,
+    available_slots INTEGER DEFAULT 0,
+    used_slots INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
@@ -217,6 +220,16 @@ try { db.exec('ALTER TABLE selections ADD COLUMN frozen_deadline DATETIME'); } c
 try { db.exec('ALTER TABLE selections ADD COLUMN apology TEXT'); } catch(e) {}
 try { db.exec('ALTER TABLE selections ADD COLUMN company_emailed INTEGER DEFAULT 0'); } catch(e) {}
 try { db.exec('ALTER TABLE jobs ADD COLUMN company_email TEXT'); } catch(e) {}
+// Migration: add company columns if missing
+try { db.exec('ALTER TABLE companies ADD COLUMN position TEXT'); } catch(e) {}
+try { db.exec('ALTER TABLE companies ADD COLUMN interview_time TEXT'); } catch(e) {}
+try { db.exec('ALTER TABLE companies ADD COLUMN salary_min REAL DEFAULT 0'); } catch(e) {}
+try { db.exec('ALTER TABLE companies ADD COLUMN salary_max REAL DEFAULT 0'); } catch(e) {}
+try { db.exec('ALTER TABLE companies ADD COLUMN company_email TEXT'); } catch(e) {}
+try { db.exec('ALTER TABLE companies ADD COLUMN available_slots INTEGER DEFAULT 0'); } catch(e) {}
+try { db.exec('ALTER TABLE companies ADD COLUMN used_slots INTEGER DEFAULT 0'); } catch(e) {}
+try { db.exec('ALTER TABLE companies ADD COLUMN pending_count INTEGER DEFAULT 0'); } catch(e) {}
+try { db.exec('ALTER TABLE companies ADD COLUMN hired_count INTEGER DEFAULT 0'); } catch(e) {}
 
 // Notifications table
 db.exec(`
@@ -384,14 +397,14 @@ admins.forEach(a => {
 const companiesCount = db.prepare('SELECT COUNT(*) as c FROM companies').get();
 if (companiesCount.c === 0) {
   const companies = [
-    { name: 'TechVision Egypt', description: 'شركة رائدة في مجال التقنية والبرمجيات', industry: 'تقنية', location: 'القاهرة، مصر', website: 'www.techvision.com' },
-    { name: 'Digital Wave', description: 'وكالة تسويق رقمي متخصصة', industry: 'تسويق', location: 'الإسكندرية، مصر', website: 'www.digitalwave.com' },
-    { name: 'Smart Solutions', description: 'حلول ذكية لإدارة الأعمال', industry: 'إدارة', location: 'الجيزة، مصر', website: 'www.smartsolutions.com' },
-    { name: 'CloudNet Systems', description: 'أنظمة الحوسبة السحابية', industry: 'تقنية', location: 'القاهرة، مصر', website: 'www.cloudnet.com' },
-    { name: 'DataFlow Analytics', description: 'تحليل البيانات الذكاء الاصطناعي', industry: 'بيانات', location: 'المنصورة، مصر', website: 'www.dataflow.com' },
+    { name: 'TechVision Egypt', position: 'مطور ويب', description: 'شركة رائدة في مجال التقنية والبرمجيات', interview_time: 'الأحد 2 م', salary_min: 8000, salary_max: 15000, company_email: 'hr@techvision.com', available_slots: 5 },
+    { name: 'Digital Wave', position: 'مندوب مبيعات', description: 'وكالة تسويق رقمي متخصصة', interview_time: 'الإثنين 10 ص', salary_min: 5000, salary_max: 10000, company_email: 'jobs@digitalwave.com', available_slots: 3 },
+    { name: 'Smart Solutions', position: 'support', description: 'حلول ذكية لإدارة الأعمال', interview_time: 'الثلاثاء 1 م', salary_min: 6000, salary_max: 12000, company_email: 'hr@smartsolutions.com', available_slots: 4 },
+    { name: 'CloudNet Systems', position: 'مهندس شبكات', description: 'أنظمة الحوسبة السحابية', interview_time: 'الأربعاء 11 ص', salary_min: 10000, salary_max: 20000, company_email: 'careers@cloudnet.com', available_slots: 2 },
+    { name: 'DataFlow Analytics', position: 'محلل بيانات', description: 'تحليل البيانات الذكاء الاصطناعي', interview_time: 'الخميس 3 م', salary_min: 12000, salary_max: 25000, company_email: 'talent@dataflow.com', available_slots: 3 },
   ];
-  const stmt = db.prepare('INSERT INTO companies (name, description, industry, location, website) VALUES (?, ?, ?, ?, ?)');
-  companies.forEach(c => stmt.run(c.name, c.description, c.industry, c.location, c.website));
+  const stmt = db.prepare('INSERT INTO companies (name, position, description, interview_time, salary_min, salary_max, company_email, available_slots) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+  companies.forEach(c => stmt.run(c.name, c.position, c.description, c.interview_time, c.salary_min, c.salary_max, c.company_email, c.available_slots));
 }
 
 // Auth middleware
@@ -1122,8 +1135,10 @@ app.put('/api/admin/selections/:id', authMiddleware, adminMiddleware, (req, res)
 app.put('/api/admin/selections/:id/unfreeze', authMiddleware, adminMiddleware, (req, res) => {
   try {
     db.prepare('UPDATE selections SET is_frozen = 0, unfrozen_at = CURRENT_TIMESTAMP WHERE id = ?').run(req.params.id);
-    const sel = db.prepare('SELECT s.*, u.name as user_name, u.email as user_email FROM selections s JOIN users u ON s.user_id = u.id WHERE s.id = ?').get(req.params.id);
+    const sel = db.prepare('SELECT s.*, u.name as user_name, u.email as user_email, j.company_name FROM selections s JOIN users u ON s.user_id = u.id JOIN jobs j ON s.job_id = j.id WHERE s.id = ?').get(req.params.id);
     if (sel) {
+      // Update company counts: pending_count--, hired_count++
+      db.prepare('UPDATE companies SET pending_count = MAX(0, pending_count - 1), hired_count = hired_count + 1 WHERE name = ?').run(sel.company_name);
       const agent = db.prepare('SELECT a.* FROM agents a JOIN users u ON a.id = u.referred_by WHERE u.id = ?').get(sel.user_id);
       if (agent) {
         db.prepare('INSERT INTO notifications (agent_id, type, title, message) VALUES (?, ?, ?, ?)').run(agent.id, 'unfreeze', 'تم فك تجميد المبلغ', `تم فك تجميد مبلغ ${sel.agent_amount} ج لـ ${sel.user_name}. سيتم تحويل المبلغ قريباً.`);
@@ -1140,8 +1155,10 @@ app.put('/api/admin/selections/:id/apologize', authMiddleware, adminMiddleware, 
   try {
     const { reason } = req.body;
     db.prepare('UPDATE selections SET is_frozen = 0, apology = ?, amount = 0, agent_amount = 0, hired = 0, status = ? WHERE id = ?').run(reason || 'تم الإعتذار عن الصفقة', 'cancelled', req.params.id);
-    const sel = db.prepare('SELECT s.*, u.name as user_name, u.email as user_email FROM selections s JOIN users u ON s.user_id = u.id WHERE s.id = ?').get(req.params.id);
+    const sel = db.prepare('SELECT s.*, u.name as user_name, u.email as user_email, j.company_name FROM selections s JOIN users u ON s.user_id = u.id JOIN jobs j ON s.job_id = j.id WHERE s.id = ?').get(req.params.id);
     if (sel) {
+      // Decrement pending_count on company when selection is cancelled
+      db.prepare('UPDATE companies SET pending_count = MAX(0, pending_count - 1) WHERE name = ?').run(sel.company_name);
       const agent = db.prepare('SELECT a.* FROM agents a JOIN users u ON a.id = u.referred_by WHERE u.id = ?').get(sel.user_id);
       if (agent) {
         db.prepare('INSERT INTO notifications (agent_id, type, title, message) VALUES (?, ?, ?, ?)').run(agent.id, 'apology', 'تم الإعتذار عن الصفقة', `تم الإعتذار عن صفقة ${sel.user_name} - ${sel.company_name}. سبب: ${reason || 'لم يحدد'}`);
@@ -1232,8 +1249,51 @@ app.put('/api/admin/selections/:id/allow-reapply', authMiddleware, adminMiddlewa
 
 app.get('/api/companies', authMiddleware, (req, res) => {
   try {
-    const companies = db.prepare('SELECT * FROM companies').all();
+    const companies = db.prepare('SELECT * FROM companies WHERE available_slots > used_slots ORDER BY name').all();
     res.json(companies);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Admin: get all companies (including full ones)
+app.get('/api/admin/companies', authMiddleware, adminMiddleware, (req, res) => {
+  try {
+    const companies = db.prepare('SELECT * FROM companies ORDER BY created_at DESC').all();
+    res.json(companies);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Admin: add company
+app.post('/api/admin/companies', authMiddleware, adminMiddleware, (req, res) => {
+  try {
+    const { name, position, description, interview_time, salary_min, salary_max, company_email, available_slots } = req.body;
+    if (!name) return res.status(400).json({ error: 'اسم الشركة مطلوب' });
+    const result = db.prepare('INSERT INTO companies (name, position, description, interview_time, salary_min, salary_max, company_email, available_slots) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(name, position || '', description || '', interview_time || '', salary_min || 0, salary_max || 0, company_email || '', available_slots || 0);
+    res.json({ id: result.lastInsertRowid });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Admin: update company
+app.put('/api/admin/companies/:id', authMiddleware, adminMiddleware, (req, res) => {
+  try {
+    const { name, position, description, interview_time, salary_min, salary_max, company_email, available_slots } = req.body;
+    db.prepare('UPDATE companies SET name=?, position=?, description=?, interview_time=?, salary_min=?, salary_max=?, company_email=?, available_slots=? WHERE id=?').run(name, position || '', description || '', interview_time || '', salary_min || 0, salary_max || 0, company_email || '', available_slots || 0, req.params.id);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Admin: delete company
+app.delete('/api/admin/companies/:id', authMiddleware, adminMiddleware, (req, res) => {
+  try {
+    db.prepare('DELETE FROM companies WHERE id = ?').run(req.params.id);
+    res.json({ success: true });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -1258,6 +1318,11 @@ app.post('/api/user/select-job', authMiddleware, (req, res) => {
     const active = db.prepare("SELECT id FROM selections WHERE user_id = ? AND status != 'cancelled'").get(req.user.id);
     if (active) return res.status(400).json({ error: 'لقد قمت باختيار وظيفة بالفعل ولا يمكنك اختيار أكثر من وظيفة واحدة' });
     const result = db.prepare('INSERT INTO selections (user_id, job_id, status) VALUES (?, ?, ?)').run(req.user.id, job_id, 'selected');
+    // Increment pending_count on the company
+    const job = db.prepare('SELECT company_name FROM jobs WHERE id = ?').get(job_id);
+    if (job) {
+      db.prepare('UPDATE companies SET pending_count = pending_count + 1 WHERE name = ?').run(job.company_name);
+    }
     res.json({ id: result.lastInsertRowid });
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -1429,6 +1494,58 @@ app.get('/api/admin/agent-earnings', authMiddleware, adminMiddleware, (req, res)
       };
     });
     res.json(result);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Agent rankings (monthly/yearly)
+app.get('/api/admin/agent-rankings', authMiddleware, adminMiddleware, (req, res) => {
+  try {
+    const { period, year, month } = req.query;
+    let dateFilter = '';
+    const params = [];
+    const now = new Date();
+    const targetYear = parseInt(year) || now.getFullYear();
+    const targetMonth = parseInt(month) || (now.getMonth() + 1);
+
+    if (period === 'month') {
+      const monthStart = `${targetYear}-${String(targetMonth).padStart(2,'0')}-01`;
+      const monthEnd = new Date(targetYear, targetMonth, 0).toISOString().split('T')[0];
+      dateFilter = `AND s.created_at >= ? AND s.created_at <= ?`;
+      params.push(monthStart, monthEnd + ' 23:59:59');
+    } else if (period === '3months') {
+      const startDate = new Date(targetYear, targetMonth - 3, 1).toISOString().split('T')[0];
+      dateFilter = `AND s.created_at >= ?`;
+      params.push(startDate);
+    } else if (period === '4months') {
+      const startDate = new Date(targetYear, targetMonth - 4, 1).toISOString().split('T')[0];
+      dateFilter = `AND s.created_at >= ?`;
+      params.push(startDate);
+    } else if (period === 'year') {
+      const yearStart = `${targetYear}-01-01`;
+      const yearEnd = `${targetYear}-12-31 23:59:59`;
+      dateFilter = `AND s.created_at >= ? AND s.created_at <= ?`;
+      params.push(yearStart, yearEnd);
+    }
+
+    const agents = db.prepare('SELECT id, name, email, phone, referral_code FROM agents WHERE is_active = 1 ORDER BY name').all();
+    const rankings = agents.map(a => {
+      const hired = db.prepare(`
+        SELECT COUNT(*) as c, COALESCE(SUM(s.amount),0) as company_earned, COALESCE(SUM(s.agent_amount),0) as agent_earned
+        FROM selections s
+        JOIN users u ON s.user_id = u.id
+        WHERE u.referred_by = ? AND s.hired = 1 ${dateFilter}
+      `).get(a.id, ...params);
+      return {
+        id: a.id, name: a.name, email: a.email, referral_code: a.referral_code,
+        hired: hired.c,
+        company_earned: hired.company_earned,
+        agent_earned: hired.agent_earned
+      };
+    });
+    rankings.sort((a, b) => b.hired - a.hired);
+    res.json(rankings);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

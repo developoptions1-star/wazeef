@@ -71,13 +71,11 @@ try {
 // Middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
+// Try multiple paths for static files
+const publicDir = fs.existsSync(path.join(__dirname, 'public')) ? path.join(__dirname, 'public') : path.join(process.cwd(), 'public');
+console.log('Using public dir:', publicDir);
+app.use(express.static(publicDir));
 app.use('/uploads', express.static(path.join(dataDir, 'uploads')));
-
-// Debug: log paths on startup
-console.log('__dirname:', __dirname);
-console.log('public dir exists:', fs.existsSync(path.join(__dirname, 'public')));
-console.log('dataDir:', dataDir);
 
 // Multer for audio uploads
 const storage = multer.diskStorage({
@@ -1793,11 +1791,27 @@ app.post('/api/resend-code', authLimiter, async (req, res) => {
 });
 
 // Serve pages
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
-app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'public', 'dashboard.html')));
-app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
+function servePage(page) {
+  return (req, res) => {
+    const filePath = path.join(__dirname, 'public', page);
+    if (fs.existsSync(filePath)) {
+      res.sendFile(filePath);
+    } else {
+      const altPath = path.join(process.cwd(), 'public', page);
+      if (fs.existsSync(altPath)) {
+        res.sendFile(altPath);
+      } else {
+        console.error('File not found:', filePath, '| cwd:', process.cwd(), '| dirlist:', fs.readdirSync(__dirname).join(', '));
+        res.status(500).json({ error: 'الصفحة غير موجودة', debug: { dir: __dirname, cwd: process.cwd(), files: fs.readdirSync(__dirname) } });
+      }
+    }
+  };
+}
+app.get('/', servePage('login.html'));
+app.get('/dashboard', servePage('dashboard.html'));
+app.get('/admin', servePage('admin.html'));
 app.get('/select-job', (req, res) => res.redirect('/'));
-app.get('/agent', (req, res) => res.sendFile(path.join(__dirname, 'public', 'agent.html')));
+app.get('/agent', servePage('agent.html'));
 
 // Multer error handler (must be after routes)
 app.use((err, req, res, next) => {

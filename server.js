@@ -71,8 +71,21 @@ try {
 // Middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
+// Find where public files actually are (works on Velixir containers)
+let _publicDir = path.join(__dirname, 'public');
 app.use('/uploads', express.static(path.join(dataDir, 'uploads')));
+// Fallback: serve embedded images if filesystem files missing
+app.get('/uploads/:file', (req, res) => {
+  const img = _embeddedImages && _embeddedImages[req.params.file];
+  if (img) {
+    res.set('Content-Type', img.mime);
+    return res.send(Buffer.from(img.base64, 'base64'));
+  }
+  res.status(404).end();
+});
+
+// Embedded pages + images (from build-pages.js) — zero filesystem dependency
+const { pages: _embeddedPages, images: _embeddedImages } = require('./pages');
 
 // Multer for audio uploads
 const storage = multer.diskStorage({
@@ -1787,12 +1800,19 @@ app.post('/api/resend-code', authLimiter, async (req, res) => {
   }
 });
 
-// Serve pages
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
-app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'public', 'dashboard.html')));
-app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
+// Serve pages (in-memory cache fallback for Velixir)
+// Serve pages from embedded module (works on any filesystem)
+function servePage(res, file) {
+  const html = _embeddedPages[file];
+  if (html) return res.type('html').send(html);
+  // Fallback to filesystem
+  res.sendFile(path.join(_publicDir, file));
+}
+app.get('/', (req, res) => servePage(res, 'login.html'));
+app.get('/dashboard', (req, res) => servePage(res, 'dashboard.html'));
+app.get('/admin', (req, res) => servePage(res, 'admin.html'));
 app.get('/select-job', (req, res) => res.redirect('/'));
-app.get('/agent', (req, res) => res.sendFile(path.join(__dirname, 'public', 'agent.html')));
+app.get('/agent', (req, res) => servePage(res, 'agent.html'));
 
 // Multer error handler (must be after routes)
 app.use((err, req, res, next) => {
@@ -1807,6 +1827,18 @@ app.use((err, req, res, next) => {
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err.message);
   res.status(500).json({ error: 'حدث خطأ في الخادم' });
+});
+
+// Debug route - shows embedded module status
+app.get('/__debug', (req, res) => {
+  res.json({
+    __dirname,
+    cwd: process.cwd(),
+    _publicDir,
+    embeddedPages: Object.keys(_embeddedPages || {}),
+    embeddedImages: Object.keys(_embeddedImages || {}),
+    embeddedPageCount: Object.keys(_embeddedPages || {}).length,
+  });
 });
 
 // 404 handler

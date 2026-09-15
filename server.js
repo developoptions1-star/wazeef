@@ -1826,8 +1826,8 @@ app.use((err, req, res, next) => {
 
 // Global error handler - hide internal errors
 app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err.message);
-  res.status(500).json({ error: 'حدث خطأ في الخادم' });
+  console.error('Unhandled error:', err.message, err.stack);
+  res.status(500).json({ error: 'حدث خطأ في الخادم', details: err.message, path: req.path });
 });
 
 // 404 handler

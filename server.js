@@ -74,6 +74,11 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(dataDir, 'uploads')));
 
+// Debug: log paths on startup
+console.log('__dirname:', __dirname);
+console.log('public dir exists:', fs.existsSync(path.join(__dirname, 'public')));
+console.log('dataDir:', dataDir);
+
 // Multer for audio uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {

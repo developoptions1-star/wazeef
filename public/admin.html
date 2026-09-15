@@ -343,19 +343,28 @@
       display: block; color: #94a3b8;
       margin-bottom: 8px; font-size: 14px; font-weight: 600;
     }
-    .modal .form-group input, .modal .form-group textarea {
+    .modal .form-group input, .modal .form-group textarea, .modal .form-group select {
       width: 100%; padding: 14px 18px;
       background: rgba(255,255,255,0.04);
       border: 1.5px solid rgba(255,255,255,0.06);
       border-radius: 14px; color: #e2e8f0;
       font-family: 'Tajawal', sans-serif; font-size: 15px; transition: all 0.3s;
+      -webkit-appearance: none; -moz-appearance: none; appearance: none;
+    }
+    .modal .form-group select option {
+      background: #1a1a2e; color: #e2e8f0;
+      padding: 10px 14px;
+    }
+    .modal .form-group select option:first-child {
+      color: #64748b;
     }
     .modal .form-group textarea { resize: vertical; min-height: 85px; }
-    .modal .form-group input:focus, .modal .form-group textarea:focus {
+    .modal .form-group input:focus, .modal .form-group textarea:focus, .modal .form-group select:focus {
       outline: none; border-color: rgba(212,168,83,0.5);
       box-shadow: 0 0 0 4px rgba(212,168,83,0.06);
     }
     .modal .form-group input::placeholder, .modal .form-group textarea::placeholder { color: #475569; }
+    .modal .form-group select::placeholder { color: #475569; }
     .modal .btn-row { display: flex; gap: 12px; margin-top: 24px; }
     .modal .btn-submit {
       flex: 1; padding: 14px;

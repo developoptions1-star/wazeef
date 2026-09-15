@@ -71,10 +71,7 @@ try {
 // Middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
-// Try multiple paths for static files
-const publicDir = fs.existsSync(path.join(__dirname, 'public')) ? path.join(__dirname, 'public') : path.join(process.cwd(), 'public');
-console.log('Using public dir:', publicDir);
-app.use(express.static(publicDir));
+app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(dataDir, 'uploads')));
 
 // Multer for audio uploads
@@ -1791,29 +1788,11 @@ app.post('/api/resend-code', authLimiter, async (req, res) => {
 });
 
 // Serve pages
-function servePage(page) {
-  return (req, res) => {
-    try {
-      const filePath = path.join(__dirname, 'public', page);
-      const filePath2 = path.join(process.cwd(), 'public', page);
-      const finalPath = fs.existsSync(filePath) ? filePath : (fs.existsSync(filePath2) ? filePath2 : null);
-      if (finalPath) {
-        res.sendFile(finalPath);
-      } else {
-        console.error('Page not found:', page, '| paths tried:', filePath, filePath2);
-        res.status(500).json({ error: 'الصفحة غير موجودة', debug: { __dirname, cwd: process.cwd(), page, files: fs.readdirSync(__dirname) } });
-      }
-    } catch (e) {
-      console.error('servePage error:', e.message);
-      res.status(500).json({ error: 'خطأ في تحميل الصفحة' });
-    }
-  };
-}
-app.get('/', servePage('login.html'));
-app.get('/dashboard', servePage('dashboard.html'));
-app.get('/admin', servePage('admin.html'));
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
+app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'public', 'dashboard.html')));
+app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 app.get('/select-job', (req, res) => res.redirect('/'));
-app.get('/agent', servePage('agent.html'));
+app.get('/agent', (req, res) => res.sendFile(path.join(__dirname, 'public', 'agent.html')));
 
 // Multer error handler (must be after routes)
 app.use((err, req, res, next) => {
@@ -1826,8 +1805,8 @@ app.use((err, req, res, next) => {
 
 // Global error handler - hide internal errors
 app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err.message, err.stack);
-  res.status(500).json({ error: 'حدث خطأ في الخادم', details: err.message, path: req.path });
+  console.error('Unhandled error:', err.message);
+  res.status(500).json({ error: 'حدث خطأ في الخادم' });
 });
 
 // 404 handler

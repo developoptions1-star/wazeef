@@ -1856,6 +1856,7 @@
         _toastLink = link;
         closeAgentModal();
         loadAgents();
+        loadRankings();
         showToast(`تم إضافة ${name} كمندوب`, 'نسخ الرابط');
         document.getElementById('agent-name').value = '';
         document.getElementById('agent-email').value = '';
@@ -1867,6 +1868,7 @@
     async function toggleAgent(id) {
       await fetch(`/api/admin/agents/${id}/toggle`, { method: 'PUT', headers: { 'Authorization': `Bearer ${token}` } });
       loadAgents();
+      loadRankings();
     }
     function copyRefLink(code) {
       navigator.clipboard.writeText(window.location.origin + '/?ref=' + code);

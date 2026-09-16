@@ -662,6 +662,19 @@
     .rk-empty h4{font-size:16px;font-weight:700;color:#94a3b8;margin-bottom:6px}
     .rk-empty p{font-size:13px;color:#64748b}
 
+    /* ── LOADING ── */
+    .rk-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:56px 24px;gap:16px}
+    .rk-loading-spinner{width:40px;height:40px;border:3px solid rgba(212,168,83,.15);border-top-color:#d4a853;border-radius:50%;animation:rkFloat 1s linear infinite}
+    .rk-loading span{font-size:14px;color:#94a3b8;font-weight:500}
+
+    /* ── ERROR ── */
+    .rk-error{text-align:center;padding:56px 24px}
+    .rk-error-icon{font-size:48px;margin-bottom:16px;opacity:.4}
+    .rk-error h4{font-size:16px;font-weight:700;color:#94a3b8;margin-bottom:6px}
+    .rk-error p{font-size:13px;color:#64748b;margin-bottom:18px}
+    .rk-retry-btn{background:rgba(212,168,83,.12);border:1px solid rgba(212,168,83,.2);color:#d4a853;padding:10px 28px;border-radius:10px;font-size:14px;font-weight:700;font-family:'Tajawal',sans-serif;cursor:pointer;transition:all .2s}
+    .rk-retry-btn:hover{background:rgba(212,168,83,.2)}
+
     /* ── TOAST ── */
     .rk-toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);display:flex;align-items:center;gap:12px;padding:14px 22px;background:rgba(15,15,15,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(212,168,83,.15);border-radius:14px;color:#f0d78c;font-size:14px;font-weight:600;box-shadow:0 8px 32px rgba(0,0,0,.4);opacity:0;transition:all .35s cubic-bezier(.16,1,.3,1);z-index:9999;pointer-events:auto;white-space:nowrap}
     .rk-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -1977,95 +1990,51 @@
     }
 
     // === Agent Rankings ===
+    let _rankingsFetchController = null;
+
     function initRankingFilters() {
       const now = new Date();
       const yearSel = document.getElementById('ranking-year');
       const monthSel = document.getElementById('ranking-month');
-      yearSel.innerHTML = `<option value="all">كل السنوات</option>`;
-      for (let y = now.getFullYear(); y >= now.getFullYear() - 2; y--) {
-        yearSel.innerHTML += `<option value="${y}" ${y===now.getFullYear()?'selected':''}>${y}</option>`;
-      }
+
       monthSel.innerHTML = `<option value="all">كل الأشهر</option>`;
       const months = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
       months.forEach((m, i) => {
         monthSel.innerHTML += `<option value="${i+1}" ${i===now.getMonth()?'selected':''}>${m}</option>`;
       });
+
+      fetch('/api/admin/ranking-years', { headers:{'Authorization':`Bearer ${token}`} })
+        .then(r => r.json())
+        .then(years => {
+          yearSel.innerHTML = `<option value="all">كل السنوات</option>`;
+          years.forEach(y => {
+            yearSel.innerHTML += `<option value="${y}" ${y===now.getFullYear()?'selected':''}>${y}</option>`;
+          });
+        })
+        .catch(() => {
+          yearSel.innerHTML = `<option value="${now.getFullYear()}" selected>${now.getFullYear()}</option>`;
+        });
     }
 
     async function loadRankings() {
       try {
+        if (_rankingsFetchController) _rankingsFetchController.abort();
+        _rankingsFetchController = new AbortController();
+
         const period = document.getElementById('ranking-period').value;
         const year = document.getElementById('ranking-year').value;
         const month = document.getElementById('ranking-month').value;
-        const res = await fetch(`/api/admin/agent-rankings?period=${period}&year=${year}&month=${month}`, { headers:{'Authorization':`Bearer ${token}`} });
-        let rankings = await res.json();
-        // FAKE DATA for preview — REMOVE AFTER APPROVAL
-        if (rankings.length === 0) {
-          const monthNow = new Date().getMonth() + 1;
-          const selMonth = parseInt(month) || monthNow;
-          const allAgents = [
-            {name:'أحمد محمد',email:'ahmed@test.com'},
-            {name:'سارة علي',email:'sara@test.com'},
-            {name:'نور حسن',email:'nour@test.com'},
-            {name:'محمد حسن',email:'mohamed@test.com'},
-            {name:'ياسمين أحمد',email:'yasmine@test.com'},
-            {name:'عمر خالد',email:'omar@test.com'},
-            {name:'فاطمة أحمد',email:'fatma@test.com'},
-            {name:'خالد سعيد',email:'khaled@test.com'},
-            {name:'مريم يوسف',email:'mariam@test.com'},
-            {name:'يوسف إبراهيم',email:'youssef@test.com'},
-            {name:'هدى علي',email:'hoda@test.com'},
-            {name:'طارق منصور',email:'tarek@test.com'},
-          ];
-          const monthData = {
-            1:  [{h:14,c:145000,a:52000},{h:11,c:115000,a:41000},{h:9,c:88000,a:32000},{h:7,c:68000,a:24000},{h:5,c:45000,a:16000},{h:4,c:35000,a:12500},{h:3,c:25000,a:9000},{h:2,c:18000,a:6500},{h:1,c:8000,a:2800},{h:0,c:0,a:0},{h:0,c:0,a:0},{h:0,c:0,a:0}],
-            2:  [{h:12,c:128000,a:46000},{h:10,c:105000,a:38000},{h:8,c:82000,a:29000},{h:6,c:58000,a:21000},{h:5,c:48000,a:17000},{h:3,c:28000,a:10000},{h:2,c:18000,a:6500},{h:2,c:15000,a:5400},{h:1,c:9000,a:3200},{h:0,c:0,a:0},{h:0,c:0,a:0},{h:0,c:0,a:0}],
-            3:  [{h:16,c:170000,a:61000},{h:13,c:138000,a:50000},{h:10,c:102000,a:37000},{h:8,c:78000,a:28000},{h:6,c:55000,a:20000},{h:4,c:38000,a:14000},{h:3,c:28000,a:10000},{h:2,c:18000,a:6500},{h:1,c:8000,a:2800},{h:0,c:0,a:0},{h:0,c:0,a:0},{h:0,c:0,a:0}],
-            4:  [{h:11,c:112000,a:40000},{h:9,c:92000,a:33000},{h:8,c:78000,a:28000},{h:7,c:68000,a:24000},{h:5,c:48000,a:17000},{h:4,c:35000,a:12500},{h:3,c:28000,a:10000},{h:2,c:18000,a:6500},{h:1,c:9000,a:3200},{h:0,c:0,a:0},{h:0,c:0,a:0},{h:0,c:0,a:0}],
-            5:  [{h:18,c:190000,a:68000},{h:14,c:148000,a:53000},{h:11,c:112000,a:40000},{h:9,c:88000,a:32000},{h:7,c:65000,a:23000},{h:5,c:45000,a:16000},{h:4,c:35000,a:12500},{h:3,c:25000,a:9000},{h:2,c:15000,a:5400},{h:1,c:8000,a:2800},{h:0,c:0,a:0},{h:0,c:0,a:0}],
-            6:  [{h:15,c:158000,a:57000},{h:12,c:125000,a:45000},{h:10,c:100000,a:36000},{h:8,c:78000,a:28000},{h:6,c:55000,a:20000},{h:5,c:45000,a:16000},{h:3,c:28000,a:10000},{h:2,c:18000,a:6500},{h:1,c:8000,a:2800},{h:0,c:0,a:0},{h:0,c:0,a:0},{h:0,c:0,a:0}],
-            7:  [{h:13,c:135000,a:49000},{h:11,c:112000,a:40000},{h:9,c:88000,a:32000},{h:8,c:78000,a:28000},{h:6,c:55000,a:20000},{h:5,c:45000,a:16000},{h:4,c:35000,a:12500},{h:3,c:25000,a:9000},{h:1,c:9000,a:3200},{h:0,c:0,a:0},{h:0,c:0,a:0},{h:0,c:0,a:0}],
-            8:  [{h:17,c:178000,a:64000},{h:14,c:145000,a:52000},{h:11,c:112000,a:40000},{h:9,c:85000,a:31000},{h:7,c:65000,a:23000},{h:5,c:48000,a:17000},{h:3,c:28000,a:10000},{h:2,c:18000,a:6500},{h:1,c:8000,a:2800},{h:0,c:0,a:0},{h:0,c:0,a:0},{h:0,c:0,a:0}],
-            9:  [{h:12,c:125000,a:45000},{h:10,c:102000,a:37000},{h:9,c:88000,a:32000},{h:7,c:68000,a:24000},{h:6,c:55000,a:20000},{h:4,c:35000,a:12500},{h:3,c:28000,a:10000},{h:2,c:18000,a:6500},{h:1,c:9000,a:3200},{h:0,c:0,a:0},{h:0,c:0,a:0},{h:0,c:0,a:0}],
-            10: [{h:19,c:200000,a:72000},{h:15,c:158000,a:57000},{h:12,c:120000,a:43000},{h:9,c:88000,a:32000},{h:7,c:65000,a:23000},{h:5,c:45000,a:16000},{h:4,c:35000,a:12500},{h:3,c:25000,a:9000},{h:2,c:15000,a:5400},{h:1,c:8000,a:2800},{h:0,c:0,a:0},{h:0,c:0,a:0}],
-            11: [{h:14,c:145000,a:52000},{h:12,c:125000,a:45000},{h:10,c:100000,a:36000},{h:8,c:78000,a:28000},{h:6,c:55000,a:20000},{h:5,c:45000,a:16000},{h:3,c:28000,a:10000},{h:2,c:18000,a:6500},{h:1,c:8000,a:2800},{h:0,c:0,a:0},{h:0,c:0,a:0},{h:0,c:0,a:0}],
-            12: [{h:16,c:168000,a:60000},{h:13,c:135000,a:49000},{h:11,c:112000,a:40000},{h:9,c:85000,a:31000},{h:7,c:65000,a:23000},{h:5,c:48000,a:17000},{h:4,c:35000,a:12500},{h:3,c:25000,a:9000},{h:2,c:15000,a:5400},{h:1,c:9000,a:3200},{h:0,c:0,a:0},{h:0,c:0,a:0}],
-          };
-
-          if (period === 'month') {
-            const md = monthData[selMonth] || monthData[monthNow];
-            rankings = allAgents.map((ag,i) => ({...ag, hired:md[i].h, company_earned:md[i].c, agent_earned:md[i].a}));
-          } else if (period === '3months') {
-            rankings = allAgents.map((ag,i) => {
-              const m1 = monthData[selMonth]||monthData[monthNow], m2 = monthData[(selMonth-1)||12]||monthData[12], m3 = monthData[(selMonth-2)||11]||monthData[11];
-              return {...ag, hired:m1[i].h+m2[i].h+m3[i].h, company_earned:m1[i].c+m2[i].c+m3[i].c, agent_earned:m1[i].a+m2[i].a+m3[i].a};
-            });
-          } else if (period === '4months') {
-            rankings = allAgents.map((ag,i) => {
-              let h=0,c=0,a=0;
-              for(let k=0;k<4;k++){const md=monthData[(selMonth-k-1+12)%12+1]||monthData[1];h+=md[i].h;c+=md[i].c;a+=md[i].a;}
-              return {...ag,hired:h,company_earned:c,agent_earned:a};
-            });
-          } else if (period === 'year') {
-            rankings = allAgents.map((ag,i) => {
-              let h=0,c=0,a=0;
-              for(let k=1;k<=12;k++){const md=monthData[k];h+=md[i].h;c+=md[i].c;a+=md[i].a;}
-              return {...ag,hired:h,company_earned:c,agent_earned:a};
-            });
-          } else {
-            rankings = allAgents.map((ag,i) => {
-              let h=0,c=0,a=0;
-              for(let k=1;k<=12;k++){const md=monthData[k];h+=md[i].h*2;c+=md[i].c*2;a+=md[i].a*2;}
-              return {...ag,hired:h,company_earned:c,agent_earned:a};
-            });
-          }
-        }
         const list = document.getElementById('rankings-list');
-        const filtered = rankings;
+
+        list.innerHTML = `<div class="rk-loading"><div class="rk-loading-spinner"></div><span>جاري تحميل الترتيب...</span></div>`;
+
+        const url = `/api/admin/agent-rankings?period=${period}&year=${year}&month=${month}`;
+        const res = await fetch(url, { headers:{'Authorization':`Bearer ${token}`}, signal: _rankingsFetchController.signal });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const rankings = await res.json();
+
         const topClass = ['top1','top2','top3'];
-        const maxHired = Math.max(...filtered.map(a => a.hired), 1);
-        const maxCompany = Math.max(...filtered.map(a => a.company_earned), 1);
-        const maxAgent = Math.max(...filtered.map(a => a.agent_earned), 1);
+        const filtered = rankings;
 
         if (filtered.length === 0) {
           list.innerHTML = `
@@ -2077,138 +2046,154 @@
             <div class="rk-container">
               <div class="rk-empty">
                 <div class="rk-empty-icon">🏆</div>
-                <h4>لا توجد نتائج ترتيب حاليًا</h4>
-                <p>ابدأ التوظيف لبناء ترتيب المندوبين.</p>
+                <h4>لا يوجد مندوبين لديهم توظيفات في هذه الفترة</h4>
+                <p>سجّل توظيف جديد لرؤية المندوبين في الترتيب.</p>
               </div>
             </div>`;
           return;
         }
 
-        list.innerHTML = `
-          <div class="rk-header">
-            <div class="rk-header-badge"><span class="rk-live-dot"></span> ترتيب الأداء</div>
-            <h3>🏆 ترتيب المندوبين</h3>
-            <p>الأداء الأعلى • التوظيف • الأرباح</p>
-          </div>
-          <div class="rk-container">
-            <div class="rk-table-header">
-              <div>الترتيب</div><div>المندوب</div><div>التوظيف</div><div>كسب الشركة</div><div>كسبه هو</div>
+        const maxHired = Math.max(...filtered.map(a => a.hired), 1);
+        const maxCompany = Math.max(...filtered.map(a => a.company_earned), 1);
+        const maxAgent = Math.max(...filtered.map(a => a.agent_earned), 1);
+
+        function renderCards() {
+          list.innerHTML = `
+            <div class="rk-header">
+              <div class="rk-header-badge"><span class="rk-live-dot"></span> ترتيب الأداء</div>
+              <h3>🏆 ترتيب المندوبين</h3>
+              <p>الأداء الأعلى • التوظيف • الأرباح</p>
             </div>
-            ${filtered.map((a, i) => {
-              const rank = i + 1;
-              const isTop = rank <= 3;
-              const hPct = Math.round((a.hired / maxHired) * 100);
-              const cPct = Math.round((a.company_earned / maxCompany) * 100);
-              const aPct = Math.round((a.agent_earned / maxAgent) * 100);
-              const champLabel = rank === 1 ? 'المتصدر' : '';
-              return `
-            <div class="rk-row ${isTop ? topClass[i] : ''}">
-              <div class="rk-badge">
-                <div class="rk-badge-core">
-                  <div class="rk-badge-shine"></div>
-                  <span class="rk-badge-num">${String(rank).padStart(2,'0')}</span>
+            <div class="rk-container">
+              <div class="rk-table-header">
+                <div>الترتيب</div><div>المندوب</div><div>التوظيف</div><div>كسب الشركة</div><div>كسبه هو</div>
+              </div>
+              ${filtered.map((a, i) => {
+                const rank = i + 1;
+                const isTop = rank <= 3;
+                const hPct = Math.round((a.hired / maxHired) * 100);
+                const cPct = Math.round((a.company_earned / maxCompany) * 100);
+                const aPct = Math.round((a.agent_earned / maxAgent) * 100);
+                const champLabel = rank === 1 ? 'المتصدر' : '';
+                return `
+              <div class="rk-row ${isTop ? topClass[i] : ''}">
+                <div class="rk-badge">
+                  <div class="rk-badge-core">
+                    <div class="rk-badge-shine"></div>
+                    <span class="rk-badge-num">${String(rank).padStart(2,'0')}</span>
+                  </div>
                 </div>
-              </div>
-              <div class="rk-identity">
-                <div class="rk-avatar">${a.name.charAt(0)}</div>
-                <div class="rk-name-block">
-                  <div class="rk-name">${a.name}</div>
-                  <div class="rk-email">${a.email}</div>
-                  ${champLabel ? `<div class="rk-champion">${champLabel}</div>` : ''}
+                <div class="rk-identity">
+                  <div class="rk-avatar">${a.name.charAt(0)}</div>
+                  <div class="rk-name-block">
+                    <div class="rk-name">${a.name}</div>
+                    <div class="rk-email">${a.email}</div>
+                    ${champLabel ? `<div class="rk-champion">${champLabel}</div>` : ''}
+                  </div>
                 </div>
-              </div>
-              <div class="rk-metric">
-                <div class="rk-metric-icon">👥</div>
-                <div class="rk-metric-val hired">${a.hired}</div>
-                <div class="rk-metric-bar"><div class="rk-metric-bar-fill hired" style="width:${hPct}%"></div></div>
-              </div>
-              <div class="rk-metric">
-                <div class="rk-metric-icon">🏢</div>
-                <div class="rk-metric-val company">${a.company_earned.toLocaleString('ar-EG')} ج</div>
-                <div class="rk-metric-bar"><div class="rk-metric-bar-fill company" style="width:${cPct}%"></div></div>
-              </div>
-              <div class="rk-metric">
-                <div class="rk-metric-icon">💰</div>
-                <div class="rk-metric-val agent">${a.agent_earned.toLocaleString('ar-EG')} ج</div>
-                <div class="rk-metric-bar"><div class="rk-metric-bar-fill agent" style="width:${aPct}%"></div></div>
-              </div>
-            </div>`;
-            }).join('')}
-          </div>
+                <div class="rk-metric">
+                  <div class="rk-metric-icon">👥</div>
+                  <div class="rk-metric-val hired">${a.hired}</div>
+                  <div class="rk-metric-bar"><div class="rk-metric-bar-fill hired" style="width:${hPct}%"></div></div>
+                </div>
+                <div class="rk-metric">
+                  <div class="rk-metric-icon">🏢</div>
+                  <div class="rk-metric-val company">${a.company_earned.toLocaleString('ar-EG')} ج</div>
+                  <div class="rk-metric-bar"><div class="rk-metric-bar-fill company" style="width:${cPct}%"></div></div>
+                </div>
+                <div class="rk-metric">
+                  <div class="rk-metric-icon">💰</div>
+                  <div class="rk-metric-val agent">${a.agent_earned.toLocaleString('ar-EG')} ج</div>
+                  <div class="rk-metric-bar"><div class="rk-metric-bar-fill agent" style="width:${aPct}%"></div></div>
+                </div>
+              </div>`;
+              }).join('')}
+            </div>
 
-          <div style="display:none" class="rk-mobile-cards">
-            ${filtered.map((a, i) => {
-              const rank = i + 1;
-              const isTop = rank <= 3;
-              const hPct = Math.round((a.hired / maxHired) * 100);
-              const cPct = Math.round((a.company_earned / maxCompany) * 100);
-              const aPct = Math.round((a.agent_earned / maxAgent) * 100);
-              return `
-            <div class="rk-row ${isTop ? topClass[i] : ''}">
-              ${isTop ? `
-              <div class="rk-badge">
-                <div class="rk-badge-core">
-                  <div class="rk-badge-shine"></div>
-                  <span class="rk-badge-num">${String(rank).padStart(2,'0')}</span>
-                </div>
-              </div>` : `<div class="rk-rank-normal">${String(rank).padStart(2,'0')}</div>`}
-              <div class="rk-identity">
-                <div class="rk-avatar">${a.name.charAt(0)}</div>
-                <div class="rk-name-block">
-                  <div class="rk-name">${a.name}</div>
-                  <div class="rk-email">${a.email}</div>
-                  ${rank === 1 ? '<div class="rk-champion">المتصدر</div>' : ''}
-                </div>
-              </div>
-              <div class="rk-metrics-mobile">
-                <div class="rk-metric-mobile">
-                  <div class="rk-metric-mobile-left">
-                    <div class="rk-metric-mobile-icon hired">👥</div>
-                    <div class="rk-metric-mobile-label">التوظيف</div>
+            <div style="display:none" class="rk-mobile-cards">
+              ${filtered.map((a, i) => {
+                const rank = i + 1;
+                const isTop = rank <= 3;
+                const hPct = Math.round((a.hired / maxHired) * 100);
+                const cPct = Math.round((a.company_earned / maxCompany) * 100);
+                const aPct = Math.round((a.agent_earned / maxAgent) * 100);
+                return `
+              <div class="rk-row ${isTop ? topClass[i] : ''}">
+                ${isTop ? `
+                <div class="rk-badge">
+                  <div class="rk-badge-core">
+                    <div class="rk-badge-shine"></div>
+                    <span class="rk-badge-num">${String(rank).padStart(2,'0')}</span>
                   </div>
-                  <div>
-                    <div class="rk-metric-mobile-val hired">${a.hired}</div>
-                    <div class="rk-metric-mobile-bar"><div class="rk-metric-mobile-bar-fill hired" style="width:${hPct}%"></div></div>
+                </div>` : `<div class="rk-rank-normal">${String(rank).padStart(2,'0')}</div>`}
+                <div class="rk-identity">
+                  <div class="rk-avatar">${a.name.charAt(0)}</div>
+                  <div class="rk-name-block">
+                    <div class="rk-name">${a.name}</div>
+                    <div class="rk-email">${a.email}</div>
+                    ${rank === 1 ? '<div class="rk-champion">المتصدر</div>' : ''}
                   </div>
                 </div>
-                <div class="rk-metric-mobile">
-                  <div class="rk-metric-mobile-left">
-                    <div class="rk-metric-mobile-icon company">🏢</div>
-                    <div class="rk-metric-mobile-label">كسب الشركة</div>
+                <div class="rk-metrics-mobile">
+                  <div class="rk-metric-mobile">
+                    <div class="rk-metric-mobile-left">
+                      <div class="rk-metric-mobile-icon hired">👥</div>
+                      <div class="rk-metric-mobile-label">التوظيف</div>
+                    </div>
+                    <div>
+                      <div class="rk-metric-mobile-val hired">${a.hired}</div>
+                      <div class="rk-metric-mobile-bar"><div class="rk-metric-mobile-bar-fill hired" style="width:${hPct}%"></div></div>
+                    </div>
                   </div>
-                  <div>
-                    <div class="rk-metric-mobile-val company">${a.company_earned.toLocaleString('ar-EG')} ج</div>
-                    <div class="rk-metric-mobile-bar"><div class="rk-metric-mobile-bar-fill company" style="width:${cPct}%"></div></div>
+                  <div class="rk-metric-mobile">
+                    <div class="rk-metric-mobile-left">
+                      <div class="rk-metric-mobile-icon company">🏢</div>
+                      <div class="rk-metric-mobile-label">كسب الشركة</div>
+                    </div>
+                    <div>
+                      <div class="rk-metric-mobile-val company">${a.company_earned.toLocaleString('ar-EG')} ج</div>
+                      <div class="rk-metric-mobile-bar"><div class="rk-metric-mobile-bar-fill company" style="width:${cPct}%"></div></div>
+                    </div>
+                  </div>
+                  <div class="rk-metric-mobile">
+                    <div class="rk-metric-mobile-left">
+                      <div class="rk-metric-mobile-icon agent">💰</div>
+                      <div class="rk-metric-mobile-label">كسبه هو</div>
+                    </div>
+                    <div>
+                      <div class="rk-metric-mobile-val agent">${a.agent_earned.toLocaleString('ar-EG')} ج</div>
+                      <div class="rk-metric-mobile-bar"><div class="rk-metric-mobile-bar-fill agent" style="width:${aPct}%"></div></div>
+                    </div>
                   </div>
                 </div>
-                <div class="rk-metric-mobile">
-                  <div class="rk-metric-mobile-left">
-                    <div class="rk-metric-mobile-icon agent">💰</div>
-                    <div class="rk-metric-mobile-label">كسبه هو</div>
-                  </div>
-                  <div>
-                    <div class="rk-metric-mobile-val agent">${a.agent_earned.toLocaleString('ar-EG')} ج</div>
-                    <div class="rk-metric-mobile-bar"><div class="rk-metric-mobile-bar-fill agent" style="width:${aPct}%"></div></div>
-                  </div>
-                </div>
-              </div>
-            </div>`;
-            }).join('')}
-          </div>
-        `;
-
-        /* Mobile card visibility */
-        function updateRankingsMobile() {
+              </div>`;
+              }).join('')}
+            </div>
+          `;
           const isMobile = window.innerWidth <= 768;
           const desktop = list.querySelector('.rk-container');
           const mobile = list.querySelector('.rk-mobile-cards');
           if (desktop) desktop.style.display = isMobile ? 'none' : '';
           if (mobile) mobile.style.display = isMobile ? 'block' : 'none';
+          window.removeEventListener('resize', _rkResize);
+          window.addEventListener('resize', _rkResize);
+          function _rkResize() {
+            if (desktop) desktop.style.display = isMobile ? 'none' : '';
+            if (mobile) mobile.style.display = isMobile ? 'block' : 'none';
+          }
         }
-        updateRankingsMobile();
-        window.removeEventListener('resize', updateRankingsMobile);
-        window.addEventListener('resize', updateRankingsMobile);
-      } catch (e) {}
+        renderCards();
+      } catch (e) {
+        if (e.name === 'AbortError') return;
+        const list = document.getElementById('rankings-list');
+        list.innerHTML = `
+          <div class="rk-error">
+            <div class="rk-error-icon">⚠️</div>
+            <h4>حدث خطأ أثناء تحميل ترتيب المندوبين</h4>
+            <p>${e.message || 'يرجى المحاولة مرة أخرى'}</p>
+            <button class="rk-retry-btn" onclick="loadRankings()">إعادة المحاولة</button>
+          </div>`;
+      }
     }
 
     function openAudioModal(file, userName) {

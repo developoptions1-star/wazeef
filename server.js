@@ -1530,49 +1530,81 @@ app.get('/api/admin/agent-earnings', authMiddleware, adminMiddleware, (req, res)
 app.get('/api/admin/agent-rankings', authMiddleware, adminMiddleware, (req, res) => {
   try {
     const { period, year, month } = req.query;
-    let dateFilter = '';
-    const params = [];
     const now = new Date();
-    const targetYear = parseInt(year) || now.getFullYear();
-    const targetMonth = parseInt(month) || (now.getMonth() + 1);
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+
+    let targetYear = currentYear;
+    let targetMonth = currentMonth;
+
+    if (year && year !== 'all') targetYear = parseInt(year);
+    if (month && month !== 'all') targetMonth = parseInt(month);
+
+    let dateClause = '';
+    const params = [];
 
     if (period === 'month') {
-      const monthStart = `${targetYear}-${String(targetMonth).padStart(2,'0')}-01`;
-      const monthEnd = new Date(targetYear, targetMonth, 0).toISOString().split('T')[0];
-      dateFilter = `AND s.created_at >= ? AND s.created_at <= ?`;
+      const my = month && month !== 'all' ? targetMonth : currentMonth;
+      const myYear = year && year !== 'all' ? targetYear : currentYear;
+      const monthStart = `${myYear}-${String(my).padStart(2,'0')}-01`;
+      const monthEnd = new Date(myYear, my, 0).toISOString().split('T')[0];
+      dateClause = `AND s.created_at >= ? AND s.created_at <= ?`;
       params.push(monthStart, monthEnd + ' 23:59:59');
     } else if (period === '3months') {
       const startDate = new Date(targetYear, targetMonth - 3, 1).toISOString().split('T')[0];
-      dateFilter = `AND s.created_at >= ?`;
+      dateClause = `AND s.created_at >= ?`;
       params.push(startDate);
     } else if (period === '4months') {
       const startDate = new Date(targetYear, targetMonth - 4, 1).toISOString().split('T')[0];
-      dateFilter = `AND s.created_at >= ?`;
+      dateClause = `AND s.created_at >= ?`;
       params.push(startDate);
     } else if (period === 'year') {
       const yearStart = `${targetYear}-01-01`;
       const yearEnd = `${targetYear}-12-31 23:59:59`;
-      dateFilter = `AND s.created_at >= ? AND s.created_at <= ?`;
+      dateClause = `AND s.created_at >= ? AND s.created_at <= ?`;
       params.push(yearStart, yearEnd);
+    } else if (period === 'all') {
+      // No date filter - all time
     }
 
-    const agents = db.prepare('SELECT id, name, email, phone, referral_code FROM agents WHERE is_active = 1 ORDER BY name').all();
-    const rankings = agents.map(a => {
-      const hired = db.prepare(`
-        SELECT COUNT(*) as c, COALESCE(SUM(s.amount),0) as company_earned, COALESCE(SUM(s.agent_amount),0) as agent_earned
-        FROM selections s
-        JOIN users u ON s.user_id = u.id
-        WHERE u.referred_by = ? AND s.hired = 1 ${dateFilter}
-      `).get(a.id, ...params);
-      return {
-        id: a.id, name: a.name, email: a.email, referral_code: a.referral_code,
-        hired: hired.c,
-        company_earned: hired.company_earned,
-        agent_earned: hired.agent_earned
-      };
-    });
-    rankings.sort((a, b) => b.hired - a.hired);
+    const query = `
+      SELECT
+        a.id,
+        a.name,
+        a.email,
+        a.phone,
+        a.referral_code,
+        COUNT(s.id) as hired,
+        COALESCE(SUM(s.amount), 0) as company_earned,
+        COALESCE(SUM(s.agent_amount), 0) as agent_earned
+      FROM agents a
+      LEFT JOIN users u ON u.referred_by = a.id
+      LEFT JOIN selections s ON s.user_id = u.id AND s.hired = 1 ${dateClause}
+      WHERE a.is_active = 1
+      GROUP BY a.id, a.name, a.email, a.phone, a.referral_code
+      HAVING COUNT(s.id) > 0
+      ORDER BY COUNT(s.id) DESC, COALESCE(SUM(s.amount), 0) DESC, COALESCE(SUM(s.agent_amount), 0) DESC, a.name ASC
+    `;
+    const rankings = db.prepare(query).all(...params);
     res.json(rankings);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/admin/ranking-years', authMiddleware, adminMiddleware, (req, res) => {
+  try {
+    const years = db.prepare(`
+      SELECT DISTINCT CAST(strftime('%Y', created_at) AS INTEGER) as year
+      FROM selections
+      WHERE created_at IS NOT NULL
+      ORDER BY year DESC
+    `).all();
+    const yearList = years.map(y => y.year);
+    const now = new Date().getFullYear();
+    if (!yearList.includes(now)) yearList.push(now);
+    yearList.sort((a, b) => b - a);
+    res.json(yearList);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

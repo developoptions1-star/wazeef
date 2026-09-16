@@ -1820,12 +1820,19 @@
     }
     function closeAgentModal() { document.getElementById('agent-modal').classList.remove('show'); }
 
-    function showToast(msg, btnLabel, btnFn) {
+    let _toastLink = '';
+    function copyToastLink() {
+      navigator.clipboard.writeText(_toastLink).then(() => {
+        const btn = document.querySelector('.rk-toast-btn');
+        if (btn) { btn.textContent = 'تم النسخ!'; btn.style.color = '#34d399'; }
+      }).catch(() => {});
+    }
+    function showToast(msg, btnLabel) {
       const existing = document.querySelector('.rk-toast');
       if (existing) existing.remove();
       const t = document.createElement('div');
       t.className = 'rk-toast';
-      t.innerHTML = `<span>${msg}</span>${btnLabel ? `<button class="rk-toast-btn" onclick="(${btnFn.toString()})()">${btnLabel}</button>` : ''}`;
+      t.innerHTML = `<span>${msg}</span>${btnLabel ? `<button class="rk-toast-btn" onclick="copyToastLink()">${btnLabel}</button>` : ''}`;
       document.body.appendChild(t);
       requestAnimationFrame(() => t.classList.add('show'));
       setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 400); }, 4000);
@@ -1846,15 +1853,10 @@
         const data = await res.json();
         if (data.error) return alert(data.error);
         const link = window.location.origin + '/?ref=' + data.referral_code;
-        document.getElementById('agent-link').value = link;
+        _toastLink = link;
         closeAgentModal();
         loadAgents();
-        showToast(`تم إضافة ${name} كمندوب`, 'نسخ الرابط', function() {
-          navigator.clipboard.writeText(link).then(() => {
-            const btn = document.querySelector('.rk-toast-btn');
-            if (btn) { btn.textContent = 'تم النسخ!'; btn.style.color = '#34d399'; }
-          });
-        });
+        showToast(`تم إضافة ${name} كمندوب`, 'نسخ الرابط');
         document.getElementById('agent-name').value = '';
         document.getElementById('agent-email').value = '';
         document.getElementById('agent-phone').value = '';

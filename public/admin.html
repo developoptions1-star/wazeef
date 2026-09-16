@@ -555,12 +555,21 @@
       .agent-row>div{padding:10px 16px;border-bottom:1px solid rgba(212,168,83,0.05)}
       .agent-row>div:last-child{border-bottom:none}
       .agent-row>div::before{font-size:10px;color:#666;font-weight:600;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
-      .agent-row>div:nth-child(1)::before{content:'المندوب'}
-      .agent-row>div:nth-child(2)::before{content:'كود الإحالة'}
-      .agent-row>div:nth-child(3)::before{content:'الاعضاء'}
-      .agent-row>div:nth-child(4)::before{content:'الطلبات'}
-      .agent-row>div:nth-child(5)::before{content:'التوظيف'}
-      .agent-row>div:nth-child(6)::before{content:'الاجراءات'}
+      #agents-section .agent-row>div:nth-child(1)::before{content:'المندوب'}
+      #agents-section .agent-row>div:nth-child(2)::before{content:'كود الإحالة'}
+      #agents-section .agent-row>div:nth-child(3)::before{content:'الاعضاء'}
+      #agents-section .agent-row>div:nth-child(4)::before{content:'الطلبات'}
+      #agents-section .agent-row>div:nth-child(5)::before{content:'التوظيف'}
+      #agents-section .agent-row>div:nth-child(6)::before{content:'الاجراءات'}
+      #rankings-section .agent-row{padding:14px 16px;border-radius:14px;margin-bottom:8px;gap:8px;display:flex;flex-direction:column;align-items:stretch}
+      #rankings-section .agent-row .rank-medal{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+      #rankings-section .agent-row .rank-medal .rank-num{font-size:28px;width:40px;text-align:center}
+      #rankings-section .agent-row .rank-medal .rank-name{font-weight:700;font-size:14px;color:#e2e8f0}
+      #rankings-section .agent-row .rank-medal .rank-email{font-size:11px;color:#64748b;margin-top:2px}
+      #rankings-section .agent-row .rank-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+      #rankings-section .agent-row .rank-stat{text-align:center;padding:8px 4px;background:rgba(255,255,255,0.02);border-radius:8px}
+      #rankings-section .agent-row .rank-stat-label{font-size:9px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px}
+      #rankings-section .agent-row .rank-stat-val{font-size:15px;font-weight:800}
       .agent-row .agent-actions{flex-direction:column;gap:6px}
       .agent-row .agent-btn{width:100%}
       #agent-earnings-list .app-row{
@@ -1728,32 +1737,42 @@
         const year = document.getElementById('ranking-year').value;
         const month = document.getElementById('ranking-month').value;
         const res = await fetch(`/api/admin/agent-rankings?period=${period}&year=${year}&month=${month}`, { headers:{'Authorization':`Bearer ${token}`} });
-        const rankings = await res.json();
+        let rankings = await res.json();
+        // FAKE DATA for preview — REMOVE AFTER APPROVAL
+        if (rankings.length === 0) {
+          rankings = [
+            {name:'أحمد محمد',email:'ahmed@test.com',hired:12,company_earned:120000,agent_earned:45000},
+            {name:'سارة علي',email:'sara@test.com',hired:8,company_earned:85000,agent_earned:30000},
+            {name:'محمد حسن',email:'mohamed@test.com',hired:6,company_earned:60000,agent_earned:22000},
+            {name:'فاطمة أحمد',email:'fatma@test.com',hired:4,company_earned:40000,agent_earned:15000},
+            {name:'عمر خالد',email:'omar@test.com',hired:2,company_earned:20000,agent_earned:7500},
+          ];
+        }
         const list = document.getElementById('rankings-list');
-        if (rankings.length === 0) { list.innerHTML = '<p style="text-align:center;padding:40px;color:#94a3b8;">لا توجد بيانات</p>'; return; }
         const medals = ['🥇','🥈','🥉'];
-        const medalColors = ['#FFD700','#C0C0C0','#CD7F32'];
         const medalBg = ['rgba(255,215,0,0.08)','rgba(192,192,192,0.08)','rgba(205,127,50,0.08)'];
+        const filtered = rankings.filter(a => a.hired > 0);
         list.innerHTML = `
-          <div class="table-header agents-header">
+          <div class="table-header agents-header" style="grid-template-columns:60px 1fr 100px 120px 120px;">
             <div>الترتيب</div><div>المندوب</div><div>عدد التوظيف</div><div>كسب الشركه</div><div>كسبه هو</div>
           </div>
-          ${rankings.filter(a => a.hired > 0).map((a, i) => `
+          ${filtered.map((a, i) => `
             <div class="agent-row" style="background:${i < 3 ? medalBg[i] : 'transparent'};">
-              <div style="font-size:28px;width:50px;text-align:center;">${i < 3 ? medals[i] : '<span style="color:#555;font-size:16px;">' + (i+1) + '</span>'}</div>
-              <div class="agent-identity">
-                <div class="agent-avatar" style="background:${i < 3 ? 'linear-gradient(135deg,' + medalColors[i] + ',' + medalColors[i] + ')' : 'linear-gradient(135deg,#d4a853,#b8860b)'};">${a.name.charAt(0)}</div>
+              <div class="rank-medal">
+                <div class="rank-num">${i < 3 ? medals[i] : '<span style="color:#555;font-size:16px;">' + (i+1) + '</span>'}</div>
                 <div>
-                  <div class="agent-name">${a.name}</div>
-                  <div class="agent-email">${a.email}</div>
+                  <div class="rank-name">${a.name}</div>
+                  <div class="rank-email">${a.email}</div>
                 </div>
               </div>
-              <div class="agent-stat"><span class="agent-stat-val green" style="font-size:20px;">${a.hired}</span></div>
-              <div class="agent-stat"><span class="agent-stat-val gold" style="font-size:16px;">${a.company_earned.toLocaleString('ar-EG')} ج</span></div>
-              <div class="agent-stat"><span class="agent-stat-val amber" style="font-size:16px;">${a.agent_earned.toLocaleString('ar-EG')} ج</span></div>
+              <div class="rank-stats">
+                <div class="rank-stat"><div class="rank-stat-label">التوظيف</div><div class="rank-stat-val" style="color:#34d399;">${a.hired}</div></div>
+                <div class="rank-stat"><div class="rank-stat-label">كسب الشركة</div><div class="rank-stat-val" style="color:#d4a853;">${a.company_earned.toLocaleString('ar-EG')} ج</div></div>
+                <div class="rank-stat"><div class="rank-stat-label">كسبه هو</div><div class="rank-stat-val" style="color:#fbbf24;">${a.agent_earned.toLocaleString('ar-EG')} ج</div></div>
+              </div>
             </div>
           `).join('')}
-          ${rankings.filter(a => a.hired > 0).length === 0 ? '<p style="text-align:center;padding:40px;color:#94a3b8;">لا يوجد مندوبين להם توظيفات في هذه الفترة</p>' : ''}
+          ${filtered.length === 0 ? '<p style="text-align:center;padding:40px;color:#94a3b8;">لا يوجد مندوبين لهم توظيفات في هذه الفترة</p>' : ''}
         `;
       } catch (e) {}
     }

@@ -62,6 +62,10 @@
     .form-group input,.sel{width:100%;height:40px;padding:0 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;color:#f5f0e8;font-family:'Tajawal',sans-serif;font-size:13px;transition:all .3s}
     .form-group input:focus,.sel:focus{outline:none;border-color:rgba(212,168,83,0.4);box-shadow:0 0 0 3px rgba(212,168,83,0.06)}
     .form-group input::placeholder{color:#333}
+    .pass-wrap{position:relative}
+    .pass-wrap input{padding-left:40px}
+    .eye-btn{position:absolute;left:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;justify-content:center}
+    .eye-btn:hover svg{stroke:#d4a853}
     .sel{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='%23555' viewBox='0 0 16 16'%3E%3Cpath d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:left 12px center;padding-left:30px;cursor:pointer}
     .sel option{background:#111;color:#f5f0e8}
 
@@ -117,6 +121,17 @@
       .form-row{grid-template-columns:1fr}
       .right-title{font-size:16px;margin-bottom:12px}
       .tabs{margin-bottom:12px}
+      .form-group{margin-bottom:8px}
+      .form-group label{margin-bottom:3px;font-size:11px}
+      .form-group input,.sel{height:38px;font-size:12px;padding:0 12px}
+      .pass-wrap input{padding-left:36px}
+      .eye-btn{left:8px}
+      .btn{height:40px;margin-top:6px;font-size:13px}
+      .section-label{margin:8px 0 6px;font-size:9px}
+      .reg-step{padding:0}
+      .step-dots{margin-bottom:10px}
+      .step-nav{margin-top:12px}
+      .step-nav .btn{margin-top:0}
     }
   </style>
 </head>
@@ -152,7 +167,7 @@
       <div id="ref-badge" class="ref-badge"><span>تم التسجيل عبر رابط إحالة المندوب</span></div>
       <div id="login-form" class="form-section active">
         <div class="form-group"><label>البريد الإلكتروني</label><input type="email" id="login-email" placeholder="أدخل بريدك الإلكتروني" autocomplete="off"></div>
-        <div class="form-group"><label>كلمة المرور</label><input type="password" id="login-password" placeholder="أدخل كلمة المرور" autocomplete="new-password"></div>
+        <div class="form-group"><label>كلمة المرور</label><div class="pass-wrap"><input type="password" id="login-password" placeholder="أدخل كلمة المرور" autocomplete="new-password"><button type="button" class="eye-btn" onclick="togglePass('login-password',this)"><svg viewBox="0 0 24 24" class="eye-open" style="width:18px;height:18px;stroke:#888;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><svg viewBox="0 0 24 24" class="eye-closed" style="width:18px;height:18px;stroke:#888;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;display:none;"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></button></div></div>
         <button class="btn btn-primary" onclick="login()">دخول</button>
         <div style="text-align:center;margin-top:8px;"><a onclick="showForgotPassword()" style="color:#94a3b8;font-size:12px;cursor:pointer;text-decoration:none;">نسيت كلمة المرور؟</a></div>
         <div class="switch-text">ما عندك حساب؟ <a onclick="switchTab('register')">سجّل دلوقتي</a></div>
@@ -167,7 +182,7 @@
           <div class="form-group"><label>رقم الهاتف <span style="color:#e57373">*</span></label><input type="text" id="reg-phone" placeholder="01xxxxxxxxx" autocomplete="off" required pattern="[0-9]{11}" title="رقم الهاتف يجب أن يكون 11 رقم"></div>
         </div>
         <div class="form-row">
-          <div class="form-group"><label>كلمة المرور <span style="color:#e57373">*</span></label><input type="password" id="reg-password" placeholder="••••••••" autocomplete="new-password" required minlength="6" title="كلمة المرور يجب أن تكون 6 أحرف على الأقل"></div>
+          <div class="form-group"><label>كلمة المرور <span style="color:#e57373">*</span></label><div class="pass-wrap"><input type="password" id="reg-password" placeholder="••••••••" autocomplete="new-password" required minlength="6" title="كلمة المرور يجب أن تكون 6 أحرف على الأقل"><button type="button" class="eye-btn" onclick="togglePass('reg-password',this)"><svg viewBox="0 0 24 24" class="eye-open" style="width:18px;height:18px;stroke:#888;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><svg viewBox="0 0 24 24" class="eye-closed" style="width:18px;height:18px;stroke:#888;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;display:none;"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></button></div></div>
           <div class="form-group"><label>العمر <span style="color:#e57373">*</span></label><input type="text" id="reg-age" placeholder="25" autocomplete="off" required pattern="[0-9]{2}" maxlength="2" title="العمر يجب أن يكون رقمين فقط"></div>
         </div>
         <div class="form-group"><label>النوع <span style="color:#e57373">*</span></label><select id="reg-gender" class="sel" required onchange="toggleMilitary()"><option value="">اختر</option><option value="male">ولد</option><option value="female">بنت</option></select></div>
@@ -254,8 +269,8 @@
         <h2>كلمة مرور جديدة</h2>
         <p>أدخل كلمة المرور الجديدة</p>
         <div id="forgot-error-3" class="verify-error"></div>
-        <div class="form-group"><label>كلمة المرور الجديدة</label><input type="password" id="forgot-new-pass" placeholder="6 أحرف على الأقل" autocomplete="new-password"></div>
-        <div class="form-group"><label>تأكيد كلمة المرور</label><input type="password" id="forgot-confirm-pass" placeholder="أعد إدخال كلمة المرور" autocomplete="new-password"></div>
+        <div class="form-group"><label>كلمة المرور الجديدة</label><div class="pass-wrap"><input type="password" id="forgot-new-pass" placeholder="6 أحرف على الأقل" autocomplete="new-password"><button type="button" class="eye-btn" onclick="togglePass('forgot-new-pass',this)"><svg viewBox="0 0 24 24" class="eye-open" style="width:18px;height:18px;stroke:#888;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><svg viewBox="0 0 24 24" class="eye-closed" style="width:18px;height:18px;stroke:#888;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;display:none;"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></button></div></div>
+        <div class="form-group"><label>تأكيد كلمة المرور</label><div class="pass-wrap"><input type="password" id="forgot-confirm-pass" placeholder="أعد إدخال كلمة المرور" autocomplete="new-password"><button type="button" class="eye-btn" onclick="togglePass('forgot-confirm-pass',this)"><svg viewBox="0 0 24 24" class="eye-open" style="width:18px;height:18px;stroke:#888;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><svg viewBox="0 0 24 24" class="eye-closed" style="width:18px;height:18px;stroke:#888;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;display:none;"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></button></div></div>
         <button class="verify-btn" onclick="resetPassword()">تعيين كلمة المرور</button>
         <div style="margin-top:14px;"><a onclick="closeForgot()" style="color:#555;font-size:12px;cursor:pointer;text-decoration:none;">العودة لتسجيل الدخول</a></div>
       </div>
@@ -325,12 +340,22 @@
     function val(id){return document.getElementById(id).value.trim()}
     function hasNumber(s){return /\d/.test(s)}
     function hasLetter(s){return /[A-Za-z\u0600-\u06FF]/.test(s)}
+    function togglePass(id,btn){const inp=document.getElementById(id);const open=inp.type==='password';inp.type=open?'text':'password';btn.querySelector('.eye-open').style.display=open?'none':'';btn.querySelector('.eye-closed').style.display=open?'':'none'}
     async function login(){const email=val('login-email'),password=val('login-password');if(!email||!password)return showError('من فضلك أكمل كل الحقول');try{let res=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});let data=await res.json();if(data.error){res=await fetch('/api/agent/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});data=await res.json();if(data.error)return showError(data.error);localStorage.setItem('token',data.token);localStorage.setItem('user',JSON.stringify(data.agent));window.location.href='/agent';return}localStorage.setItem('token',data.token);localStorage.setItem('user',JSON.stringify(data.user));window.location.href=data.user.role==='admin'?'/admin':'/dashboard'}catch(e){showError('حدث خطأ في الاتصال')}}
     function toggleMilitary(){const g=val('reg-gender');document.getElementById('military-row').style.display=g==='female'?'none':''}
     const AREAS={'القاهرة':['مدينة نصر','مصر الجديدة','المعادي','وسط البلد','حلوان','التجمع الخامس','التجمع الأول','الشروق','العبور','المرج','عين شمس','المطرية','شبرا','الزمالك','السلام','النزهة','بدر','أخرى'],'الجيزة':['المهندسين','الدقي','العجوزة','فيصل','الهرم','6 أكتوبر','الشيخ زايد','حدائق الأهرام','إمبابة','الوراق','أوسيم','كرداسة','البدرشين','الحوامدية','أخرى'],'الإسكندرية':['سموحة','سيدي بشر','ميامي','العصافرة','المنتزه','محرم بك','العجمي','الدخيلة','العامرية','برج العرب','الرمل','المنشية','أخرى'],'الدقهلية':['المنصورة','طلخا','ميت غمر','دكرنس','أخرى'],'الشرقية':['الزقازيق','العاشر من رمضان','بلبيس','فاقوس','أخرى'],'الغربية':['طنطا','المحلة الكبرى','زفتى','أخرى'],'المنوفية':['شبين الكوم','منوف','السادات','أخرى'],'القليوبية':['بنها','شبرا الخيمة','قليوب','الخانكة','أخرى'],'البحيرة':['دمنهور','كفر الدوار','رشيد','أخرى'],'كفر الشيخ':['كفر الشيخ','دسوق','فوة','أخرى'],'دمياط':['دمياط','رأس البر','دمياط الجديدة','أخرى'],'بورسعيد':['بورسعيد','بورفؤاد','أخرى'],'الإسماعيلية':['الإسماعيلية','فايد','القنطرة','أخرى'],'السويس':['السويس','الأربعين','فيصل السويس','أخرى'],'الفيوم':['الفيوم','سنورس','إطسا','أخرى'],'بني سويف':['بني سويف','الواسطى','ناصر','أخرى'],'المنيا':['المنيا','ملوي','مغاغة','أخرى'],'أسيوط':['أسيوط','ديروط','منفلوط','أخرى'],'سوهاج':['سوهاج','طهطا','جرجا','أخرى'],'قنا':['قنا','نجع حمادي','قوص','أخرى'],'الأقصر':['الأقصر','إسنا','أرمنت','أخرى'],'أسوان':['أسوان','دراو','كوم أمبو','إدفو','أخرى'],'البحر الأحمر':['الغردقة','سفاجا','مرسى علم','أخرى'],'مطروح':['مرسى مطروح','الحمام','العلمين','أخرى'],'شمال سيناء':['العريش','رفح','الشيخ زويد','أخرى'],'جنوب سيناء':['شرم الشيخ','دهب','الطور','أخرى'],'الوادي الجديد':['الخارجة','الداخلة','الفرافرة','أخرى']};
     function updateAreas(){const g=val('reg-governorate');document.getElementById('reg-city').innerHTML='<option value="">اختر المنطقة</option>'+((AREAS[g]||[]).map(a=>`<option>${a}</option>`).join(''))}
     async function register(){
       const name=val('reg-name'),email=val('reg-email'),phone=val('reg-phone'),password=val('reg-password'),nationality=val('reg-nationality'),gov=val('reg-governorate'),area=val('reg-city'),city=gov&&area?gov+' - '+area:'',language_applied=val('reg-language-applied'),age=val('reg-age'),national_id=val('reg-national-id'),college=val('reg-college'),education_level=val('reg-education-level'),gender=val('reg-gender');let military_status=val('reg-military-status');if(gender==='female')military_status='na';const call_center_experience=val('reg-call-center');
+      // Step 3 validation
+      if(!language_applied)return showError('من فضلك اختر اللغة المطلوبة');
+      if(!gender)return showError('من فضلك اختر النوع');
+      if(gender==='male'&&!military_status)return showError('من فضلك اختر الوضع العسكري');
+      if(!national_id)return showError('من فضلك أدخل الرقم القومي');
+      if(!/^[0-9]+$/.test(national_id))return showError('الرقم القومي يجب أن يحتوي على أرقام فقط');
+      if(national_id.length!==14)return showError('الرقم القومي يجب أن يكون 14 رقم بالضبط (أدخلت '+national_id.length+')');
+      if(!call_center_experience)return showError('من فضلك اختر خبرة سنتر الاتصالات');
+      // Step 1 validation
       if(!name)return showError('من فضلك أدخل الاسم الكامل');
       if(hasNumber(name))return showError('الاسم يجب أن يحتوي على حروف فقط، بدون أرقام');
       if(name.length<3)return showError('الاسم يجب أن يكون 3 أحرف على الأقل');
@@ -343,18 +368,13 @@
       if(!age)return showError('من فضلك أدخل العمر');
       if(!/^[0-9]{2}$/.test(age))return showError('العمر يجب أن يكون رقمين فقط');
       if(parseInt(age)<16||parseInt(age)>80)return showError('العمر يجب أن يكون بين 16 و 80');
+      // Step 2 validation
       if(!nationality)return showError('من فضلك اختر الجنسية');
       if(hasNumber(nationality))return showError('الجنسية يجب أن تحتوي على حروف فقط');
       if(!city)return showError('من فضلك اختر المحافظة والمنطقة');
       if(!college)return showError('من فضلك أدخل الكلية');
       if(hasNumber(college))return showError('الكلية يجب أن تحتوي على حروف فقط');
       if(!education_level)return showError('من فضلك اختر المرحلة الدراسية');
-      if(!language_applied)return showError('من فضلك اختر اللغة المطلوبة');
-      if(!gender)return showError('من فضلك اختر النوع');
-      if(gender==='male'&&!military_status)return showError('من فضلك اختر الوضع العسكري');
-      if(!national_id)return showError('من فضلك أدخل الرقم القومي');
-      if(!/^[0-9]{14}$/.test(national_id))return showError('الرقم القومي يجب أن يكون 14 رقم بدون حروف');
-      if(!call_center_experience)return showError('من فضلك اختر خبرة سنتر الاتصالات');
       const ref=new URLSearchParams(window.location.search).get('ref')||'';
       try{const res=await fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,phone,password,nationality,city,language_applied,age:parseInt(age),national_id,college,education_level,gender,military_status,call_center_experience,ref})});const data=await res.json();if(data.error)return showError(data.error);if(data.needVerification){document.getElementById('verify-email-display').textContent=email;document.getElementById('verify-overlay').classList.add('show');setTimeout(()=>document.getElementById('code-1').focus(),300);return}localStorage.setItem('token',data.token);localStorage.setItem('user',JSON.stringify(data.user));window.location.href='/dashboard'}catch(e){showError('حدث خطأ في الاتصال')}
     }

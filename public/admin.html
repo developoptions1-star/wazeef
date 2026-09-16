@@ -479,31 +479,195 @@
     .agent-btn.copy:hover{background:rgba(212,168,83,0.12);transform:translateY(-1px)}
     .agent-btn.copy svg{stroke:#d4a853}
 
-    .rankings-wrap{padding:0}
-    .rankings-header{display:grid;grid-template-columns:60px 1.6fr 100px 130px 130px;align-items:center;gap:14px;padding:16px 28px;background:rgba(212,168,83,0.04);border-bottom:1px solid rgba(212,168,83,0.06)}
-    .rankings-header>div{font-size:12px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.5px;text-align:center}
-    .rankings-header>div:nth-child(2){text-align:right}
-    .rankings-row{display:grid;grid-template-columns:60px 1.6fr 100px 130px 130px;align-items:center;gap:14px;padding:16px 28px;border-bottom:1px solid rgba(255,255,255,0.03);transition:all .25s ease;cursor:default}
-    .rankings-row:last-child{border-bottom:none}
-    .rankings-row:hover{background:rgba(212,168,83,0.02)}
-    .rankings-row .rk-rank{font-size:24px;text-align:center;font-weight:800}
-    .rankings-row .rk-identity{display:flex;align-items:center;gap:12px}
-    .rankings-row .rk-avatar{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;flex-shrink:0;transition:all .25s}
-    .rankings-row .rk-name{font-size:14px;font-weight:700;color:#f0d78c;line-height:1.3}
-    .rankings-row .rk-email{font-size:12px;color:#94a3b8;direction:ltr;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px}
-    .rankings-row .rk-stat{text-align:center;font-size:15px;font-weight:800}
-    .rankings-row .rk-stat.hired{color:#34d399}
-    .rankings-row .rk-stat.company{color:#d4a853}
-    .rankings-row .rk-stat.agent{color:#fbbf24}
-    .rankings-row.top1{background:rgba(255,215,0,0.03)}
-    .rankings-row.top1 .rk-avatar{background:linear-gradient(135deg,rgba(255,215,0,0.18),rgba(255,215,0,0.06));border:1px solid rgba(255,215,0,0.15);color:#FFD700}
-    .rankings-row.top1:hover{background:rgba(255,215,0,0.05)}
-    .rankings-row.top2{background:rgba(192,192,192,0.02)}
-    .rankings-row.top2 .rk-avatar{background:linear-gradient(135deg,rgba(192,192,192,0.15),rgba(192,192,192,0.05));border:1px solid rgba(192,192,192,0.12);color:#C0C0C0}
-    .rankings-row.top2:hover{background:rgba(192,192,192,0.04)}
-    .rankings-row.top3{background:rgba(205,127,50,0.02)}
-    .rankings-row.top3 .rk-avatar{background:linear-gradient(135deg,rgba(205,127,50,0.15),rgba(205,127,50,0.05));border:1px solid rgba(205,127,50,0.12);color:#CD7F32}
-    .rankings-row.top3:hover{background:rgba(205,127,50,0.04)}
+    /* ═══════════════════════════════════════════
+       PREMIUM GAMING LEADERBOARD — CSS VARIABLES
+       ═══════════════════════════════════════════ */
+    .rk-section{margin-top:30px}
+    :root{
+      --rk-gold:#FFD700;--rk-gold-dim:rgba(255,215,0,.12);--rk-gold-glow:rgba(255,215,0,.25);
+      --rk-silver:#C0C0C0;--rk-silver-dim:rgba(192,192,192,.10);--rk-silver-glow:rgba(192,192,192,.20);
+      --rk-bronze:#CD7F32;--rk-bronze-dim:rgba(205,127,50,.10);--rk-bronze-glow:rgba(205,127,50,.20);
+      --rk-green:#34d399;--rk-amber:#fbbf24;--rk-radius:18px;
+      --rk-tr:320ms cubic-bezier(.16,1,.3,1);
+    }
+    @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+    /* ── HEADER ── */
+    .rk-header{position:relative;text-align:center;padding:32px 24px 24px;border-radius:var(--rk-radius) var(--rk-radius) 0 0;background:linear-gradient(180deg,rgba(212,168,83,.06) 0%,rgba(212,168,83,.01) 100%);border-bottom:1px solid rgba(212,168,83,.08);overflow:hidden}
+    .rk-header::before{content:'';position:absolute;top:-60%;left:50%;transform:translateX(-50%);width:400px;height:400px;background:radial-gradient(circle,rgba(212,168,83,.07) 0%,transparent 70%);pointer-events:none}
+    .rk-header-badge{display:inline-flex;align-items:center;gap:8px;padding:6px 18px;background:rgba(212,168,83,.06);border:1px solid rgba(212,168,83,.10);border-radius:20px;font-size:11px;font-weight:700;color:#d4a853;letter-spacing:.5px;margin-bottom:14px}
+    .rk-live-dot{width:7px;height:7px;border-radius:50%;background:#34d399;box-shadow:0 0 8px rgba(52,211,153,.5);animation:rkGlow 2s ease infinite}
+    .rk-header h3{font-size:24px;font-weight:900;background:linear-gradient(135deg,#f0d78c,#d4a853,#b8860b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px}
+    .rk-header p{font-size:12px;color:#64748b;font-weight:500}
+
+    /* ── CONTAINER ── */
+    .rk-container{background:rgba(15,15,15,.6);border:1px solid rgba(212,168,83,.06);border-top:none;border-radius:0 0 var(--rk-radius) var(--rk-radius);overflow:hidden}
+    .rk-table-header{display:grid;grid-template-columns:56px 1.6fr 80px 120px 120px;align-items:center;gap:12px;padding:12px 24px;background:rgba(212,168,83,.03);border-bottom:1px solid rgba(212,168,83,.05)}
+    .rk-table-header>div{font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.8px;text-align:center}
+    .rk-table-header>div:nth-child(2){text-align:right}
+
+    /* ── ROW ── */
+    .rk-row{display:grid;grid-template-columns:56px 1.6fr 80px 120px 120px;align-items:center;gap:12px;padding:14px 24px;position:relative;transition:all var(--rk-tr);cursor:default;border-bottom:1px solid rgba(255,255,255,.02)}
+    .rk-row:last-child{border-bottom:none}
+    .rk-row:hover{background:rgba(212,168,83,.02);transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.3)}
+
+    /* ═══════════════════════════════════════════
+       AAA GAMING RANK BADGES — ESPORTS STYLE
+       ═══════════════════════════════════════════ */
+    @keyframes rkFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+    @keyframes rkGlow{0%,100%{opacity:.4}50%{opacity:1}}
+    @keyframes rkSweep{0%{left:-100%}100%{left:200%}}
+    @keyframes rkAura{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.3}50%{transform:translate(-50%,-50%) scale(1.15);opacity:.5}}
+    @keyframes rkBarGrow{from{width:0}}
+    @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+    /* ── BASE BADGE CONTAINER ── */
+    .rk-badge{position:relative;width:52px;height:58px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:transform var(--rk-tr)}
+    .rk-row:hover .rk-badge{transform:scale(1.08) rotate(-1deg)}
+    .rk-badge-core{position:relative;z-index:2;display:flex;align-items:center;justify-content:center;width:100%;height:100%}
+    .rk-badge-num{position:relative;z-index:3;font-family:'Courier New',monospace;font-weight:900;font-size:15px;letter-spacing:1px;line-height:1}
+    .rk-badge-shine{position:absolute;top:0;left:-100%;width:50%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);z-index:4;pointer-events:none;animation:rkSweep 4s ease-in-out infinite}
+
+    /* ── #1: LEGENDARY CHAMPION — SHIELD + CROWN ── */
+    .rk-row.top1 .rk-badge{width:56px;height:62px;animation:rkFloat 5s ease-in-out infinite}
+    .rk-row.top1 .rk-badge::before{content:'';position:absolute;top:50%;left:50%;width:80px;height:80px;border-radius:50%;background:radial-gradient(circle,rgba(255,215,0,.18) 0%,rgba(255,215,0,.04) 50%,transparent 70%);animation:rkAura 3s ease infinite;pointer-events:none;z-index:0}
+    .rk-row.top1 .rk-badge-core{
+      clip-path:polygon(50% 0%,85% 8%,100% 30%,100% 72%,85% 92%,50% 100%,15% 92%,0% 72%,0% 30%,15% 8%);
+      background:linear-gradient(170deg,#1a1400 0%,#2a1f00 15%,#4a3800 30%,#FFD700 45%,#B8860B 55%,#4a3800 70%,#2a1f00 85%,#1a1400 100%);
+      box-shadow:0 0 40px rgba(255,215,0,.2);
+    }
+    .rk-row.top1 .rk-badge-core::before{
+      content:'';position:absolute;inset:3px;z-index:1;
+      clip-path:polygon(50% 0%,85% 8%,100% 30%,100% 72%,85% 92%,50% 100%,15% 92%,0% 72%,0% 30%,15% 8%);
+      background:linear-gradient(170deg,rgba(255,215,0,.06) 0%,rgba(184,134,11,.1) 50%,rgba(255,215,0,.04) 100%);
+    }
+    .rk-row.top1 .rk-badge-core::after{
+      content:'';position:absolute;inset:6px;z-index:1;
+      clip-path:polygon(50% 0%,85% 8%,100% 30%,100% 72%,85% 92%,50% 100%,15% 92%,0% 72%,0% 30%,15% 8%);
+      background:linear-gradient(170deg,#0a0800 0%,#1a1200 40%,#0a0800 100%);
+    }
+    .rk-row.top1 .rk-badge-num{
+      color:#FFD700;font-size:16px;
+      text-shadow:0 0 20px rgba(255,215,0,.6),0 0 40px rgba(255,215,0,.3),0 2px 4px rgba(0,0,0,.8);
+    }
+    .rk-row.top1 .rk-badge-shine{animation-duration:3.5s}
+    /* Crown spike on top */
+    .rk-row.top1 .rk-badge::after{
+      content:'';position:absolute;top:-6px;left:50%;transform:translateX(-50%);z-index:5;
+      width:0;height:0;
+      border-left:8px solid transparent;border-right:8px solid transparent;
+      border-bottom:10px solid #FFD700;
+      filter:drop-shadow(0 0 6px rgba(255,215,0,.5));
+    }
+    .rk-row.top1{background:linear-gradient(90deg,rgba(255,215,0,.04) 0%,transparent 60%);border-color:rgba(255,215,0,.08)}
+    .rk-row.top1:hover{background:linear-gradient(90deg,rgba(255,215,0,.08) 0%,rgba(255,215,0,.02) 60%);box-shadow:0 8px 48px rgba(255,215,0,.12)}
+    .rk-row.top1 .rk-champion{display:inline-flex}
+
+    /* ── #2: ELITE — ANGULAR DIAMOND ── */
+    .rk-row.top2 .rk-badge-core{
+      clip-path:polygon(50% 0%,92% 18%,92% 82%,50% 100%,8% 82%,8% 18%);
+      background:linear-gradient(170deg,#0a0a0a 0%,#1a1a1a 15%,#555 35%,#C0C0C0 48%,#808080 55%,#333 75%,#1a1a1a 90%,#0a0a0a 100%);
+      box-shadow:0 0 24px rgba(192,192,192,.15);
+    }
+    .rk-row.top2 .rk-badge-core::before{
+      content:'';position:absolute;inset:3px;z-index:1;
+      clip-path:polygon(50% 0%,92% 18%,92% 82%,50% 100%,8% 82%,8% 18%);
+      background:linear-gradient(170deg,rgba(255,255,255,.04) 0%,rgba(192,192,192,.06) 50%,rgba(255,255,255,.02) 100%);
+    }
+    .rk-row.top2 .rk-badge-core::after{
+      content:'';position:absolute;inset:6px;z-index:1;
+      clip-path:polygon(50% 0%,92% 18%,92% 82%,50% 100%,8% 82%,8% 18%);
+      background:linear-gradient(170deg,#0a0a0a 0%,#151515 40%,#0a0a0a 100%);
+    }
+    .rk-row.top2 .rk-badge-num{
+      color:#C0C0C0;font-size:15px;
+      text-shadow:0 0 16px rgba(192,192,192,.5),0 0 32px rgba(192,192,192,.2),0 2px 4px rgba(0,0,0,.7);
+    }
+    .rk-row.top2 .rk-badge-shine{animation-duration:5s}
+    .rk-row.top2{background:linear-gradient(90deg,rgba(192,192,192,.03) 0%,transparent 60%);border-color:rgba(192,192,192,.06)}
+    .rk-row.top2:hover{background:linear-gradient(90deg,rgba(192,192,192,.06) 0%,rgba(192,192,192,.01) 60%);box-shadow:0 6px 32px rgba(192,192,192,.08)}
+
+    /* ── #3: VETERAN — ANGULAR SHIELD ── */
+    .rk-row.top3 .rk-badge-core{
+      clip-path:polygon(50% 0%,88% 12%,100% 35%,100% 75%,88% 95%,50% 100%,12% 95%,0% 75%,0% 35%,12% 12%);
+      background:linear-gradient(170deg,#0a0500 0%,#1a0e00 15%,#5a3a1a 35%,#CD7F32 48%,#8B5E3C 55%,#3a2010 75%,#1a0e00 90%,#0a0500 100%);
+      box-shadow:0 0 24px rgba(205,127,50,.15);
+    }
+    .rk-row.top3 .rk-badge-core::before{
+      content:'';position:absolute;inset:3px;z-index:1;
+      clip-path:polygon(50% 0%,88% 12%,100% 35%,100% 75%,88% 95%,50% 100%,12% 95%,0% 75%,0% 35%,12% 12%);
+      background:linear-gradient(170deg,rgba(205,127,50,.04) 0%,rgba(139,94,60,.06) 50%,rgba(205,127,50,.02) 100%);
+    }
+    .rk-row.top3 .rk-badge-core::after{
+      content:'';position:absolute;inset:6px;z-index:1;
+      clip-path:polygon(50% 0%,88% 12%,100% 35%,100% 75%,88% 95%,50% 100%,12% 95%,0% 75%,0% 35%,12% 12%);
+      background:linear-gradient(170deg,#080400 0%,#120a00 40%,#080400 100%);
+    }
+    .rk-row.top3 .rk-badge-num{
+      color:#CD7F32;font-size:15px;
+      text-shadow:0 0 16px rgba(205,127,50,.5),0 0 32px rgba(205,127,50,.2),0 2px 4px rgba(0,0,0,.7);
+    }
+    .rk-row.top3 .rk-badge-shine{animation-duration:5.5s}
+    .rk-row.top3{background:linear-gradient(90deg,rgba(205,127,50,.03) 0%,transparent 60%);border-color:rgba(205,127,50,.06)}
+    .rk-row.top3:hover{background:linear-gradient(90deg,rgba(205,127,50,.06) 0%,rgba(205,127,50,.01) 60%);box-shadow:0 6px 32px rgba(205,127,50,.08)}
+
+    /* ── RANK 4+: FUTURISTIC ANGULAR ── */
+    .rk-row:not(.top1):not(.top2):not(.top3) .rk-badge{width:42px;height:46px}
+    .rk-row:not(.top1):not(.top2):not(.top3) .rk-badge-core{
+      clip-path:polygon(50% 0%,90% 15%,100% 40%,100% 70%,90% 92%,50% 100%,10% 92%,0% 70%,0% 40%,10% 15%);
+      background:linear-gradient(170deg,#0c0c0c 0%,#1a1a1a 20%,#2a2a2a 45%,#333 50%,#2a2a2a 55%,#1a1a1a 80%,#0c0c0c 100%);
+      border:1px solid rgba(255,255,255,.04);
+    }
+    .rk-row:not(.top1):not(.top2):not(.top3) .rk-badge-core::before{
+      content:'';position:absolute;inset:2px;z-index:1;
+      clip-path:polygon(50% 0%,90% 15%,100% 40%,100% 70%,90% 92%,50% 100%,10% 92%,0% 70%,0% 40%,10% 15%);
+      background:linear-gradient(170deg,rgba(255,255,255,.02) 0%,rgba(100,116,139,.04) 50%,rgba(255,255,255,.01) 100%);
+    }
+    .rk-row:not(.top1):not(.top2):not(.top3) .rk-badge-core::after{display:none}
+    .rk-row:not(.top1):not(.top2):not(.top3) .rk-badge-num{color:#64748b;font-size:13px;text-shadow:0 1px 3px rgba(0,0,0,.5)}
+    .rk-row:not(.top1):not(.top2):not(.top3) .rk-badge-shine{display:none}
+    .rk-row:not(.top1):not(.top2):not(.top3) .rk-badge:hover{transform:scale(1.05)}
+
+    /* ── AVATAR ── */
+    .rk-identity{display:flex;align-items:center;gap:12px;overflow:hidden}
+    .rk-avatar{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;flex-shrink:0;position:relative;transition:all var(--rk-tr)}
+    .rk-avatar::after{content:'';position:absolute;inset:-3px;border-radius:50%;border:2px solid transparent;transition:border-color var(--rk-tr)}
+    .rk-row:hover .rk-avatar::after{border-color:rgba(212,168,83,.2)}
+    .rk-row.top1 .rk-avatar{background:linear-gradient(135deg,rgba(255,215,0,.15),rgba(255,215,0,.05));color:#FFD700;border:1.5px solid rgba(255,215,0,.2)}
+    .rk-row.top1 .rk-avatar::after{border-color:rgba(255,215,0,.15)}
+    .rk-row.top2 .rk-avatar{background:linear-gradient(135deg,rgba(192,192,192,.12),rgba(192,192,192,.04));color:#C0C0C0;border:1.5px solid rgba(192,192,192,.15)}
+    .rk-row.top3 .rk-avatar{background:linear-gradient(135deg,rgba(205,127,50,.12),rgba(205,127,50,.04));color:#CD7F32;border:1.5px solid rgba(205,127,50,.15)}
+    .rk-row:not(.top1):not(.top2):not(.top3) .rk-avatar{background:linear-gradient(135deg,rgba(212,168,83,.1),rgba(212,168,83,.03));color:#d4a853;border:1.5px solid rgba(212,168,83,.12)}
+    .rk-name-block{overflow:hidden;min-width:0}
+    .rk-name{font-size:14px;font-weight:700;color:#f0d78c;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .rk-email{font-size:11px;color:#64748b;direction:ltr;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .rk-champion{display:none;font-size:9px;font-weight:800;color:#FFD700;background:linear-gradient(135deg,rgba(255,215,0,.15),rgba(255,215,0,.05));border:1px solid rgba(255,215,0,.2);border-radius:6px;padding:2px 8px;margin-top:3px;letter-spacing:.5px;width:fit-content}
+
+    /* ── METRICS ── */
+    .rk-metric{text-align:center;position:relative}
+    .rk-metric-icon{font-size:11px;margin-bottom:2px;opacity:.5}
+    .rk-metric-val{font-size:16px;font-weight:900;line-height:1.2}
+    .rk-metric-val.hired{color:var(--rk-green)}
+    .rk-metric-val.company{color:var(--rk-amber)}
+    .rk-metric-val.agent{color:#d4a853}
+    .rk-metric-bar{height:3px;border-radius:2px;background:rgba(255,255,255,.04);margin-top:6px;overflow:hidden}
+    .rk-metric-bar-fill{height:100%;border-radius:2px;animation:rkBarGrow .8s ease forwards}
+    .rk-metric-bar-fill.hired{background:linear-gradient(90deg,rgba(52,211,153,.6),rgba(52,211,153,.2))}
+    .rk-metric-bar-fill.company{background:linear-gradient(90deg,rgba(251,191,36,.6),rgba(251,191,36,.2))}
+    .rk-metric-bar-fill.agent{background:linear-gradient(90deg,rgba(212,168,83,.6),rgba(212,168,83,.2))}
+
+    /* ── EMPTY STATE ── */
+    .rk-empty{text-align:center;padding:56px 24px}
+    .rk-empty-icon{width:64px;height:64px;margin:0 auto 18px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(212,168,83,.06);border:1px solid rgba(212,168,83,.08)}
+    .rk-empty h4{font-size:16px;font-weight:700;color:#94a3b8;margin-bottom:6px}
+    .rk-empty p{font-size:13px;color:#64748b}
+
+    /* ── TOAST ── */
+    .rk-toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);display:flex;align-items:center;gap:12px;padding:14px 22px;background:rgba(15,15,15,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(212,168,83,.15);border-radius:14px;color:#f0d78c;font-size:14px;font-weight:600;box-shadow:0 8px 32px rgba(0,0,0,.4);opacity:0;transition:all .35s cubic-bezier(.16,1,.3,1);z-index:9999;pointer-events:auto;white-space:nowrap}
+    .rk-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    .rk-toast-btn{background:rgba(212,168,83,.12);border:1px solid rgba(212,168,83,.2);color:#d4a853;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:700;font-family:'Tajawal',sans-serif;cursor:pointer;transition:all .2s;white-space:nowrap}
+    .rk-toast-btn:hover{background:rgba(212,168,83,.2)}
+    @media(max-width:480px){.rk-toast{bottom:16px;width:calc(100vw - 32px);white-space:normal;text-align:center;justify-content:center}}
 
 
     @media(max-width:768px){
@@ -587,19 +751,6 @@
       #agents-section .agent-row>div:nth-child(4)::before{content:'الطلبات'}
       #agents-section .agent-row>div:nth-child(5)::before{content:'التوظيف'}
       #agents-section .agent-row>div:nth-child(6)::before{content:'الاجراءات'}
-      #rankings-section .rankings-header{display:none}
-      .rankings-card{padding:14px 16px;border-radius:14px;margin-bottom:8px;background:rgba(15,15,15,0.8);border:1px solid rgba(212,168,83,0.08)}
-      .rankings-card-top{display:flex;align-items:center;gap:12px;margin-bottom:10px}
-      .rankings-card .rk-rank{font-size:26px;width:36px;text-align:center;flex-shrink:0}
-      .rankings-card .rk-name{font-weight:700;font-size:14px;color:#e2e8f0;line-height:1.3}
-      .rankings-card .rk-email{font-size:11px;color:#64748b;direction:ltr;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px}
-      .rankings-card .rk-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
-      .rankings-card .rk-stat{padding:8px 4px;background:rgba(255,255,255,0.02);border-radius:8px;text-align:center}
-      .rankings-card .rk-stat-label{font-size:9px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px}
-      .rankings-card .rk-stat-val{font-size:14px;font-weight:800}
-      .rankings-card.top1{border-color:rgba(255,215,0,0.12);background:linear-gradient(135deg,rgba(255,215,0,0.04),rgba(255,215,0,0.01))}
-      .rankings-card.top2{border-color:rgba(192,192,192,0.1);background:linear-gradient(135deg,rgba(192,192,192,0.03),rgba(192,192,192,0.01))}
-      .rankings-card.top3{border-color:rgba(205,127,50,0.1);background:linear-gradient(135deg,rgba(205,127,50,0.03),rgba(205,127,50,0.01))}
       .agent-row .agent-actions{flex-direction:column;gap:6px}
       .agent-row .agent-btn{width:100%}
       #agent-earnings-list .app-row{
@@ -631,27 +782,54 @@
       .rankings-filter{flex-direction:column;align-items:stretch!important;gap:8px!important}
       .rankings-filter .filter-input{min-width:100%!important;width:100%}
       .rankings-title-row{flex-direction:column!important;align-items:flex-start!important;gap:10px!important}
-      .rankings-header{display:none}
-      .rankings-row{
+      .rk-table-header{display:none}
+      .rk-row{
         display:flex;flex-direction:column;gap:0;padding:0;
-        background:rgba(15,15,15,0.8);border:1px solid rgba(212,168,83,0.08);
-        border-radius:14px;margin-bottom:8px;overflow:hidden;position:relative;
+        background:rgba(15,15,15,.85);border:1px solid rgba(212,168,83,.08);
+        border-radius:16px;margin-bottom:10px;overflow:hidden;position:relative;
+        backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
       }
-      .rankings-row:hover{transform:none;box-shadow:none}
-      .rankings-row.top1{border-color:rgba(255,215,0,0.12);background:linear-gradient(135deg,rgba(255,215,0,0.04),rgba(255,215,0,0.01))}
-      .rankings-row.top2{border-color:rgba(192,192,192,0.1);background:linear-gradient(135deg,rgba(192,192,192,0.03),rgba(192,192,192,0.01))}
-      .rankings-row.top3{border-color:rgba(205,127,50,0.1);background:linear-gradient(135deg,rgba(205,127,50,0.03),rgba(205,127,50,0.01))}
-      .rankings-row .rk-rank{position:absolute;top:14px;left:14px;font-size:22px;width:auto}
-      .rankings-row .rk-identity{padding:14px 16px 10px 50px;border-bottom:1px solid rgba(212,168,83,0.05)}
-      .rankings-row .rk-avatar{width:32px;height:32px;font-size:12px;border-radius:8px}
-      .rankings-row .rk-name{font-size:13px}
-      .rankings-row .rk-email{font-size:10px;max-width:150px}
-      .rankings-row .rk-stat{text-align:right;padding:10px 16px;border-bottom:1px solid rgba(212,168,83,0.04);display:flex;justify-content:space-between;align-items:center;font-size:14px}
-      .rankings-row .rk-stat:last-child{border-bottom:none}
-      .rankings-row .rk-stat::before{font-size:11px;color:#64748b;font-weight:600}
-      .rankings-row .rk-stat.hired::before{content:'التوظيف'}
-      .rankings-row .rk-stat.company::before{content:'كسب الشركة'}
-      .rankings-row .rk-stat.agent::before{content:'كسبه هو'}
+      .rk-row:hover{transform:none;box-shadow:none}
+      .rk-row.top1{border-color:rgba(255,215,0,.15);background:linear-gradient(160deg,rgba(255,215,0,.05),rgba(184,134,11,.02),rgba(15,15,15,.85));box-shadow:0 0 24px rgba(255,215,0,.06)}
+      .rk-row.top2{border-color:rgba(192,192,192,.12);background:linear-gradient(160deg,rgba(192,192,192,.04),rgba(15,15,15,.85))}
+      .rk-row.top3{border-color:rgba(205,127,50,.12);background:linear-gradient(160deg,rgba(205,127,50,.04),rgba(15,15,15,.85))}
+
+      .rk-badge{position:absolute;top:14px;left:14px;width:48px;height:52px}
+      .rk-row.top1 .rk-badge{animation:rkFloat 5s ease-in-out infinite;width:52px;height:56px}
+      .rk-row.top2 .rk-badge{width:48px;height:52px}
+      .rk-row.top3 .rk-badge{width:48px;height:52px}
+
+      .rk-identity{padding:16px 16px 14px 68px;gap:10px;border-bottom:1px solid rgba(212,168,83,.05)}
+      .rk-avatar{width:36px;height:36px;font-size:13px}
+      .rk-name{font-size:14px}
+      .rk-email{font-size:10px;max-width:160px}
+      .rk-champion{margin-top:4px;font-size:8px;padding:2px 6px}
+
+      .rk-metrics-mobile{display:flex;flex-direction:column;gap:0}
+      .rk-metric-mobile{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;border-bottom:1px solid rgba(212,168,83,.04);transition:background var(--rk-tr)}
+      .rk-metric-mobile:last-child{border-bottom:none}
+      .rk-metric-mobile:active{background:rgba(212,168,83,.03)}
+      .rk-metric-mobile-left{display:flex;align-items:center;gap:10px}
+      .rk-metric-mobile-icon{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+      .rk-metric-mobile-icon.hired{background:rgba(52,211,153,.08);color:var(--rk-green)}
+      .rk-metric-mobile-icon.company{background:rgba(251,191,36,.08);color:var(--rk-amber)}
+      .rk-metric-mobile-icon.agent{background:rgba(212,168,83,.08);color:#d4a853}
+      .rk-metric-mobile-label{font-size:12px;color:#94a3b8;font-weight:500}
+      .rk-metric-mobile-val{font-size:16px;font-weight:900;line-height:1}
+      .rk-metric-mobile-val.hired{color:var(--rk-green)}
+      .rk-metric-mobile-val.company{color:var(--rk-amber)}
+      .rk-metric-mobile-val.agent{color:#d4a853}
+      .rk-metric-mobile-bar{height:2px;background:rgba(255,255,255,.03);margin-top:6px;border-radius:1px;overflow:hidden}
+      .rk-metric-mobile-bar-fill{height:100%;border-radius:1px;animation:rkBarGrow .8s ease forwards}
+      .rk-metric-mobile-bar-fill.hired{background:linear-gradient(90deg,rgba(52,211,153,.5),rgba(52,211,153,.15))}
+      .rk-metric-mobile-bar-fill.company{background:linear-gradient(90deg,rgba(251,191,36,.5),rgba(251,191,36,.15))}
+      .rk-metric-mobile-bar-fill.agent{background:linear-gradient(90deg,rgba(212,168,83,.5),rgba(212,168,83,.15))}
+
+      .rk-rank-normal{position:absolute;top:14px;left:14px;width:40px;height:44px;display:flex;align-items:center;justify-content:center;font-family:'Courier New',monospace;font-size:13px;font-weight:900;color:#64748b;letter-spacing:1px;
+        clip-path:polygon(50% 0%,90% 15%,100% 40%,100% 70%,90% 92%,50% 100%,10% 92%,0% 70%,0% 40%,10% 15%);
+        background:linear-gradient(170deg,#0c0c0c,#1a1a1a 20%,#2a2a2a 45%,#333 50%,#2a2a2a 55%,#1a1a1a 80%,#0c0c0c);
+        text-shadow:0 1px 3px rgba(0,0,0,.5);
+      }
     }
   </style>
 </head>
@@ -1642,6 +1820,17 @@
     }
     function closeAgentModal() { document.getElementById('agent-modal').classList.remove('show'); }
 
+    function showToast(msg, btnLabel, btnFn) {
+      const existing = document.querySelector('.rk-toast');
+      if (existing) existing.remove();
+      const t = document.createElement('div');
+      t.className = 'rk-toast';
+      t.innerHTML = `<span>${msg}</span>${btnLabel ? `<button class="rk-toast-btn" onclick="(${btnFn.toString()})()">${btnLabel}</button>` : ''}`;
+      document.body.appendChild(t);
+      requestAnimationFrame(() => t.classList.add('show'));
+      setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 400); }, 4000);
+    }
+
     async function addAgent() {
       const name = document.getElementById('agent-name').value;
       const email = document.getElementById('agent-email').value;
@@ -1658,8 +1847,18 @@
         if (data.error) return alert(data.error);
         const link = window.location.origin + '/?ref=' + data.referral_code;
         document.getElementById('agent-link').value = link;
-        document.getElementById('agent-link-box').style.display = 'block';
+        closeAgentModal();
         loadAgents();
+        showToast(`تم إضافة ${name} كمندوب`, 'نسخ الرابط', function() {
+          navigator.clipboard.writeText(link).then(() => {
+            const btn = document.querySelector('.rk-toast-btn');
+            if (btn) { btn.textContent = 'تم النسخ!'; btn.style.color = '#34d399'; }
+          });
+        });
+        document.getElementById('agent-name').value = '';
+        document.getElementById('agent-email').value = '';
+        document.getElementById('agent-phone').value = '';
+        document.getElementById('agent-password').value = '';
       } catch (e) { alert('حدث خطأ'); }
     }
 
@@ -1778,9 +1977,11 @@
       const now = new Date();
       const yearSel = document.getElementById('ranking-year');
       const monthSel = document.getElementById('ranking-month');
+      yearSel.innerHTML = `<option value="all">كل السنوات</option>`;
       for (let y = now.getFullYear(); y >= now.getFullYear() - 2; y--) {
         yearSel.innerHTML += `<option value="${y}" ${y===now.getFullYear()?'selected':''}>${y}</option>`;
       }
+      monthSel.innerHTML = `<option value="all">كل الأشهر</option>`;
       const months = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
       months.forEach((m, i) => {
         monthSel.innerHTML += `<option value="${i+1}" ${i===now.getMonth()?'selected':''}>${m}</option>`;
@@ -1796,40 +1997,213 @@
         let rankings = await res.json();
         // FAKE DATA for preview — REMOVE AFTER APPROVAL
         if (rankings.length === 0) {
-          rankings = [
-            {name:'أحمد محمد',email:'ahmed@test.com',hired:12,company_earned:120000,agent_earned:45000},
-            {name:'سارة علي',email:'sara@test.com',hired:8,company_earned:85000,agent_earned:30000},
-            {name:'محمد حسن',email:'mohamed@test.com',hired:6,company_earned:60000,agent_earned:22000},
-            {name:'فاطمة أحمد',email:'fatma@test.com',hired:4,company_earned:40000,agent_earned:15000},
-            {name:'عمر خالد',email:'omar@test.com',hired:2,company_earned:20000,agent_earned:7500},
+          const monthNow = new Date().getMonth() + 1;
+          const selMonth = parseInt(month) || monthNow;
+          const allAgents = [
+            {name:'أحمد محمد',email:'ahmed@test.com'},
+            {name:'سارة علي',email:'sara@test.com'},
+            {name:'نور حسن',email:'nour@test.com'},
+            {name:'محمد حسن',email:'mohamed@test.com'},
+            {name:'ياسمين أحمد',email:'yasmine@test.com'},
+            {name:'عمر خالد',email:'omar@test.com'},
+            {name:'فاطمة أحمد',email:'fatma@test.com'},
+            {name:'خالد سعيد',email:'khaled@test.com'},
+            {name:'مريم يوسف',email:'mariam@test.com'},
+            {name:'يوسف إبراهيم',email:'youssef@test.com'},
+            {name:'هدى علي',email:'hoda@test.com'},
+            {name:'طارق منصور',email:'tarek@test.com'},
           ];
+          const monthData = {
+            1:  [{h:14,c:145000,a:52000},{h:11,c:115000,a:41000},{h:9,c:88000,a:32000},{h:7,c:68000,a:24000},{h:5,c:45000,a:16000},{h:4,c:35000,a:12500},{h:3,c:25000,a:9000},{h:2,c:18000,a:6500},{h:1,c:8000,a:2800},{h:0,c:0,a:0},{h:0,c:0,a:0},{h:0,c:0,a:0}],
+            2:  [{h:12,c:128000,a:46000},{h:10,c:105000,a:38000},{h:8,c:82000,a:29000},{h:6,c:58000,a:21000},{h:5,c:48000,a:17000},{h:3,c:28000,a:10000},{h:2,c:18000,a:6500},{h:2,c:15000,a:5400},{h:1,c:9000,a:3200},{h:0,c:0,a:0},{h:0,c:0,a:0},{h:0,c:0,a:0}],
+            3:  [{h:16,c:170000,a:61000},{h:13,c:138000,a:50000},{h:10,c:102000,a:37000},{h:8,c:78000,a:28000},{h:6,c:55000,a:20000},{h:4,c:38000,a:14000},{h:3,c:28000,a:10000},{h:2,c:18000,a:6500},{h:1,c:8000,a:2800},{h:0,c:0,a:0},{h:0,c:0,a:0},{h:0,c:0,a:0}],
+            4:  [{h:11,c:112000,a:40000},{h:9,c:92000,a:33000},{h:8,c:78000,a:28000},{h:7,c:68000,a:24000},{h:5,c:48000,a:17000},{h:4,c:35000,a:12500},{h:3,c:28000,a:10000},{h:2,c:18000,a:6500},{h:1,c:9000,a:3200},{h:0,c:0,a:0},{h:0,c:0,a:0},{h:0,c:0,a:0}],
+            5:  [{h:18,c:190000,a:68000},{h:14,c:148000,a:53000},{h:11,c:112000,a:40000},{h:9,c:88000,a:32000},{h:7,c:65000,a:23000},{h:5,c:45000,a:16000},{h:4,c:35000,a:12500},{h:3,c:25000,a:9000},{h:2,c:15000,a:5400},{h:1,c:8000,a:2800},{h:0,c:0,a:0},{h:0,c:0,a:0}],
+            6:  [{h:15,c:158000,a:57000},{h:12,c:125000,a:45000},{h:10,c:100000,a:36000},{h:8,c:78000,a:28000},{h:6,c:55000,a:20000},{h:5,c:45000,a:16000},{h:3,c:28000,a:10000},{h:2,c:18000,a:6500},{h:1,c:8000,a:2800},{h:0,c:0,a:0},{h:0,c:0,a:0},{h:0,c:0,a:0}],
+            7:  [{h:13,c:135000,a:49000},{h:11,c:112000,a:40000},{h:9,c:88000,a:32000},{h:8,c:78000,a:28000},{h:6,c:55000,a:20000},{h:5,c:45000,a:16000},{h:4,c:35000,a:12500},{h:3,c:25000,a:9000},{h:1,c:9000,a:3200},{h:0,c:0,a:0},{h:0,c:0,a:0},{h:0,c:0,a:0}],
+            8:  [{h:17,c:178000,a:64000},{h:14,c:145000,a:52000},{h:11,c:112000,a:40000},{h:9,c:85000,a:31000},{h:7,c:65000,a:23000},{h:5,c:48000,a:17000},{h:3,c:28000,a:10000},{h:2,c:18000,a:6500},{h:1,c:8000,a:2800},{h:0,c:0,a:0},{h:0,c:0,a:0},{h:0,c:0,a:0}],
+            9:  [{h:12,c:125000,a:45000},{h:10,c:102000,a:37000},{h:9,c:88000,a:32000},{h:7,c:68000,a:24000},{h:6,c:55000,a:20000},{h:4,c:35000,a:12500},{h:3,c:28000,a:10000},{h:2,c:18000,a:6500},{h:1,c:9000,a:3200},{h:0,c:0,a:0},{h:0,c:0,a:0},{h:0,c:0,a:0}],
+            10: [{h:19,c:200000,a:72000},{h:15,c:158000,a:57000},{h:12,c:120000,a:43000},{h:9,c:88000,a:32000},{h:7,c:65000,a:23000},{h:5,c:45000,a:16000},{h:4,c:35000,a:12500},{h:3,c:25000,a:9000},{h:2,c:15000,a:5400},{h:1,c:8000,a:2800},{h:0,c:0,a:0},{h:0,c:0,a:0}],
+            11: [{h:14,c:145000,a:52000},{h:12,c:125000,a:45000},{h:10,c:100000,a:36000},{h:8,c:78000,a:28000},{h:6,c:55000,a:20000},{h:5,c:45000,a:16000},{h:3,c:28000,a:10000},{h:2,c:18000,a:6500},{h:1,c:8000,a:2800},{h:0,c:0,a:0},{h:0,c:0,a:0},{h:0,c:0,a:0}],
+            12: [{h:16,c:168000,a:60000},{h:13,c:135000,a:49000},{h:11,c:112000,a:40000},{h:9,c:85000,a:31000},{h:7,c:65000,a:23000},{h:5,c:48000,a:17000},{h:4,c:35000,a:12500},{h:3,c:25000,a:9000},{h:2,c:15000,a:5400},{h:1,c:9000,a:3200},{h:0,c:0,a:0},{h:0,c:0,a:0}],
+          };
+
+          if (period === 'month') {
+            const md = monthData[selMonth] || monthData[monthNow];
+            rankings = allAgents.map((ag,i) => ({...ag, hired:md[i].h, company_earned:md[i].c, agent_earned:md[i].a}));
+          } else if (period === '3months') {
+            rankings = allAgents.map((ag,i) => {
+              const m1 = monthData[selMonth]||monthData[monthNow], m2 = monthData[(selMonth-1)||12]||monthData[12], m3 = monthData[(selMonth-2)||11]||monthData[11];
+              return {...ag, hired:m1[i].h+m2[i].h+m3[i].h, company_earned:m1[i].c+m2[i].c+m3[i].c, agent_earned:m1[i].a+m2[i].a+m3[i].a};
+            });
+          } else if (period === '4months') {
+            rankings = allAgents.map((ag,i) => {
+              let h=0,c=0,a=0;
+              for(let k=0;k<4;k++){const md=monthData[(selMonth-k-1+12)%12+1]||monthData[1];h+=md[i].h;c+=md[i].c;a+=md[i].a;}
+              return {...ag,hired:h,company_earned:c,agent_earned:a};
+            });
+          } else if (period === 'year') {
+            rankings = allAgents.map((ag,i) => {
+              let h=0,c=0,a=0;
+              for(let k=1;k<=12;k++){const md=monthData[k];h+=md[i].h;c+=md[i].c;a+=md[i].a;}
+              return {...ag,hired:h,company_earned:c,agent_earned:a};
+            });
+          } else {
+            rankings = allAgents.map((ag,i) => {
+              let h=0,c=0,a=0;
+              for(let k=1;k<=12;k++){const md=monthData[k];h+=md[i].h*2;c+=md[i].c*2;a+=md[i].a*2;}
+              return {...ag,hired:h,company_earned:c,agent_earned:a};
+            });
+          }
         }
         const list = document.getElementById('rankings-list');
-        const medals = ['🥇','🥈','🥉'];
-        const medalBg = ['rgba(255,215,0,0.08)','rgba(192,192,192,0.08)','rgba(205,127,50,0.08)'];
-        const filtered = rankings.filter(a => a.hired > 0);
+        const filtered = rankings;
         const topClass = ['top1','top2','top3'];
+        const maxHired = Math.max(...filtered.map(a => a.hired), 1);
+        const maxCompany = Math.max(...filtered.map(a => a.company_earned), 1);
+        const maxAgent = Math.max(...filtered.map(a => a.agent_earned), 1);
+
+        if (filtered.length === 0) {
+          list.innerHTML = `
+            <div class="rk-header">
+              <div class="rk-header-badge"><span class="rk-live-dot"></span> ترتيب الأداء</div>
+              <h3>🏆 ترتيب المندوبين</h3>
+              <p>الأداء الأعلى • التوظيف • الأرباح</p>
+            </div>
+            <div class="rk-container">
+              <div class="rk-empty">
+                <div class="rk-empty-icon">🏆</div>
+                <h4>لا توجد نتائج ترتيب حاليًا</h4>
+                <p>ابدأ التوظيف لبناء ترتيب المندوبين.</p>
+              </div>
+            </div>`;
+          return;
+        }
+
         list.innerHTML = `
-          <div class="rankings-header">
-            <div>الترتيب</div><div>المندوب</div><div>التوظيف</div><div>كسب الشركة</div><div>كسبه هو</div>
+          <div class="rk-header">
+            <div class="rk-header-badge"><span class="rk-live-dot"></span> ترتيب الأداء</div>
+            <h3>🏆 ترتيب المندوبين</h3>
+            <p>الأداء الأعلى • التوظيف • الأرباح</p>
           </div>
-          ${filtered.map((a, i) => `
-            <div class="rankings-row ${i < 3 ? topClass[i] : ''}">
-              <div class="rk-rank">${i < 3 ? medals[i] : '<span style="color:#555;font-size:15px;">'+(i+1)+'</span>'}</div>
-              <div class="rk-identity">
-                <div class="rk-avatar">${a.name.charAt(0)}</div>
-                <div style="overflow:hidden;">
-                  <div class="rk-name">${a.name}</div>
-                  <div class="rk-email">${a.email}</div>
+          <div class="rk-container">
+            <div class="rk-table-header">
+              <div>الترتيب</div><div>المندوب</div><div>التوظيف</div><div>كسب الشركة</div><div>كسبه هو</div>
+            </div>
+            ${filtered.map((a, i) => {
+              const rank = i + 1;
+              const isTop = rank <= 3;
+              const hPct = Math.round((a.hired / maxHired) * 100);
+              const cPct = Math.round((a.company_earned / maxCompany) * 100);
+              const aPct = Math.round((a.agent_earned / maxAgent) * 100);
+              const champLabel = rank === 1 ? 'المتصدر' : '';
+              return `
+            <div class="rk-row ${isTop ? topClass[i] : ''}">
+              <div class="rk-badge">
+                <div class="rk-badge-core">
+                  <div class="rk-badge-shine"></div>
+                  <span class="rk-badge-num">${String(rank).padStart(2,'0')}</span>
                 </div>
               </div>
-              <div class="rk-stat hired">${a.hired}</div>
-              <div class="rk-stat company">${a.company_earned.toLocaleString('ar-EG')} ج</div>
-              <div class="rk-stat agent">${a.agent_earned.toLocaleString('ar-EG')} ج</div>
-            </div>
-          `).join('')}
-          ${filtered.length === 0 ? '<p style="text-align:center;padding:40px;color:#94a3b8;">لا يوجد مندوبين لهم توظيفات في هذه الفترة</p>' : ''}
+              <div class="rk-identity">
+                <div class="rk-avatar">${a.name.charAt(0)}</div>
+                <div class="rk-name-block">
+                  <div class="rk-name">${a.name}</div>
+                  <div class="rk-email">${a.email}</div>
+                  ${champLabel ? `<div class="rk-champion">${champLabel}</div>` : ''}
+                </div>
+              </div>
+              <div class="rk-metric">
+                <div class="rk-metric-icon">👥</div>
+                <div class="rk-metric-val hired">${a.hired}</div>
+                <div class="rk-metric-bar"><div class="rk-metric-bar-fill hired" style="width:${hPct}%"></div></div>
+              </div>
+              <div class="rk-metric">
+                <div class="rk-metric-icon">🏢</div>
+                <div class="rk-metric-val company">${a.company_earned.toLocaleString('ar-EG')} ج</div>
+                <div class="rk-metric-bar"><div class="rk-metric-bar-fill company" style="width:${cPct}%"></div></div>
+              </div>
+              <div class="rk-metric">
+                <div class="rk-metric-icon">💰</div>
+                <div class="rk-metric-val agent">${a.agent_earned.toLocaleString('ar-EG')} ج</div>
+                <div class="rk-metric-bar"><div class="rk-metric-bar-fill agent" style="width:${aPct}%"></div></div>
+              </div>
+            </div>`;
+            }).join('')}
+          </div>
+
+          <div style="display:none" class="rk-mobile-cards">
+            ${filtered.map((a, i) => {
+              const rank = i + 1;
+              const isTop = rank <= 3;
+              const hPct = Math.round((a.hired / maxHired) * 100);
+              const cPct = Math.round((a.company_earned / maxCompany) * 100);
+              const aPct = Math.round((a.agent_earned / maxAgent) * 100);
+              return `
+            <div class="rk-row ${isTop ? topClass[i] : ''}">
+              ${isTop ? `
+              <div class="rk-badge">
+                <div class="rk-badge-core">
+                  <div class="rk-badge-shine"></div>
+                  <span class="rk-badge-num">${String(rank).padStart(2,'0')}</span>
+                </div>
+              </div>` : `<div class="rk-rank-normal">${String(rank).padStart(2,'0')}</div>`}
+              <div class="rk-identity">
+                <div class="rk-avatar">${a.name.charAt(0)}</div>
+                <div class="rk-name-block">
+                  <div class="rk-name">${a.name}</div>
+                  <div class="rk-email">${a.email}</div>
+                  ${rank === 1 ? '<div class="rk-champion">المتصدر</div>' : ''}
+                </div>
+              </div>
+              <div class="rk-metrics-mobile">
+                <div class="rk-metric-mobile">
+                  <div class="rk-metric-mobile-left">
+                    <div class="rk-metric-mobile-icon hired">👥</div>
+                    <div class="rk-metric-mobile-label">التوظيف</div>
+                  </div>
+                  <div>
+                    <div class="rk-metric-mobile-val hired">${a.hired}</div>
+                    <div class="rk-metric-mobile-bar"><div class="rk-metric-mobile-bar-fill hired" style="width:${hPct}%"></div></div>
+                  </div>
+                </div>
+                <div class="rk-metric-mobile">
+                  <div class="rk-metric-mobile-left">
+                    <div class="rk-metric-mobile-icon company">🏢</div>
+                    <div class="rk-metric-mobile-label">كسب الشركة</div>
+                  </div>
+                  <div>
+                    <div class="rk-metric-mobile-val company">${a.company_earned.toLocaleString('ar-EG')} ج</div>
+                    <div class="rk-metric-mobile-bar"><div class="rk-metric-mobile-bar-fill company" style="width:${cPct}%"></div></div>
+                  </div>
+                </div>
+                <div class="rk-metric-mobile">
+                  <div class="rk-metric-mobile-left">
+                    <div class="rk-metric-mobile-icon agent">💰</div>
+                    <div class="rk-metric-mobile-label">كسبه هو</div>
+                  </div>
+                  <div>
+                    <div class="rk-metric-mobile-val agent">${a.agent_earned.toLocaleString('ar-EG')} ج</div>
+                    <div class="rk-metric-mobile-bar"><div class="rk-metric-mobile-bar-fill agent" style="width:${aPct}%"></div></div>
+                  </div>
+                </div>
+              </div>
+            </div>`;
+            }).join('')}
+          </div>
         `;
+
+        /* Mobile card visibility */
+        function updateRankingsMobile() {
+          const isMobile = window.innerWidth <= 768;
+          const desktop = list.querySelector('.rk-container');
+          const mobile = list.querySelector('.rk-mobile-cards');
+          if (desktop) desktop.style.display = isMobile ? 'none' : '';
+          if (mobile) mobile.style.display = isMobile ? 'block' : 'none';
+        }
+        updateRankingsMobile();
+        window.removeEventListener('resize', updateRankingsMobile);
+        window.addEventListener('resize', updateRankingsMobile);
       } catch (e) {}
     }
 

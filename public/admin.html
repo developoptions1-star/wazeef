@@ -479,6 +479,32 @@
     .agent-btn.copy:hover{background:rgba(212,168,83,0.12);transform:translateY(-1px)}
     .agent-btn.copy svg{stroke:#d4a853}
 
+    .rankings-wrap{padding:0}
+    .rankings-header{display:grid;grid-template-columns:60px 1.6fr 100px 130px 130px;align-items:center;gap:14px;padding:16px 28px;background:rgba(212,168,83,0.04);border-bottom:1px solid rgba(212,168,83,0.06)}
+    .rankings-header>div{font-size:12px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.5px;text-align:center}
+    .rankings-header>div:nth-child(2){text-align:right}
+    .rankings-row{display:grid;grid-template-columns:60px 1.6fr 100px 130px 130px;align-items:center;gap:14px;padding:16px 28px;border-bottom:1px solid rgba(255,255,255,0.03);transition:all .25s ease;cursor:default}
+    .rankings-row:last-child{border-bottom:none}
+    .rankings-row:hover{background:rgba(212,168,83,0.02)}
+    .rankings-row .rk-rank{font-size:24px;text-align:center;font-weight:800}
+    .rankings-row .rk-identity{display:flex;align-items:center;gap:12px}
+    .rankings-row .rk-avatar{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;flex-shrink:0;transition:all .25s}
+    .rankings-row .rk-name{font-size:14px;font-weight:700;color:#f0d78c;line-height:1.3}
+    .rankings-row .rk-email{font-size:12px;color:#94a3b8;direction:ltr;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px}
+    .rankings-row .rk-stat{text-align:center;font-size:15px;font-weight:800}
+    .rankings-row .rk-stat.hired{color:#34d399}
+    .rankings-row .rk-stat.company{color:#d4a853}
+    .rankings-row .rk-stat.agent{color:#fbbf24}
+    .rankings-row.top1{background:rgba(255,215,0,0.03)}
+    .rankings-row.top1 .rk-avatar{background:linear-gradient(135deg,rgba(255,215,0,0.18),rgba(255,215,0,0.06));border:1px solid rgba(255,215,0,0.15);color:#FFD700}
+    .rankings-row.top1:hover{background:rgba(255,215,0,0.05)}
+    .rankings-row.top2{background:rgba(192,192,192,0.02)}
+    .rankings-row.top2 .rk-avatar{background:linear-gradient(135deg,rgba(192,192,192,0.15),rgba(192,192,192,0.05));border:1px solid rgba(192,192,192,0.12);color:#C0C0C0}
+    .rankings-row.top2:hover{background:rgba(192,192,192,0.04)}
+    .rankings-row.top3{background:rgba(205,127,50,0.02)}
+    .rankings-row.top3 .rk-avatar{background:linear-gradient(135deg,rgba(205,127,50,0.15),rgba(205,127,50,0.05));border:1px solid rgba(205,127,50,0.12);color:#CD7F32}
+    .rankings-row.top3:hover{background:rgba(205,127,50,0.04)}
+
 
     @media(max-width:768px){
       .navbar{padding:12px 16px;flex-wrap:wrap;gap:8px;background:transparent;border-bottom:none}
@@ -561,15 +587,19 @@
       #agents-section .agent-row>div:nth-child(4)::before{content:'الطلبات'}
       #agents-section .agent-row>div:nth-child(5)::before{content:'التوظيف'}
       #agents-section .agent-row>div:nth-child(6)::before{content:'الاجراءات'}
-      #rankings-section .agent-row{padding:14px 16px;border-radius:14px;margin-bottom:8px;gap:8px;display:flex;flex-direction:column;align-items:stretch}
-      #rankings-section .agent-row .rank-medal{display:flex;align-items:center;gap:12px;margin-bottom:8px}
-      #rankings-section .agent-row .rank-medal .rank-num{font-size:28px;width:40px;text-align:center}
-      #rankings-section .agent-row .rank-medal .rank-name{font-weight:700;font-size:14px;color:#e2e8f0}
-      #rankings-section .agent-row .rank-medal .rank-email{font-size:11px;color:#64748b;margin-top:2px}
-      #rankings-section .agent-row .rank-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
-      #rankings-section .agent-row .rank-stat{text-align:center;padding:8px 4px;background:rgba(255,255,255,0.02);border-radius:8px}
-      #rankings-section .agent-row .rank-stat-label{font-size:9px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px}
-      #rankings-section .agent-row .rank-stat-val{font-size:15px;font-weight:800}
+      #rankings-section .rankings-header{display:none}
+      .rankings-card{padding:14px 16px;border-radius:14px;margin-bottom:8px;background:rgba(15,15,15,0.8);border:1px solid rgba(212,168,83,0.08)}
+      .rankings-card-top{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+      .rankings-card .rk-rank{font-size:26px;width:36px;text-align:center;flex-shrink:0}
+      .rankings-card .rk-name{font-weight:700;font-size:14px;color:#e2e8f0;line-height:1.3}
+      .rankings-card .rk-email{font-size:11px;color:#64748b;direction:ltr;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px}
+      .rankings-card .rk-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+      .rankings-card .rk-stat{padding:8px 4px;background:rgba(255,255,255,0.02);border-radius:8px;text-align:center}
+      .rankings-card .rk-stat-label{font-size:9px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px}
+      .rankings-card .rk-stat-val{font-size:14px;font-weight:800}
+      .rankings-card.top1{border-color:rgba(255,215,0,0.12);background:linear-gradient(135deg,rgba(255,215,0,0.04),rgba(255,215,0,0.01))}
+      .rankings-card.top2{border-color:rgba(192,192,192,0.1);background:linear-gradient(135deg,rgba(192,192,192,0.03),rgba(192,192,192,0.01))}
+      .rankings-card.top3{border-color:rgba(205,127,50,0.1);background:linear-gradient(135deg,rgba(205,127,50,0.03),rgba(205,127,50,0.01))}
       .agent-row .agent-actions{flex-direction:column;gap:6px}
       .agent-row .agent-btn{width:100%}
       #agent-earnings-list .app-row{
@@ -596,6 +626,32 @@
       .stat-card .num{font-size:22px}
       .tabs{flex-wrap:wrap}
       .tab-btn{padding:8px 12px;font-size:12px;flex:1;text-align:center}
+    }
+    @media(max-width:768px){
+      .rankings-filter{flex-direction:column;align-items:stretch!important;gap:8px!important}
+      .rankings-filter .filter-input{min-width:100%!important;width:100%}
+      .rankings-title-row{flex-direction:column!important;align-items:flex-start!important;gap:10px!important}
+      .rankings-header{display:none}
+      .rankings-row{
+        display:flex;flex-direction:column;gap:0;padding:0;
+        background:rgba(15,15,15,0.8);border:1px solid rgba(212,168,83,0.08);
+        border-radius:14px;margin-bottom:8px;overflow:hidden;position:relative;
+      }
+      .rankings-row:hover{transform:none;box-shadow:none}
+      .rankings-row.top1{border-color:rgba(255,215,0,0.12);background:linear-gradient(135deg,rgba(255,215,0,0.04),rgba(255,215,0,0.01))}
+      .rankings-row.top2{border-color:rgba(192,192,192,0.1);background:linear-gradient(135deg,rgba(192,192,192,0.03),rgba(192,192,192,0.01))}
+      .rankings-row.top3{border-color:rgba(205,127,50,0.1);background:linear-gradient(135deg,rgba(205,127,50,0.03),rgba(205,127,50,0.01))}
+      .rankings-row .rk-rank{position:absolute;top:14px;left:14px;font-size:22px;width:auto}
+      .rankings-row .rk-identity{padding:14px 16px 10px 50px;border-bottom:1px solid rgba(212,168,83,0.05)}
+      .rankings-row .rk-avatar{width:32px;height:32px;font-size:12px;border-radius:8px}
+      .rankings-row .rk-name{font-size:13px}
+      .rankings-row .rk-email{font-size:10px;max-width:150px}
+      .rankings-row .rk-stat{text-align:right;padding:10px 16px;border-bottom:1px solid rgba(212,168,83,0.04);display:flex;justify-content:space-between;align-items:center;font-size:14px}
+      .rankings-row .rk-stat:last-child{border-bottom:none}
+      .rankings-row .rk-stat::before{font-size:11px;color:#64748b;font-weight:600}
+      .rankings-row .rk-stat.hired::before{content:'التوظيف'}
+      .rankings-row .rk-stat.company::before{content:'كسب الشركة'}
+      .rankings-row .rk-stat.agent::before{content:'كسبه هو'}
     }
   </style>
 </head>
@@ -696,9 +752,9 @@
         <div id="agents-list"></div>
       </div>
       <div style="margin-top:30px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div class="rankings-title-row" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
           <div class="section-title" style="margin-bottom:0;"><div class="dot"></div>ترتيب المندوبين</div>
-          <div style="display:flex;gap:10px;align-items:center;">
+          <div class="rankings-filter" style="display:flex;gap:10px;align-items:center;">
             <select id="ranking-period" class="filter-input" onchange="loadRankings()" style="min-width:180px;">
               <option value="month">الشهر الحالي</option>
               <option value="3months">آخر 3 شهور</option>
@@ -1752,24 +1808,24 @@
         const medals = ['🥇','🥈','🥉'];
         const medalBg = ['rgba(255,215,0,0.08)','rgba(192,192,192,0.08)','rgba(205,127,50,0.08)'];
         const filtered = rankings.filter(a => a.hired > 0);
+        const topClass = ['top1','top2','top3'];
         list.innerHTML = `
-          <div class="table-header agents-header" style="grid-template-columns:60px 1fr 100px 120px 120px;">
-            <div>الترتيب</div><div>المندوب</div><div>عدد التوظيف</div><div>كسب الشركه</div><div>كسبه هو</div>
+          <div class="rankings-header">
+            <div>الترتيب</div><div>المندوب</div><div>التوظيف</div><div>كسب الشركة</div><div>كسبه هو</div>
           </div>
           ${filtered.map((a, i) => `
-            <div class="agent-row" style="background:${i < 3 ? medalBg[i] : 'transparent'};">
-              <div class="rank-medal">
-                <div class="rank-num">${i < 3 ? medals[i] : '<span style="color:#555;font-size:16px;">' + (i+1) + '</span>'}</div>
-                <div>
-                  <div class="rank-name">${a.name}</div>
-                  <div class="rank-email">${a.email}</div>
+            <div class="rankings-row ${i < 3 ? topClass[i] : ''}">
+              <div class="rk-rank">${i < 3 ? medals[i] : '<span style="color:#555;font-size:15px;">'+(i+1)+'</span>'}</div>
+              <div class="rk-identity">
+                <div class="rk-avatar">${a.name.charAt(0)}</div>
+                <div style="overflow:hidden;">
+                  <div class="rk-name">${a.name}</div>
+                  <div class="rk-email">${a.email}</div>
                 </div>
               </div>
-              <div class="rank-stats">
-                <div class="rank-stat"><div class="rank-stat-label">التوظيف</div><div class="rank-stat-val" style="color:#34d399;">${a.hired}</div></div>
-                <div class="rank-stat"><div class="rank-stat-label">كسب الشركة</div><div class="rank-stat-val" style="color:#d4a853;">${a.company_earned.toLocaleString('ar-EG')} ج</div></div>
-                <div class="rank-stat"><div class="rank-stat-label">كسبه هو</div><div class="rank-stat-val" style="color:#fbbf24;">${a.agent_earned.toLocaleString('ar-EG')} ج</div></div>
-              </div>
+              <div class="rk-stat hired">${a.hired}</div>
+              <div class="rk-stat company">${a.company_earned.toLocaleString('ar-EG')} ج</div>
+              <div class="rk-stat agent">${a.agent_earned.toLocaleString('ar-EG')} ج</div>
             </div>
           `).join('')}
           ${filtered.length === 0 ? '<p style="text-align:center;padding:40px;color:#94a3b8;">لا يوجد مندوبين لهم توظيفات في هذه الفترة</p>' : ''}

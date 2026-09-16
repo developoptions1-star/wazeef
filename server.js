@@ -1087,7 +1087,7 @@ app.put('/api/admin/selections/:id', authMiddleware, adminMiddleware, (req, res)
       if (sel) {
         const agent = db.prepare('SELECT a.* FROM agents a JOIN users u ON a.id = u.referred_by WHERE u.id = ?').get(sel.user_id);
         if (agent) {
-          db.prepare('INSERT INTO notifications (agent_id, type, title, message) VALUES (?, ?, ?, ?)').run(agent.id, 'selection_confirmed', 'تم تثبيت صفقة', `تم تثبيت صفقة ${sel.user_name} - ${sel.company_name}. مبلغك: ${agent_amount || 0} ج. سيتم الإرسال خلال أسبوع إلى 3 أسابيع.`);
+          db.prepare('INSERT INTO notifications (agent_id, type, title, message) VALUES (?, ?, ?, ?)').run(agent.id, 'selection_confirmed', 'تم تثبيت صفقة', `تم تثبيت صفقة ${sel.user_name} - ${sel.company_name}. مبلغك: ${agent_amount || 0} ج. سيتم التأكيد خلال 3 أسابيع وإرسال المبلغ.`);
           if (agent.email) {
             sendEmail(agent.email, 'تم تثبيت صفقة - وَظِيف', `
               <div dir="rtl" style="font-family:'Tajawal',sans-serif;max-width:500px;margin:0 auto;padding:30px;background:#0a0a0a;color:#f5f0e8;border-radius:16px;border:1px solid rgba(212,168,83,0.1);">
@@ -1097,15 +1097,15 @@ app.put('/api/admin/selections/:id', authMiddleware, adminMiddleware, (req, res)
                   <p style="margin:0 0 8px;"><strong style="color:#66bb6a;">العضو:</strong> ${sel.user_name}</p>
                   <p style="margin:0 0 8px;"><strong style="color:#66bb6a;">الشركة:</strong> ${sel.company_name}</p>
                   <p style="margin:0 0 8px;"><strong style="color:#66bb6a;">مبلغك:</strong> ${agent_amount || 0} ج</p>
-                  <p style="margin:0;"><strong style="color:#fbbf24;">سيتم الإرسال خلال أسبوع إلى 3 أسابيع</strong></p>
+                  <p style="margin:0;"><strong style="color:#fbbf24;">سيتم التأكيد خلال 3 أسابيع وإرسال المبلغ</strong></p>
                 </div>
-                <p style="color:#888;font-size:13px;text-align:center;">المبلغ متجمد حالياً وسيتم إرساله خلال الأسابيع الثلاثة القادمة.</p>
+                <p style="color:#888;font-size:13px;text-align:center;">المبلغ متجمد حالياً وسيتم التأكيد خلال 3 أسابيع وإرساله.</p>
                 <div style="text-align:center;margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.05);"><span style="color:#555;font-size:11px;">وَظِيف - منصة التوظيف الذكي</span></div>
               </div>
             `);
           }
         }
-        db.prepare('INSERT INTO notifications (user_id, type, title, message) VALUES (?, ?, ?, ?)').run(sel.user_id, 'selection_confirmed', 'تم تثبيت صفقة', `تم تثبيت صفقة عملك في ${sel.company_name}. سيتم الإرسال خلال أسبوع إلى 3 أسابيع.`);
+        // User notification removed — user doesn't see earnings info
         if (sel.user_email) {
           sendEmail(sel.user_email, 'تم تثبيت صفقة عملك - وَظِيف', `
             <div dir="rtl" style="font-family:'Tajawal',sans-serif;max-width:500px;margin:0 auto;padding:30px;background:#0a0a0a;color:#f5f0e8;border-radius:16px;border:1px solid rgba(212,168,83,0.1);">
@@ -1154,9 +1154,23 @@ app.put('/api/admin/selections/:id/unfreeze', authMiddleware, adminMiddleware, (
       db.prepare('UPDATE companies SET pending_count = MAX(0, pending_count - 1), hired_count = hired_count + 1 WHERE name = ?').run(sel.company_name);
       const agent = db.prepare('SELECT a.* FROM agents a JOIN users u ON a.id = u.referred_by WHERE u.id = ?').get(sel.user_id);
       if (agent) {
-        db.prepare('INSERT INTO notifications (agent_id, type, title, message) VALUES (?, ?, ?, ?)').run(agent.id, 'unfreeze', 'تم فك تجميد المبلغ', `تم فك تجميد مبلغ ${sel.agent_amount} ج لـ ${sel.user_name}. سيتم تحويل المبلغ قريباً.`);
+        db.prepare('INSERT INTO notifications (agent_id, type, title, message) VALUES (?, ?, ?, ?)').run(agent.id, 'unfreeze', 'تم فك تجميد المبلغ', `تم فك تجميد مبلغ ${sel.agent_amount} ج لـ ${sel.user_name}. المبلغ دخل حسابك.`);
+        if (agent.email) {
+          sendEmail(agent.email, 'تم فك تجميد المبلغ - وَظِيف', `
+            <div dir="rtl" style="font-family:'Tajawal',sans-serif;max-width:500px;margin:0 auto;padding:30px;background:#0a0a0a;color:#f5f0e8;border-radius:16px;border:1px solid rgba(212,168,83,0.1);">
+              <div style="text-align:center;margin-bottom:24px;"><div style="width:50px;height:50px;background:linear-gradient(135deg,#b8860b,#d4a853);border-radius:14px;display:inline-flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#0a0a0a;">و</div></div>
+              <h2 style="color:#66bb6a;text-align:center;margin-bottom:20px;">تم فك تجميد المبلغ</h2>
+              <div style="background:rgba(100,200,100,0.06);border:1px solid rgba(100,200,100,0.12);border-radius:12px;padding:16px;margin-bottom:20px;">
+                <p style="margin:0 0 8px;"><strong style="color:#66bb6a;">العضو:</strong> ${sel.user_name}</p>
+                <p style="margin:0 0 8px;"><strong style="color:#66bb6a;">الشركة:</strong> ${sel.company_name}</p>
+                <p style="margin:0 0 8px;"><strong style="color:#66bb6a;">المبلغ:</strong> ${sel.agent_amount} ج</p>
+                <p style="margin:0;"><strong style="color:#66bb6a;">المبلغ دخل حسابك بنجاح</strong></p>
+              </div>
+              <div style="text-align:center;margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.05);"><span style="color:#555;font-size:11px;">وَظِيف - منصة التوظيف الذكي</span></div>
+            </div>
+          `);
+        }
       }
-      db.prepare('INSERT INTO notifications (user_id, type, title, message) VALUES (?, ?, ?, ?)').run(sel.user_id, 'unfreeze', 'تم فك تجميد المبلغ', `تم فك تجميد مبلغ راتبك من ${sel.amount} ج. سيتم تحويل المبلغ قريباً.`);
     }
     res.json({ success: true });
   } catch (e) {
@@ -1191,17 +1205,17 @@ app.put('/api/admin/selections/:id/apologize', authMiddleware, adminMiddleware, 
           `);
         }
       }
-      db.prepare('INSERT INTO notifications (user_id, type, title, message) VALUES (?, ?, ?, ?)').run(sel.user_id, 'apology', 'تم الإعتذار عن الصفقة', `تم الإعتذار عن صفقة عملك في ${sel.company_name}. سبب: ${reason || 'لم يحدد'}`);
+      db.prepare('INSERT INTO notifications (user_id, type, title, message) VALUES (?, ?, ?, ?)').run(sel.user_id, 'apology', 'تم رفضك في الشركة', `للاسف تم رفضك في شركة ${sel.company_name}. السبب: ${reason || 'لم يحدد'}. يمكنك التقديم مرة أخرى في أي وقت.`);
       if (sel.user_email) {
-        sendEmail(sel.user_email, 'تم الإعتذار عن صفقة العمل - وَظِيف', `
+        sendEmail(sel.user_email, 'تم رفضك في الشركة - وَظِيف', `
           <div dir="rtl" style="font-family:'Tajawal',sans-serif;max-width:500px;margin:0 auto;padding:30px;background:#0a0a0a;color:#f5f0e8;border-radius:16px;border:1px solid rgba(212,168,83,0.1);">
             <div style="text-align:center;margin-bottom:24px;"><div style="width:50px;height:50px;background:linear-gradient(135deg,#b8860b,#d4a853);border-radius:14px;display:inline-flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#0a0a0a;">و</div></div>
-            <h2 style="color:#e57373;text-align:center;margin-bottom:20px;">تم الإعتذار عن صفقة العمل</h2>
+            <h2 style="color:#e57373;text-align:center;margin-bottom:20px;">تم رفضك في الشركة</h2>
             <div style="background:rgba(220,50,50,0.06);border:1px solid rgba(220,50,50,0.12);border-radius:12px;padding:16px;margin-bottom:20px;">
               <p style="margin:0 0 8px;"><strong style="color:#e57373;">الشركة:</strong> ${sel.company_name}</p>
               <p style="margin:0;"><strong style="color:#e57373;">السبب:</strong> ${reason || 'لم يحدد'}</p>
             </div>
-            <p style="color:#888;font-size:13px;text-align:center;">نعتذر عن هذا الإلغاء. يمكنك تقديم طلب جديد في أي وقت.</p>
+            <p style="color:#888;font-size:13px;text-align:center;">للاسف تم رفضك في هذه الشركة. يمكنك تقديم طلب جديد في أي وقت.</p>
             <div style="text-align:center;margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.05);"><span style="color:#555;font-size:11px;">وَظِيف - منصة التوظيف الذكي</span></div>
           </div>
         `);

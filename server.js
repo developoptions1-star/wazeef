@@ -1,3 +1,8 @@
+process.on('uncaughtException', e => { console.error('UNCAUGHT:', e.stack || e.message); process.exit(1); });
+process.on('unhandledRejection', e => { console.error('UNHANDLED:', e && e.stack || e); process.exit(1); });
+console.log('Node', process.version, 'starting...');
+console.log('CWD:', process.cwd());
+console.log('argv:', process.argv[1]);
 const express = require('express');
 const multer = require('multer');
 const bcrypt = require('bcryptjs');

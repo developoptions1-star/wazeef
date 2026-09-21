@@ -10,9 +10,21 @@ class SqlJsWrapper {
   }
 
   async init() {
-    const wasmPath = path.join(path.dirname(process.argv[1] || __dirname), 'sql-wasm.wasm');
-    const locFile = fs.existsSync(wasmPath) ? wasmPath : undefined;
-    const SQL = await initSqlJs(locFile ? { locateFile: () => wasmPath } : undefined);
+    const candidates = [
+      path.join(path.dirname(process.argv[1] || __dirname), 'sql-wasm.wasm'),
+      path.join(__dirname, 'sql-wasm.wasm'),
+      path.join(__dirname, 'node_modules', 'sql.js', 'dist', 'sql-wasm.wasm'),
+      path.join(path.dirname(process.argv[1] || __dirname), 'node_modules', 'sql.js', 'dist', 'sql-wasm.wasm'),
+      path.join('/app', 'sql-wasm.wasm'),
+      path.join('/app', 'node_modules', 'sql.js', 'dist', 'sql-wasm.wasm')
+    ];
+    let wasmPath = null;
+    for (const c of candidates) {
+      if (fs.existsSync(c)) { wasmPath = c; break; }
+    }
+    console.log('WASM path:', wasmPath || 'NOT FOUND - using default');
+    const opts = wasmPath ? { locateFile: () => wasmPath } : undefined;
+    const SQL = await initSqlJs(opts);
     if (fs.existsSync(this.dbPath)) {
       const buf = fs.readFileSync(this.dbPath);
       this.db = new SQL.Database(buf);

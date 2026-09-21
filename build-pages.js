@@ -17,9 +17,9 @@ const uploadsDir = path.join(PUB, 'uploads');
 if (fs.existsSync(uploadsDir)) {
   fs.readdirSync(uploadsDir).forEach(f => {
     const ext = path.extname(f).toLowerCase();
-    if (['.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico'].includes(ext) && f !== 'wazef1.png') {
+    if (['.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.webp'].includes(ext) && f !== 'wazef1.png' && f !== 'wazef-mobile.png') {
       const data = fs.readFileSync(path.join(uploadsDir, f));
-      const mime = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.svg': 'image/svg+xml', '.ico': 'image/x-icon' }[ext] || 'application/octet-stream';
+      const mime = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.webp': 'image/webp' }[ext] || 'application/octet-stream';
       images[f] = { mime, base64: data.toString('base64') };
     }
   });

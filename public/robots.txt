@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Allow: /login.html
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /agent
+Disallow: /api/
+
+Sitemap: https://wazef.com/sitemap.xml

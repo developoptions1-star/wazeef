@@ -3,10 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="X-Frame-Options" content="DENY">
   <meta name="robots" content="noindex, nofollow">
   <title>وَظِيف - تسجيل الدخول</title>
-  <link rel="icon" type="image/png" href="/uploads/wazef.png">
+  <link rel="icon" type="image/webp" href="/uploads/wazef.webp">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#d4a853">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="وَظِيف">
+  <link rel="apple-touch-icon" href="/uploads/icon-192.webp">
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
@@ -22,19 +27,19 @@
 
     .card-left{padding:28px 24px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;border-left:1px solid rgba(212,168,83,0.05);background:rgba(212,168,83,0.015)}
     .logo-img{width:100%;max-width:280px;height:auto;margin:0 auto 14px;border-radius:10px;display:block}
-    .card-left .sub{color:#555;font-size:12px;margin-bottom:22px}
+    .card-left .sub{color:#94a3b8;font-size:12px;margin-bottom:22px}
     .features{display:flex;flex-direction:column;gap:8px;width:100%}
     .feature{display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(212,168,83,0.03);border:1px solid rgba(212,168,83,0.05);border-radius:10px;text-align:right}
     .feat-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:rgba(212,168,83,0.07);flex-shrink:0}
     .feat-icon svg{width:15px;height:15px;stroke:#d4a853;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-    .feat-text{font-size:11px;color:#666;line-height:1.4}
+    .feat-text{font-size:11px;color:#94a3b8;line-height:1.4}
     .feat-text strong{color:#d4a853;display:block;font-size:12px;margin-bottom:1px}
 
     .card-right{padding:28px 28px;overflow-y:auto;max-height:85vh}
     .right-title{font-size:17px;font-weight:700;margin-bottom:16px;color:#f5f0e8}
 
-    .tabs{display:flex;margin-bottom:16px;background:rgba(255,255,255,0.03);border-radius:10px;padding:3px;border:1px solid rgba(212,168,83,0.05)}
-    .tab{flex:1;padding:9px;text-align:center;color:#555;cursor:pointer;border-radius:8px;transition:all .3s;font-size:13px;font-weight:600}
+    .tabs{display:flex;margin-bottom:16px;background:rgba(212,168,83,0.03);border-radius:10px;padding:3px;border:1px solid rgba(212,168,83,0.05)}
+    .tab{flex:1;padding:9px;text-align:center;color:#94a3b8;cursor:pointer;border-radius:8px;transition:all .3s;font-size:13px;font-weight:600}
     .tab.active{background:rgba(212,168,83,0.1);color:#f0d78c}
 
     .error{background:rgba(220,50,50,0.08);border:1px solid rgba(220,50,50,0.15);color:#e57373;padding:10px;border-radius:10px;text-align:center;font-size:12px;margin-bottom:12px;display:none;font-weight:600}
@@ -45,12 +50,12 @@
     .reg-step.active{display:block;animation:fadeUp .4s ease}
     @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
     .step-dots{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:14px}
-    .step-dots .dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#555;background:rgba(255,255,255,0.04);border:1.5px solid rgba(255,255,255,0.08)}
+    .step-dots .dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#94a3b8;background:rgba(212,168,83,0.04);border:1.5px solid rgba(212,168,83,0.08)}
     .step-dots .dot.active{color:#0a0a0a;background:linear-gradient(135deg,#b8860b,#d4a853);border-color:transparent}
     .step-dots .dot.done{color:#d4a853;border-color:rgba(212,168,83,0.4)}
-    .step-dots .line{width:32px;height:2px;background:rgba(255,255,255,0.08);border-radius:2px}
+    .step-dots .line{width:32px;height:2px;background:rgba(212,168,83,0.08);border-radius:2px}
     .step-nav{display:flex;gap:10px;margin-top:4px}
-    .btn-ghost{flex:1;padding:12px;background:transparent;border:1.5px solid rgba(255,255,255,0.1);border-radius:12px;color:#888;font-family:'Tajawal',sans-serif;font-size:14px;font-weight:700;cursor:pointer}
+    .btn-ghost{flex:1;padding:12px;background:transparent;border:1.5px solid rgba(212,168,83,0.1);border-radius:12px;color:#94a3b8;font-family:'Tajawal',sans-serif;font-size:14px;font-weight:700;cursor:pointer}
     .btn-ghost:hover{border-color:rgba(212,168,83,0.3);color:#d4a853}
     .step-nav .btn-primary{flex:2}
 
@@ -58,8 +63,8 @@
     .form-section.active{display:block}
 
     .form-group{margin-bottom:10px}
-    .form-group label{display:block;color:#666;margin-bottom:4px;font-size:11px;font-weight:600}
-    .form-group input,.sel{width:100%;height:40px;padding:0 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;color:#f5f0e8;font-family:'Tajawal',sans-serif;font-size:13px;transition:all .3s}
+    .form-group label{display:block;color:#94a3b8;margin-bottom:4px;font-size:11px;font-weight:600}
+    .form-group input,.sel{width:100%;height:40px;padding:0 14px;background:rgba(212,168,83,0.03);border:1px solid rgba(212,168,83,0.06);border-radius:10px;color:#f5f0e8;font-family:'Tajawal',sans-serif;font-size:13px;transition:all .3s}
     .form-group input:focus,.sel:focus{outline:none;border-color:rgba(212,168,83,0.4);box-shadow:0 0 0 3px rgba(212,168,83,0.06)}
     .form-group input::placeholder{color:#333}
     .pass-wrap{position:relative}
@@ -71,13 +76,13 @@
 
     .form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 
-    .section-label{font-size:10px;color:#444;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin:12px 0 8px;padding-bottom:4px;border-bottom:1px solid rgba(255,255,255,0.03)}
+    .section-label{font-size:10px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin:12px 0 8px;padding-bottom:4px;border-bottom:1px solid rgba(212,168,83,0.03)}
 
     .btn{width:100%;height:42px;border:none;border-radius:10px;font-family:'Tajawal',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .3s;margin-top:8px}
     .btn-primary{background:linear-gradient(135deg,#b8860b,#d4a853);color:#0a0a0a;box-shadow:0 6px 20px rgba(212,168,83,0.2)}
     .btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(212,168,83,0.3)}
 
-    .switch-text{text-align:center;margin-top:12px;font-size:12px;color:#555}
+    .switch-text{text-align:center;margin-top:12px;font-size:12px;color:#94a3b8}
     .switch-text a{color:#d4a853;font-weight:600;cursor:pointer;text-decoration:none}
     .switch-text a:hover{color:#f0d78c}
 
@@ -85,15 +90,15 @@
     .verify-overlay.show{display:flex}
     .verify-card{background:rgba(16,16,16,0.97);border:1px solid rgba(212,168,83,0.1);border-radius:24px;padding:36px 32px;width:100%;max-width:420px;text-align:center;animation:cardIn .5s cubic-bezier(.16,1,.3,1) forwards;opacity:0;transform:translateY(20px)}
     .verify-card h2{color:#f5f0e8;font-size:18px;margin-bottom:8px}
-    .verify-card p{color:#666;font-size:13px;margin-bottom:24px;line-height:1.6}
+    .verify-card p{color:#94a3b8;font-size:13px;margin-bottom:24px;line-height:1.6}
     .verify-email{color:#d4a853;font-weight:700}
     .code-inputs{display:flex;gap:10px;justify-content:center;margin-bottom:20px;direction:ltr}
-    .code-inputs input{width:48px;height:56px;text-align:center;font-size:22px;font-weight:800;background:rgba(255,255,255,0.04);border:1.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#f0d78c;font-family:'Tajawal',sans-serif;transition:all .3s;outline:none}
+    .code-inputs input{width:48px;height:56px;text-align:center;font-size:22px;font-weight:800;background:rgba(212,168,83,0.04);border:1.5px solid rgba(212,168,83,0.08);border-radius:12px;color:#f0d78c;font-family:'Tajawal',sans-serif;transition:all .3s;outline:none}
     .code-inputs input:focus{border-color:rgba(212,168,83,0.5);box-shadow:0 0 0 3px rgba(212,168,83,0.1);background:rgba(212,168,83,0.04)}
     .verify-btn{width:100%;height:46px;border:none;border-radius:12px;background:linear-gradient(135deg,#b8860b,#d4a853);color:#0a0a0a;font-family:'Tajawal',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:all .3s;margin-bottom:12px}
     .verify-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(212,168,83,0.3)}
     .verify-btn:disabled{opacity:0.4;cursor:not-allowed;transform:none}
-    .resend-text{font-size:12px;color:#555}
+    .resend-text{font-size:12px;color:#94a3b8}
     .resend-text a{color:#d4a853;cursor:pointer;font-weight:600;text-decoration:none}
     .resend-text a:hover{color:#f0d78c}
     .verify-error{background:rgba(220,50,50,0.08);border:1px solid rgba(220,50,50,0.15);color:#e57373;padding:10px;border-radius:10px;text-align:center;font-size:12px;margin-bottom:12px;display:none;font-weight:600}
@@ -103,11 +108,11 @@
     .forgot-overlay.show{display:flex}
     .forgot-card{background:rgba(16,16,16,0.97);border:1px solid rgba(212,168,83,0.1);border-radius:24px;padding:36px 32px;width:100%;max-width:420px;text-align:center;animation:cardIn .5s cubic-bezier(.16,1,.3,1) forwards;opacity:0;transform:translateY(20px)}
     .forgot-card h2{color:#f5f0e8;font-size:18px;margin-bottom:8px}
-    .forgot-card p{color:#666;font-size:13px;margin-bottom:20px;line-height:1.6}
+    .forgot-card p{color:#94a3b8;font-size:13px;margin-bottom:20px;line-height:1.6}
     .forgot-step{display:none}
     .forgot-step.active{display:block}
     .forgot-code-inputs{display:flex;gap:10px;justify-content:center;margin-bottom:20px;direction:ltr}
-    .forgot-code-inputs input{width:48px;height:56px;text-align:center;font-size:22px;font-weight:800;background:rgba(255,255,255,0.04);border:1.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#f0d78c;font-family:'Tajawal',sans-serif;transition:all .3s;outline:none}
+    .forgot-code-inputs input{width:48px;height:56px;text-align:center;font-size:22px;font-weight:800;background:rgba(212,168,83,0.04);border:1.5px solid rgba(212,168,83,0.08);border-radius:12px;color:#f0d78c;font-family:'Tajawal',sans-serif;transition:all .3s;outline:none}
     .forgot-code-inputs input:focus{border-color:rgba(212,168,83,0.5);box-shadow:0 0 0 3px rgba(212,168,83,0.1);background:rgba(212,168,83,0.04)}
 
     @media(max-width:700px){
@@ -140,7 +145,7 @@
   <canvas id="bg-canvas"></canvas>
   <div class="card">
     <div class="card-left">
-      <img src="/uploads/wazef.png" alt="وَظِيف" class="logo-img">
+      <img src="/uploads/wazef.webp" alt="وَظِيف" class="logo-img">
       <p class="sub">منصة التوظيف الذكي</p>
       <div class="features">
         <div class="feature">
@@ -167,7 +172,7 @@
       <div id="ref-badge" class="ref-badge"><span>تم التسجيل عبر رابط إحالة المندوب</span></div>
       <div id="login-form" class="form-section active">
         <div class="form-group"><label>البريد الإلكتروني</label><input type="email" id="login-email" placeholder="أدخل بريدك الإلكتروني" autocomplete="off"></div>
-        <div class="form-group"><label>كلمة المرور</label><div class="pass-wrap"><input type="password" id="login-password" placeholder="أدخل كلمة المرور" autocomplete="new-password"><button type="button" class="eye-btn" onclick="togglePass('login-password',this)"><svg viewBox="0 0 24 24" class="eye-open" style="width:18px;height:18px;stroke:#888;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><svg viewBox="0 0 24 24" class="eye-closed" style="width:18px;height:18px;stroke:#888;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;display:none;"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></button></div></div>
+        <div class="form-group"><label>كلمة المرور</label><div class="pass-wrap"><input type="password" id="login-password" placeholder="أدخل كلمة المرور" autocomplete="new-password"><button type="button" class="eye-btn" onclick="togglePass('login-password',this)"><svg viewBox="0 0 24 24" class="eye-open" style="width:18px;height:18px;stroke:#94a3b8;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><svg viewBox="0 0 24 24" class="eye-closed" style="width:18px;height:18px;stroke:#94a3b8;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;display:none;"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></button></div></div>
         <button class="btn btn-primary" onclick="login()">دخول</button>
         <div style="text-align:center;margin-top:8px;"><a onclick="showForgotPassword()" style="color:#94a3b8;font-size:12px;cursor:pointer;text-decoration:none;">نسيت كلمة المرور؟</a></div>
         <div class="switch-text">ما عندك حساب؟ <a onclick="switchTab('register')">سجّل دلوقتي</a></div>
@@ -182,7 +187,7 @@
           <div class="form-group"><label>رقم الهاتف <span style="color:#e57373">*</span></label><input type="text" id="reg-phone" placeholder="01xxxxxxxxx" autocomplete="off" required pattern="[0-9]{11}" title="رقم الهاتف يجب أن يكون 11 رقم"></div>
         </div>
         <div class="form-row">
-          <div class="form-group"><label>كلمة المرور <span style="color:#e57373">*</span></label><div class="pass-wrap"><input type="password" id="reg-password" placeholder="••••••••" autocomplete="new-password" required minlength="6" title="كلمة المرور يجب أن تكون 6 أحرف على الأقل"><button type="button" class="eye-btn" onclick="togglePass('reg-password',this)"><svg viewBox="0 0 24 24" class="eye-open" style="width:18px;height:18px;stroke:#888;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><svg viewBox="0 0 24 24" class="eye-closed" style="width:18px;height:18px;stroke:#888;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;display:none;"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></button></div></div>
+          <div class="form-group"><label>كلمة المرور <span style="color:#e57373">*</span></label><div class="pass-wrap"><input type="password" id="reg-password" placeholder="••••••••" autocomplete="new-password" required minlength="6" title="كلمة المرور يجب أن تكون 6 أحرف على الأقل"><button type="button" class="eye-btn" onclick="togglePass('reg-password',this)"><svg viewBox="0 0 24 24" class="eye-open" style="width:18px;height:18px;stroke:#94a3b8;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><svg viewBox="0 0 24 24" class="eye-closed" style="width:18px;height:18px;stroke:#94a3b8;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;display:none;"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></button></div></div>
           <div class="form-group"><label>العمر <span style="color:#e57373">*</span></label><input type="text" id="reg-age" placeholder="25" autocomplete="off" required pattern="[0-9]{2}" maxlength="2" title="العمر يجب أن يكون رقمين فقط"></div>
         </div>
         <div class="form-group"><label>النوع <span style="color:#e57373">*</span></label><select id="reg-gender" class="sel" required onchange="toggleMilitary()"><option value="">اختر</option><option value="male">ولد</option><option value="female">بنت</option></select></div>
@@ -222,7 +227,7 @@
 
   <div class="verify-overlay" id="verify-overlay">
     <div class="verify-card">
-      <img src="/uploads/wazef.png" alt="وَظِيف" style="width:120px;height:auto;margin:0 auto 16px;border-radius:8px;display:block;">
+      <img src="/uploads/wazef.webp" alt="وَظِيف" style="width:120px;height:auto;margin:0 auto 16px;border-radius:8px;display:block;">
       <h2>تحقق من بريدك الإلكتروني</h2>
       <p>أرسلنا كود تحقق مكون من 6 أرقام إلى<br><span class="verify-email" id="verify-email-display"></span></p>
       <div id="verify-error" class="verify-error"></div>
@@ -237,7 +242,7 @@
       </div>
       <button class="verify-btn" id="verify-btn" onclick="verifyCode()" disabled>تأكيد الكود</button>
       <div class="resend-text">لم يصلك الكود؟ <a onclick="resendCode()">إعادة الإرسال</a></div>
-      <div style="margin-top:14px;"><a onclick="closeVerify()" style="color:#555;font-size:12px;cursor:pointer;text-decoration:none;">العودة لتسجيل الدخول</a></div>
+      <div style="margin-top:14px;"><a onclick="closeVerify()" style="color:#94a3b8;font-size:12px;cursor:pointer;text-decoration:none;">العودة لتسجيل الدخول</a></div>
     </div>
   </div>
 
@@ -249,7 +254,7 @@
         <div id="forgot-error" class="verify-error"></div>
         <div class="form-group"><label>البريد الإلكتروني</label><input type="email" id="forgot-email" placeholder="أدخل بريدك الإلكتروني" autocomplete="off"></div>
         <button class="verify-btn" onclick="sendResetCode()">إرسال الكود</button>
-        <div style="margin-top:14px;"><a onclick="closeForgot()" style="color:#555;font-size:12px;cursor:pointer;text-decoration:none;">العودة لتسجيل الدخول</a></div>
+        <div style="margin-top:14px;"><a onclick="closeForgot()" style="color:#94a3b8;font-size:12px;cursor:pointer;text-decoration:none;">العودة لتسجيل الدخول</a></div>
       </div>
       <div class="forgot-step" id="forgot-step-2">
         <h2>أدخل الكود</h2>
@@ -269,10 +274,10 @@
         <h2>كلمة مرور جديدة</h2>
         <p>أدخل كلمة المرور الجديدة</p>
         <div id="forgot-error-3" class="verify-error"></div>
-        <div class="form-group"><label>كلمة المرور الجديدة</label><div class="pass-wrap"><input type="password" id="forgot-new-pass" placeholder="6 أحرف على الأقل" autocomplete="new-password"><button type="button" class="eye-btn" onclick="togglePass('forgot-new-pass',this)"><svg viewBox="0 0 24 24" class="eye-open" style="width:18px;height:18px;stroke:#888;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><svg viewBox="0 0 24 24" class="eye-closed" style="width:18px;height:18px;stroke:#888;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;display:none;"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></button></div></div>
-        <div class="form-group"><label>تأكيد كلمة المرور</label><div class="pass-wrap"><input type="password" id="forgot-confirm-pass" placeholder="أعد إدخال كلمة المرور" autocomplete="new-password"><button type="button" class="eye-btn" onclick="togglePass('forgot-confirm-pass',this)"><svg viewBox="0 0 24 24" class="eye-open" style="width:18px;height:18px;stroke:#888;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><svg viewBox="0 0 24 24" class="eye-closed" style="width:18px;height:18px;stroke:#888;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;display:none;"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></button></div></div>
+        <div class="form-group"><label>كلمة المرور الجديدة</label><div class="pass-wrap"><input type="password" id="forgot-new-pass" placeholder="6 أحرف على الأقل" autocomplete="new-password"><button type="button" class="eye-btn" onclick="togglePass('forgot-new-pass',this)"><svg viewBox="0 0 24 24" class="eye-open" style="width:18px;height:18px;stroke:#94a3b8;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><svg viewBox="0 0 24 24" class="eye-closed" style="width:18px;height:18px;stroke:#94a3b8;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;display:none;"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></button></div></div>
+        <div class="form-group"><label>تأكيد كلمة المرور</label><div class="pass-wrap"><input type="password" id="forgot-confirm-pass" placeholder="أعد إدخال كلمة المرور" autocomplete="new-password"><button type="button" class="eye-btn" onclick="togglePass('forgot-confirm-pass',this)"><svg viewBox="0 0 24 24" class="eye-open" style="width:18px;height:18px;stroke:#94a3b8;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><svg viewBox="0 0 24 24" class="eye-closed" style="width:18px;height:18px;stroke:#94a3b8;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;display:none;"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></button></div></div>
         <button class="verify-btn" onclick="resetPassword()">تعيين كلمة المرور</button>
-        <div style="margin-top:14px;"><a onclick="closeForgot()" style="color:#555;font-size:12px;cursor:pointer;text-decoration:none;">العودة لتسجيل الدخول</a></div>
+        <div style="margin-top:14px;"><a onclick="closeForgot()" style="color:#94a3b8;font-size:12px;cursor:pointer;text-decoration:none;">العودة لتسجيل الدخول</a></div>
       </div>
     </div>
   </div>
@@ -431,42 +436,97 @@
       if(np!==cp)return showForgotError('forgot-error-3','كلمتا المرور غير متطابقتين');
       try{const res=await fetch('/api/reset-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:forgotEmail,resetToken:forgotResetToken,newPassword:np})});const data=await res.json();if(data.error)return showForgotError('forgot-error-3',data.error);alert('تم تغيير كلمة المرور بنجاح! يمكنك تسجيل الدخول الآن.');closeForgot()}catch(e){showForgotError('forgot-error-3','حدث خطأ في الاتصال')}
     }
+
+    // PWA Install Banner
+    let deferredPrompt=null;
+    window.addEventListener('beforeinstallprompt',e=>{
+      e.preventDefault();deferredPrompt=e;
+      const banner=document.getElementById('pwa-banner');
+      if(banner&&!banner.classList.contains('show')){
+        document.getElementById('pwa-install-btn').style.display='block';
+        document.getElementById('pwa-msg').textContent='حمّل التطبيق وكمّل بسهولة!';
+        document.getElementById('pwa-sub').textContent='اضغط "تثبيت" لتثبيت التطبيق على جهازك';
+        banner.classList.add('show');
+      }
+    });
+    const isStandalone=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone;
+    if(!isStandalone){showPwaBanner('manual')}
+    else{showPwaBanner('installed')}
+
+    function showPwaBanner(mode){
+      const banner=document.getElementById('pwa-banner');
+      if(!banner)return;
+      if(mode==='install'){
+        document.getElementById('pwa-install-btn').style.display='block';
+        document.getElementById('pwa-msg').textContent='حمّل التطبيق وكمّل بسهولة!';
+        document.getElementById('pwa-sub').textContent='اضغط \"تثبيت\" لتثبيت التطبيق على جهازك';
+      }else if(mode==='manual'){
+        document.getElementById('pwa-install-btn').style.display='none';
+        document.getElementById('pwa-msg').textContent='حمّل التطبيق من المتصفح!';
+        document.getElementById('pwa-sub').textContent='من قائمة المتصفح ← \"إضافة إلى الشاشة الرئيسية\"';
+      }else{
+        document.getElementById('pwa-install-btn').style.display='none';
+        document.getElementById('pwa-msg').textContent='مرحباً بعودتك!';
+        document.getElementById('pwa-sub').textContent='أنت تستخدم التطبيق الآن';
+        banner.querySelector('.pwa-icon').style.background='linear-gradient(135deg,#66bb6a,#2e7d32)';
+      }
+      banner.classList.add('show');
+    }
+
+    async function installPwa(){
+      if(!deferredPrompt)return;
+      deferredPrompt.prompt();
+      const{outcome}=await deferredPrompt.userChoice;
+      deferredPrompt=null;
+      if(outcome==='accepted'){showPwaBanner('installed')}
+    }
+    function dismissPwa(){document.getElementById('pwa-banner').classList.remove('show')}
   </script>
-<!-- Splash Screen -->
-<div id="splash-screen" style="display:none;position:fixed;inset:0;z-index:99999;background:#0a0a0a;flex-direction:column;align-items:center;justify-content:center;">
-  <div style="text-align:center;">
-    <img src="/uploads/wazef.png" style="width:120px;border-radius:12px;margin-bottom:20px;animation:logoPulse 1.5s ease-in-out infinite;">
-    <h1 style="font-size:28px;background:linear-gradient(135deg,#f0d78c,#b8860b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;">وَظِيف</h1>
-    <p style="color:#666;font-size:13px;margin-bottom:28px;">يرجى الانتظار...</p>
-    <div style="display:flex;gap:6px;justify-content:center;">
-      <div class="splash-dot" style="width:10px;height:10px;border-radius:50%;background:#d4a853;animation:dotBounce 1.2s ease-in-out infinite;"></div>
-      <div class="splash-dot" style="width:10px;height:10px;border-radius:50%;background:#d4a853;animation:dotBounce 1.2s ease-in-out 0.2s infinite;"></div>
-      <div class="splash-dot" style="width:10px;height:10px;border-radius:50%;background:#d4a853;animation:dotBounce 1.2s ease-in-out 0.4s infinite;"></div>
+
+  <!-- PWA Banner -->
+  <div id="pwa-banner" class="pwa-banner">
+    <div class="pwa-icon"><img src="/uploads/icon-192.webp" alt="وَظِيف"></div>
+    <div class="pwa-content">
+      <div id="pwa-msg" class="pwa-title">حمّل التطبيق وكمّل بسهولة!</div>
+      <div id="pwa-sub" class="pwa-sub">اضغط "تثبيت" لتثبيت التطبيق على جهازك</div>
+    </div>
+    <div class="pwa-actions">
+      <button id="pwa-install-btn" class="pwa-btn-install" onclick="installPwa()">تثبيت</button>
+      <button class="pwa-btn-skip" onclick="dismissPwa()">لاحقاً</button>
     </div>
   </div>
-</div>
-<style>
-@keyframes logoPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.05);opacity:0.8}}
-@keyframes dotBounce{0%,100%{transform:translateY(0);opacity:0.4}50%{transform:translateY(-10px);opacity:1}}
-</style>
-<script>
-(function(){
-  let activeRequests=0;let splashTimer=null;const splash=document.getElementById('splash-screen');
-  function showSplash(){if(splash)splash.style.display='flex'}
-  function hideSplash(){if(splash)splash.style.display='none'}
-  const origFetch=window.fetch;
-  window.fetch=function(...args){
-    activeRequests++;clearTimeout(splashTimer);
-    splashTimer=setTimeout(showSplash,2000);
-    return origFetch.apply(this,args).then(res=>{
-      activeRequests--;if(activeRequests<=0){activeRequests=0;clearTimeout(splashTimer);hideSplash()}
-      return res;
-    }).catch(err=>{
-      activeRequests--;if(activeRequests<=0){activeRequests=0;clearTimeout(splashTimer);hideSplash()}
-      throw err;
+  <style>
+    .pwa-banner{position:fixed;bottom:20px;left:20px;right:20px;z-index:9999;display:none;align-items:center;gap:14px;padding:16px 20px;background:rgba(16,16,16,0.97);backdrop-filter:blur(20px);border:1px solid rgba(212,168,83,0.2);border-radius:16px;box-shadow:0 10px 40px rgba(0,0,0,0.6);animation:pwaSlideUp .5s cubic-bezier(.16,1,.3,1)}
+    .pwa-banner.show{display:flex}
+    @keyframes pwaSlideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+    .pwa-icon{width:50px;height:50px;min-width:50px;border-radius:14px;overflow:hidden;background:linear-gradient(135deg,#b8860b,#d4a853)}
+    .pwa-icon img{width:100%;height:100%;object-fit:cover}
+    .pwa-content{flex:1;min-width:0}
+    .pwa-title{color:#f5f0e8;font-size:14px;font-weight:700;margin-bottom:2px}
+    .pwa-sub{color:#94a3b8;font-size:12px;line-height:1.5}
+    .pwa-actions{display:flex;gap:8px;flex-shrink:0}
+    .pwa-btn-install{padding:8px 18px;background:linear-gradient(135deg,#b8860b,#d4a853);color:#0a0a0a;border:none;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;transition:all 0.3s;font-family:'Tajawal',sans-serif}
+    .pwa-btn-install:hover{transform:scale(1.05);box-shadow:0 4px 15px rgba(212,168,83,0.3)}
+    .pwa-btn-skip{padding:8px 14px;background:rgba(255,255,255,0.05);color:#94a3b8;border:1px solid rgba(255,255,255,0.08);border-radius:10px;font-size:12px;cursor:pointer;transition:all 0.3s;font-family:'Tajawal',sans-serif}
+    .pwa-btn-skip:hover{background:rgba(255,255,255,0.1);color:#f5f0e8}
+    @media(max-width:500px){.pwa-banner{left:12px;right:12px;bottom:12px;padding:14px 16px}}
+  </style>
+  <script>
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/sw.js').then(reg => {
+    reg.addEventListener('updatefound', () => {
+      const sw = reg.installing;
+      sw.addEventListener('statechange', () => {
+        if(sw.state === 'installed' && navigator.serviceWorker.controller){
+          if(confirm('نسخة جديدة متاحة! هل تريد التحديث؟')){sw.postMessage({type:'SKIP_WAITING'})}
+        }
+      });
     });
-  };
-})();
-</script>
+  });
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if(!refreshing){refreshing=true;location.reload()}
+  });
+}</script>
 </body>
 </html>

@@ -1,5 +1,5 @@
-process.on('uncaughtException', e => { console.error('UNCAUGHT:', e.stack || e.message); process.exit(1); });
-process.on('unhandledRejection', e => { console.error('UNHANDLED:', e && e.stack || e); process.exit(1); });
+process.on('uncaughtException', e => console.error('UNCAUGHT:', e.message));
+process.on('unhandledRejection', e => {});
 console.log('Node', process.version, 'starting...');
 console.log('CWD:', process.cwd());
 console.log('argv:', process.argv[1]);
@@ -390,7 +390,8 @@ async function backupDatabase(manual) {
     return { ok: false, error: e.message };
   }
 }
-setInterval(() => { if (db) backupDatabase(false); }, 24 * 60 * 60 * 1000);
+// Auto backup disabled on startup to prevent SMTP errors on Velixir
+// setInterval(() => { if (db) backupDatabase(false); }, 24 * 60 * 60 * 1000);
 
 function saveNotification(userId, agentId, type, title, message) {
   try {

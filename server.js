@@ -305,6 +305,30 @@ db.exec(`
   );
 `);
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS company_users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    company_id INTEGER NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    password TEXT NOT NULL,
+    name TEXT DEFAULT '',
+    is_active INTEGER DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (company_id) REFERENCES companies(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS company_languages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    company_id INTEGER NOT NULL,
+    language TEXT NOT NULL,
+    level TEXT NOT NULL,
+    needed_count INTEGER DEFAULT 1,
+    filled_count INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (company_id) REFERENCES companies(id)
+  );
+`);
+
 // Email transporter
 const SMTP_USER = process.env.SMTP_USER || 'mohamedfaron297@gmail.com';
 const SMTP_PASS = process.env.SMTP_PASS || 'ushf stxg rmgp xhig';
@@ -2750,6 +2774,8 @@ app.get('/dashboard', (req, res) => servePage(res, 'dashboard.html'));
 app.get('/admin', (req, res) => servePage(res, 'admin.html'));
 app.get('/select-job', (req, res) => res.redirect('/'));
 app.get('/agent', (req, res) => servePage(res, 'agent.html'));
+app.get('/company', (req, res) => servePage(res, 'company.html'));
+app.get('/company.html', (req, res) => servePage(res, 'company.html'));
 
 // Multer error handler (must be after routes)
 app.use((err, req, res, next) => {
@@ -2821,6 +2847,167 @@ app.post('/api/admin/reset-db', authMiddleware, adminMiddleware, (req, res) => {
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
+});
+
+// ============ COMPANY PORTAL ============
+
+// Company login
+app.post('/api/company/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+    const cu = db.prepare('SELECT cu.*, c.name as company_name FROM company_users cu JOIN companies c ON cu.company_id = c.id WHERE cu.email = ? AND cu.is_active = 1').get(email);
+    if (!cu) return res.status(401).json({ error: 'Invalid credentials' });
+    const valid = bcrypt.compareSync(password, cu.password);
+    if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
+    const token = jwt.sign({ id: cu.id, company_id: cu.company_id, email: cu.email, role: 'company', company_name: cu.company_name, name: cu.name }, JWT_SECRET, { expiresIn: '7d' });
+    res.json({ token, user: { id: cu.id, company_id: cu.company_id, email: cu.email, name: cu.name, company_name: cu.company_name, role: 'company' } });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Company auth middleware
+function companyAuthMiddleware(req, res, next) {
+  const h = req.headers.authorization;
+  if (!h) return res.status(401).json({ error: 'No token' });
+  try { req.user = jwt.verify(h.replace('Bearer ', ''), JWT_SECRET); if (req.user.role !== 'company') return res.status(403).json({ error: 'Not company' }); next(); } catch(e) { res.status(401).json({ error: 'Invalid token' }); }
+}
+
+// Get company profile
+app.get('/api/company/profile', companyAuthMiddleware, (req, res) => {
+  try {
+    const company = db.prepare('SELECT * FROM companies WHERE id = ?').get(req.user.company_id);
+    if (!company) return res.status(404).json({ error: 'Company not found' });
+    const languages = db.prepare('SELECT * FROM company_languages WHERE company_id = ?').all(req.user.company_id);
+    res.json({ company, languages });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Update company profile
+app.put('/api/company/profile', companyAuthMiddleware, (req, res) => {
+  try {
+    const { name, position, description, interview_time, salary_min, salary_max, company_email, available_slots, deadline } = req.body;
+    db.prepare('UPDATE companies SET name=COALESCE(?,name), position=COALESCE(?,position), description=COALESCE(?,description), interview_time=COALESCE(?,interview_time), salary_min=COALESCE(?,salary_min), salary_max=COALESCE(?,salary_max), company_email=COALESCE(?,company_email), available_slots=COALESCE(?,available_slots), deadline=COALESCE(?,deadline) WHERE id=?').run(name, position, description, interview_time, salary_min, salary_max, company_email, available_slots, deadline, req.user.company_id);
+    res.json({ success: true, message: 'تم التحديث' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Change company password
+app.put('/api/company/password', companyAuthMiddleware, (req, res) => {
+  try {
+    const { current_password, new_password } = req.body;
+    if (!current_password || !new_password) return res.status(400).json({ error: 'Both passwords required' });
+    const cu = db.prepare('SELECT * FROM company_users WHERE id = ?').get(req.user.id);
+    if (!bcrypt.compareSync(current_password, cu.password)) return res.status(401).json({ error: 'Current password wrong' });
+    db.prepare('UPDATE company_users SET password = ? WHERE id = ?').run(bcrypt.hashSync(new_password, 10), req.user.id);
+    res.json({ success: true, message: 'تم تغيير كلمة المرور' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Add company language
+app.post('/api/company/languages', companyAuthMiddleware, (req, res) => {
+  try {
+    const { language, level, needed_count } = req.body;
+    if (!language || !level) return res.status(400).json({ error: 'Language and level required' });
+    const validLevels = ['A1','A2','B1','B2','C1','C2'];
+    if (!validLevels.includes(level)) return res.status(400).json({ error: 'Invalid level' });
+    const exists = db.prepare('SELECT id FROM company_languages WHERE company_id=? AND language=? AND level=?').get(req.user.company_id, language, level);
+    if (exists) return res.status(400).json({ error: 'This language/level already exists' });
+    db.prepare('INSERT INTO company_languages (company_id, language, level, needed_count) VALUES (?,?,?,?)').run(req.user.company_id, language, level, needed_count || 1);
+    res.json({ success: true, message: 'تمت الإضافة' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Delete company language
+app.delete('/api/company/languages/:id', companyAuthMiddleware, (req, res) => {
+  try {
+    db.prepare('DELETE FROM company_languages WHERE id=? AND company_id=?').run(req.params.id, req.user.company_id);
+    res.json({ success: true, message: 'تم الحذف' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Get company candidates (users selected for this company's jobs)
+app.get('/api/company/candidates', companyAuthMiddleware, (req, res) => {
+  try {
+    const cid = req.user.company_id;
+    const jobs = db.prepare('SELECT * FROM jobs WHERE company_name = (SELECT name FROM companies WHERE id=?)').all(cid);
+    if (!jobs.length) return res.json({ candidates: [] });
+    const jobIds = jobs.map(j => j.id);
+    const placeholders = jobIds.map(() => '?').join(',');
+    const selections = db.prepare(`SELECT s.*, u.name, u.email, u.phone, u.nationality, u.city, u.age, u.national_id, u.college, u.education_level, u.military_status, u.call_center_experience, u.language_applied, j.position, j.company_name, j.interview_time, j.salary_min, j.salary_max FROM selections s JOIN users u ON s.user_id = u.id JOIN jobs j ON s.job_id = j.id WHERE s.job_id IN (${placeholders})`).all(...jobIds);
+    res.json({ candidates: selections });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Admin: create company user account
+app.post('/api/admin/company-users', authMiddleware, adminMiddleware, (req, res) => {
+  try {
+    const { company_id, email, password, name } = req.body;
+    if (!company_id || !email || !password) return res.status(400).json({ error: 'Missing fields' });
+    const company = db.prepare('SELECT id FROM companies WHERE id=?').get(company_id);
+    if (!company) return res.status(404).json({ error: 'Company not found' });
+    const exists = db.prepare('SELECT id FROM company_users WHERE email=?').get(email);
+    if (exists) return res.status(400).json({ error: 'Email already exists' });
+    db.prepare('INSERT INTO company_users (company_id, email, password, name) VALUES (?,?,?,?)').run(company_id, email, bcrypt.hashSync(password, 10), name || '');
+    res.json({ success: true, message: 'تم إنشاء حساب الشركة' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Admin: get all company users
+app.get('/api/admin/company-users', authMiddleware, adminMiddleware, (req, res) => {
+  try {
+    const users = db.prepare('SELECT cu.*, c.name as company_name FROM company_users cu JOIN companies c ON cu.company_id = c.id').all();
+    res.json(users);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Admin: delete company user
+app.delete('/api/admin/company-users/:id', authMiddleware, adminMiddleware, (req, res) => {
+  try {
+    db.prepare('DELETE FROM company_users WHERE id=?').run(req.params.id);
+    res.json({ success: true, message: 'تم الحذف' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Admin: get company languages
+app.get('/api/admin/company-languages/:companyId', authMiddleware, adminMiddleware, (req, res) => {
+  try {
+    const langs = db.prepare('SELECT * FROM company_languages WHERE company_id=?').all(req.params.companyId);
+    res.json(langs);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Admin: add company language
+app.post('/api/admin/company-languages', authMiddleware, adminMiddleware, (req, res) => {
+  try {
+    const { company_id, language, level, needed_count } = req.body;
+    if (!company_id || !language || !level) return res.status(400).json({ error: 'Missing fields' });
+    db.prepare('INSERT INTO company_languages (company_id, language, level, needed_count) VALUES (?,?,?,?)').run(company_id, language, level, needed_count || 1);
+    res.json({ success: true, message: 'تمت الإضافة' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Admin: delete company language
+app.delete('/api/admin/company-languages/:id', authMiddleware, adminMiddleware, (req, res) => {
+  try {
+    db.prepare('DELETE FROM company_languages WHERE id=?').run(req.params.id);
+    res.json({ success: true, message: 'تم الحذف' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Admin: get jobs filtered by language for assignment
+app.get('/api/admin/jobs-by-language/:language', authMiddleware, adminMiddleware, (req, res) => {
+  try {
+    const lang = req.params.language;
+    const companies = db.prepare('SELECT DISTINCT c.id, c.name FROM companies c JOIN company_languages cl ON c.id = cl.company_id WHERE cl.language = ?').all(lang);
+    if (!companies.length) {
+      db.prepare('INSERT INTO admin_notifications (company_id, type, message, status) VALUES (0, ?, ?, ?)').run('missing_language', `لا توجد شركة توفر وظيفة باللغة: ${lang}. برجاء التعاoad مع شركة توفر هذا التخصص.`, 'pending');
+      return res.json({ jobs: [], message: 'لا توجد شركة متاحة لهذه اللغة', notification_sent: true });
+    }
+    const companyNames = companies.map(c => c.name);
+    const placeholders = companyNames.map(() => '?').join(',');
+    const jobs = db.prepare(`SELECT j.*, c.id as company_id FROM jobs j JOIN companies c ON j.company_name = c.name WHERE c.name IN (${placeholders})`).all(...companyNames);
+    res.json({ jobs, companies });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // 404 handler

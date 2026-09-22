@@ -8,7 +8,7 @@ const PUB = path.join(__dirname, 'public');
 const OUT = path.join(__dirname, 'pages.js');
 
 const pages = {};
-['login.html', 'dashboard.html', 'admin.html', 'agent.html'].forEach(f => {
+['login.html', 'dashboard.html', 'admin.html', 'agent.html', 'company.html'].forEach(f => {
   pages[f] = fs.readFileSync(path.join(PUB, f), 'utf8');
 });
 

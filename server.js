@@ -131,8 +131,8 @@ if (fs.existsSync(pendingRestore)) {
 }
 let db;
 async function initDatabase() {
-  const Database = require('better-sqlite3');
-  db = new Database(dbPath);
+  const { openDb } = require('./sqlite-wrapper');
+  db = await openDb(dbPath);
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
@@ -369,7 +369,8 @@ async function sendEmail(to, subject, html, attachments) {
 async function backupDatabase(manual) {
   try {
     const tmp = path.join(dataDir, 'backup-tmp.db');
-    fs.copyFileSync(dbPath, tmp);
+    const data = db.db.export();
+    fs.writeFileSync(tmp, Buffer.from(data));
     const size = fs.statSync(tmp).size;
     if (size > 20 * 1024 * 1024) {
       try { fs.unlinkSync(tmp); } catch (e) {}

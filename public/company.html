@@ -106,20 +106,38 @@
 
     /* Languages */
     .lang-section{padding:28px 32px}
-    .lang-list{margin-bottom:20px}
-    .lang-item{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:rgba(212,168,83,0.02);border:1px solid rgba(212,168,83,0.05);border-radius:14px;margin-bottom:8px;transition:all .2s}
-    .lang-item:hover{background:rgba(212,168,83,0.04)}
-    .lang-info{display:flex;align-items:center;gap:14px;flex:1}
-    .lang-name{font-weight:700;font-size:14px;color:#f0d78c}
-    .lang-level{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;background:rgba(212,168,83,0.08);color:#d4a853;border:1px solid rgba(212,168,83,0.12)}
-    .lang-count{color:#94a3b8;font-size:12px;font-weight:600}
-    .lang-delete{padding:7px 14px;background:rgba(220,50,50,0.06);border:1px solid rgba(220,50,50,0.12);border-radius:10px;color:#e57373;cursor:pointer;font-family:'Tajawal',sans-serif;font-size:12px;font-weight:600;transition:all .3s}
-    .lang-delete:hover{background:rgba(220,50,50,0.15);border-color:rgba(220,50,50,0.3)}
+    .lang-list{margin-bottom:24px;display:flex;flex-direction:column;gap:10px}
+    .lang-item{padding:16px 18px;background:linear-gradient(145deg,rgba(212,168,83,0.05),rgba(212,168,83,0.02));border:1px solid rgba(212,168,83,0.1);border-radius:16px;transition:all .3s;position:relative;overflow:hidden}
+    .lang-item::before{content:'';position:absolute;top:0;right:0;width:4px;height:100%;background:linear-gradient(180deg,#d4a853,#b8860b);border-radius:0 4px 4px 0}
+    .lang-item:hover{background:linear-gradient(145deg,rgba(212,168,83,0.08),rgba(212,168,83,0.04));border-color:rgba(212,168,83,0.18);transform:translateX(-3px)}
+    .lang-item-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;padding-right:8px}
+    .lang-item-name{font-weight:800;font-size:15px;color:#f0d78c;flex:2}
+    .lang-item-level{padding:4px 14px;border-radius:20px;font-size:11px;font-weight:800;background:rgba(212,168,83,0.12);color:#d4a853;border:1px solid rgba(212,168,83,0.2);letter-spacing:0.5px}
+    .lang-item-count{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;background:rgba(100,116,139,0.1);color:#94a3b8;border:1px solid rgba(100,116,139,0.15)}
+    .lang-item-meta{display:flex;flex-wrap:wrap;gap:8px;padding-right:8px}
+    .lang-item-meta span{font-size:11px;color:#94a3b8;background:rgba(0,0,0,0.25);padding:4px 10px;border-radius:8px;display:flex;align-items:center;gap:4px}
+    .lang-item-desc{font-size:12px;color:#64748b;margin-top:8px;padding-right:8px;line-height:1.5}
+    .lang-item-actions{position:absolute;top:12px;left:12px;display:flex;gap:6px}
+    .lang-item-del{width:30px;height:30px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.15);border-radius:8px;color:#ef4444;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;transition:all .3s;opacity:0.6}
+    .lang-item-edit{width:30px;height:30px;background:rgba(212,168,83,0.08);border:1px solid rgba(212,168,83,0.15);border-radius:8px;color:#d4a853;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;transition:all .3s;opacity:0.6}
+    .lang-item:hover .lang-item-del,.lang-item:hover .lang-item-edit{opacity:1}
+    .lang-item-del:hover{background:rgba(239,68,68,0.2);border-color:rgba(239,68,68,0.4);transform:scale(1.1)}
+    .lang-item-edit:hover{background:rgba(212,168,83,0.2);border-color:rgba(212,168,83,0.4);transform:scale(1.1)}
 
-    .lang-add{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
-    .lang-add .form-group{margin-bottom:0;flex:1;min-width:140px}
-    .btn-add-lang{padding:0 24px;height:42px;background:linear-gradient(135deg,#b8860b,#d4a853);color:#0a0a0a;border:none;border-radius:12px;font-family:'Tajawal',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .3s;white-space:nowrap;flex-shrink:0}
+    .lang-add{background:rgba(0,0,0,0.2);border:1px solid rgba(212,168,83,0.08);border-radius:16px;padding:20px}
+    .lang-add-row{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+    .lang-add-row:last-of-type{margin-bottom:0}
+    .lang-add input,.lang-add select,.lang-add textarea{background-color:#0f1117 !important;background:rgba(212,168,83,0.04) !important;border:1.5px solid rgba(212,168,83,0.1) !important;border-radius:10px !important;color:#e2e8f0 !important;font-family:'Tajawal',sans-serif !important;font-size:13px !important;padding:10px 12px !important;height:auto !important;transition:all .3s !important}
+    .lang-add input:focus,.lang-add select:focus,.lang-add textarea:focus{border-color:rgba(212,168,83,0.4) !important;box-shadow:0 0 0 3px rgba(212,168,83,0.06) !important;outline:none !important}
+    .lang-add input::placeholder,.lang-add textarea::placeholder{color:#4a5568 !important}
+    .lang-add select option{background:#0f1117;color:#e2e8f0}
+    .lang-add input[type="number"]{text-align:center}
+    .lang-add input[type="date"]{direction:ltr;text-align:left;color-scheme:dark}
+    .lang-add-label{font-size:11px;color:#94a3b8;font-weight:600;margin-bottom:5px;display:block}
+    .lang-sep{height:1px;background:rgba(212,168,83,0.06);margin:12px 0}
+    .btn-add-lang{width:100%;padding:13px;background:linear-gradient(135deg,#b8860b,#d4a853);color:#0a0a0a;border:none;border-radius:12px;font-family:'Tajawal',sans-serif;font-size:14px;font-weight:800;cursor:pointer;transition:all .3s;letter-spacing:0.3px}
     .btn-add-lang:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(212,168,83,0.3)}
+    .btn-add-lang:active{transform:translateY(0)}
 
     /* Candidates */
     .cand-section{padding:28px 32px}
@@ -157,9 +175,10 @@
       .profile-grid{grid-template-columns:1fr}
       .password-grid{grid-template-columns:1fr}
       .lang-section{padding:20px 18px}
-      .lang-add{flex-direction:column}
-      .lang-add .form-group{min-width:auto;width:100%}
-      .btn-add-lang{width:100%;height:42px}
+      .lang-add{padding:16px}
+      .lang-add-row{flex-wrap:wrap}
+      .lang-add-row select,.lang-add-row input{flex:1 !important;min-width:calc(50% - 4px) !important}
+      .btn-add-lang{width:100%;height:46px}
       .cand-section{padding:20px 18px}
       .cand-table thead{display:none}
       .cand-table,.cand-table tbody,.cand-table tr,.cand-table td{display:block}
@@ -230,7 +249,6 @@
       <div class="tabs">
         <button class="tab-btn active" onclick="switchDashTab('profile',this)">الملف الشخصي</button>
         <button class="tab-btn" onclick="switchDashTab('languages',this)">اللغات</button>
-        <button class="tab-btn" onclick="switchDashTab('jobs',this)">الوظائف</button>
         <button class="tab-btn" onclick="switchDashTab('candidates',this)">المتقدمين</button>
         <button class="tab-btn" onclick="switchDashTab('confirmed',this)">المؤكدين</button>
       </div>
@@ -279,66 +297,84 @@
               </div>
             </div>
 
-            <div class="section-label" style="margin-top:20px">إضافة لغة جديدة</div>
+            <div class="section-label" style="margin-top:24px">➕ إضافة لغة جديدة</div>
             <div class="lang-add">
-              <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;">
-                <select id="lang-select" class="sel" style="flex:2;margin:0;">
-                  <option value="">اختر اللغة</option>
-                  <option value="العربية">العربية</option>
-                  <option value="الإنجليزية">الإنجليزية</option>
-                  <option value="الفرنسية">الفرنسية</option>
-                  <option value="الألمانية">الألمانية</option>
-                  <option value="الإسبانية">الإسبانية</option>
-                  <option value="التركية">التركية</option>
-                  <option value="الإيطالية">الإيطالية</option>
-                  <option value="الروسية">الروسية</option>
-                </select>
-                <select id="lang-level" class="sel" style="flex:1;margin:0;">
-                  <option value="">المستوى</option>
-                  <option value="A1">A1</option>
-                  <option value="A2">A2</option>
-                  <option value="B1">B1</option>
-                  <option value="B2">B2</option>
-                  <option value="C1">C1</option>
-                  <option value="C2">C2</option>
-                </select>
-                <input type="number" id="lang-count" min="1" value="1" placeholder="العدد" style="flex:1;margin:0;text-align:center;">
+              <div class="lang-add-row">
+                <div style="flex:2;">
+                  <span class="lang-add-label">اللغة</span>
+                  <select id="lang-select" style="width:100%;">
+                    <option value="">اختر اللغة</option>
+                    <option value="العربية">العربية</option>
+                    <option value="الإنجليزية">الإنجليزية</option>
+                    <option value="الفرنسية">الفرنسية</option>
+                    <option value="الألمانية">الألمانية</option>
+                    <option value="الإسبانية">الإسبانية</option>
+                    <option value="التركية">التركية</option>
+                    <option value="الإيطالية">الإيطالية</option>
+                    <option value="الروسية">الروسية</option>
+                  </select>
+                </div>
+                <div style="flex:1;">
+                  <span class="lang-add-label">المستوى</span>
+                  <select id="lang-level" style="width:100%;">
+                    <option value="">A1-C2</option>
+                    <option value="A1">A1</option>
+                    <option value="A2">A2</option>
+                    <option value="B1">B1</option>
+                    <option value="B2">B2</option>
+                    <option value="C1">C1</option>
+                    <option value="C2">C2</option>
+                  </select>
+                </div>
+                <div style="flex:1;">
+                  <span class="lang-add-label">العدد</span>
+                  <input type="number" id="lang-count" min="1" value="1" placeholder="1" style="width:100%;">
+                </div>
               </div>
-              <div class="form-group"><input type="text" id="lang-position" placeholder="اسم الوظيفة (مثال: مطور ويب)" autocomplete="off"></div>
-              <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;">
-                <input type="number" id="lang-salary-min" placeholder="المرتب الأدنى" style="flex:1;margin:0;text-align:center;">
-                <span style="color:#94a3b8;font-size:14px;">-</span>
-                <input type="number" id="lang-salary-max" placeholder="المرتب الأقصى" style="flex:1;margin:0;text-align:center;">
+
+              <div class="lang-sep"></div>
+
+              <div class="lang-add-row">
+                <div style="flex:2;">
+                  <span class="lang-add-label">اسم الوظيفة</span>
+                  <input type="text" id="lang-position" placeholder="مثال: مطور ويب" autocomplete="off" style="width:100%;">
+                </div>
+                <div style="flex:1;">
+                  <span class="lang-add-label">وقت المقابلة</span>
+                  <input type="text" id="lang-interview" placeholder="السبت 2 م" autocomplete="off" style="width:100%;">
+                </div>
               </div>
-              <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;">
-                <input type="text" id="lang-interview" placeholder="وقت المقابلة (مثال: السبت 2 م)" style="flex:2;margin:0;">
-                <input type="date" id="lang-deadline" style="flex:1;margin:0;direction:ltr;text-align:left;color-scheme:dark;">
+
+              <div class="lang-add-row">
+                <div style="flex:1;">
+                  <span class="lang-add-label">المرتب الأدنى</span>
+                  <input type="number" id="lang-salary-min" placeholder="5000" style="width:100%;">
+                </div>
+                <div style="flex:1;">
+                  <span class="lang-add-label">المرتب الأقصى</span>
+                  <input type="number" id="lang-salary-max" placeholder="15000" style="width:100%;">
+                </div>
               </div>
-              <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;">
-                <input type="number" id="lang-notify-days" placeholder="تنبيه قبل كام يوم" min="1" max="30" value="5" style="flex:1;margin:0;text-align:center;">
+
+              <div class="lang-add-row">
+                <div style="flex:1;">
+                  <span class="lang-add-label">📅 تاريخ انتهاء المهلة</span>
+                  <input type="date" id="lang-deadline" style="width:100%;">
+                </div>
+                <div style="flex:1;">
+                  <span class="lang-add-label">🔔 تنبيه قبل كام يوم</span>
+                  <input type="number" id="lang-notify-days" min="1" max="30" value="5" placeholder="5" style="width:100%;">
+                </div>
               </div>
-              <div class="form-group"><textarea id="lang-desc" placeholder="وصف الشركة / الوظيفة" style="min-height:55px;resize:vertical;width:100%;padding:12px 14px;background:rgba(212,168,83,0.03);border:1px solid rgba(212,168,83,0.06);border-radius:12px;color:#f5f0e8;font-family:'Tajawal',sans-serif;font-size:13px;"></textarea></div>
-              <button class="btn-add-lang" onclick="addLanguage()" style="width:100%;padding:12px;">+ إضافة</button>
+
+              <div style="margin-bottom:12px;">
+                <span class="lang-add-label">الوصف</span>
+                <textarea id="lang-desc" placeholder="وصف الشركة / الوظيفة" style="width:100%;min-height:60px;resize:vertical;"></textarea>
+              </div>
+
+              <button class="btn-add-lang" onclick="addLanguage()">+ إضافة اللغة</button>
             </div>
           </div>
-        </div>
-      </div>
-
-      <!-- Tab 3: Jobs -->
-      <div class="tab-panel" id="tab-jobs">
-        <div class="glass" style="padding:28px 32px;">
-          <div class="section-label">الوظائف المسجلة</div>
-          <div id="jobs-list"><p style="color:#94a3b8;text-align:center;padding:30px;">لا توجد وظائف بعد</p></div>
-          <div class="divider"></div>
-          <div class="section-label">إضافة وظيفة جديدة</div>
-          <div class="profile-grid">
-            <div class="form-group"><label>اسم الوظيفة</label><input type="text" id="j-position" placeholder="مثال: مطور ويب" autocomplete="off"></div>
-            <div class="form-group"><label>وقت المقابلة</label><input type="text" id="j-interview" placeholder="مثال: السبت 2 م" autocomplete="off"></div>
-            <div class="form-group"><label>المرتب الأدنى</label><input type="number" id="j-salary-min" placeholder="5000" autocomplete="off"></div>
-            <div class="form-group"><label>المرتب الأقصى</label><input type="number" id="j-salary-max" placeholder="15000" autocomplete="off"></div>
-            <div class="form-group full-width"><label>الوصف</label><textarea id="j-desc" placeholder="تفاصيل الوظيفة"></textarea></div>
-          </div>
-          <button class="btn-save" onclick="addJob()">+ إضافة وظيفة</button>
         </div>
       </div>
 
@@ -508,7 +544,6 @@
       document.getElementById('tab-'+tab).classList.add('active');
       if(tab==='languages')loadLanguages();
       if(tab==='candidates')loadCandidates();
-      if(tab==='jobs')loadJobs();
       if(tab==='confirmed')loadConfirmed();
     }
 
@@ -556,11 +591,45 @@
 
     /* ===== LANGUAGES ===== */
     let currentLanguages=[];
+    let editingLangId=null;
     async function loadLanguages(){
       try{
         const data=await api('/api/company/profile');
         renderLanguages(data.languages||[]);
       }catch(e){showToast(e.message,'error')}
+    }
+    function editLangById(id){
+      const l=currentLanguages.find(x=>x.id===id);
+      if(!l)return;
+      editLang(l);
+    }
+    function editLang(l){
+      editingLangId=l.id;
+      document.getElementById('lang-select').value=l.language||'';
+      document.getElementById('lang-level').value=l.level||'';
+      document.getElementById('lang-count').value=l.needed_count||1;
+      document.getElementById('lang-position').value=l.position||'';
+      document.getElementById('lang-salary-min').value=l.salary_min||'';
+      document.getElementById('lang-salary-max').value=l.salary_max||'';
+      document.getElementById('lang-interview').value=l.interview_time||'';
+      document.getElementById('lang-deadline').value=l.deadline||'';
+      document.getElementById('lang-notify-days').value=l.notify_days||5;
+      document.getElementById('lang-desc').value=l.description||'';
+      const btn=document.querySelector('.btn-add-lang');
+      btn.textContent='💾 حفظ التعديلات';
+      btn.style.background='linear-gradient(135deg,#16a34a,#22c55e)';
+      document.getElementById('lang-select').scrollIntoView({behavior:'smooth',block:'center'});
+    }
+    function cancelEditLang(){
+      editingLangId=null;
+      ['lang-select','lang-level','lang-position','lang-interview','lang-deadline','lang-desc'].forEach(id=>document.getElementById(id).value='');
+      document.getElementById('lang-count').value='1';
+      document.getElementById('lang-salary-min').value='';
+      document.getElementById('lang-salary-max').value='';
+      document.getElementById('lang-notify-days').value='5';
+      const btn=document.querySelector('.btn-add-lang');
+      btn.textContent='+ إضافة اللغة';
+      btn.style.background='linear-gradient(135deg,#b8860b,#d4a853)';
     }
 
     function renderLanguages(langs){
@@ -573,22 +642,23 @@
       langs.forEach(l=>{
         const div=document.createElement('div');div.className='lang-item';div.dataset.id=l.id;
         div.innerHTML=`
-          <div style="padding:12px;background:rgba(212,168,83,0.06);border:1px solid rgba(212,168,83,0.1);border-radius:10px;margin-bottom:8px;">
-            <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
-              <span style="flex:2;font-size:14px;color:#f0d78c;font-weight:700;">${esc(l.language)}</span>
-              <span style="flex:1;font-size:12px;padding:3px 8px;background:rgba(212,168,83,0.15);border-radius:6px;color:#d4a853;text-align:center;font-weight:700;">${esc(l.level)}</span>
-              <span style="flex:1;font-size:12px;color:#94a3b8;text-align:center;">${l.needed_count||1} مطلوب</span>
-              <button class="lang-delete" onclick="deleteLanguage(${l.id})" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;padding:2px 6px;">✕</button>
-            </div>
-            <div style="font-size:11px;color:#94a3b8;display:flex;flex-wrap:wrap;gap:8px;">
-              ${l.position?`<span>💼 ${esc(l.position)}</span>`:''}
-              ${(l.salary_min||l.salary_max)?`<span>💰 ${l.salary_min||0}-${l.salary_max||0} ج</span>`:''}
-              ${l.interview_time?`<span>🕐 ${esc(l.interview_time)}</span>`:''}
-              ${l.deadline?`<span>📅 ${esc(l.deadline)}</span>`:''}
-              ${l.notify_days?`<span>🔔 ${l.notify_days} يوم</span>`:''}
-            </div>
-            ${l.description?`<div style="font-size:11px;color:#64748b;margin-top:4px;">📝 ${esc(l.description)}</div>`:''}
-          </div>`;
+          <div class="lang-item-actions">
+            <button class="lang-item-edit" onclick="editLangById(${l.id})" title="تعديل">✏️</button>
+            <button class="lang-item-del" onclick="deleteLanguage(${l.id})" title="حذف">✕</button>
+          </div>
+          <div class="lang-item-head">
+            <span class="lang-item-name">${esc(l.language)}</span>
+            <span class="lang-item-level">${esc(l.level)}</span>
+            <span class="lang-item-count">${l.needed_count||1} مطلوب</span>
+          </div>
+          <div class="lang-item-meta">
+            ${l.position?`<span>💼 ${esc(l.position)}</span>`:''}
+            ${(l.salary_min||l.salary_max)?`<span>💰 ${(l.salary_min||0).toLocaleString()} - ${(l.salary_max||0).toLocaleString()} ج</span>`:''}
+            ${l.interview_time?`<span>🕐 ${esc(l.interview_time)}</span>`:''}
+            ${l.deadline?`<span>📅 ${esc(l.deadline)}</span>`:''}
+            ${l.notify_days?`<span>🔔 ${l.notify_days} يوم</span>`:''}
+          </div>
+          ${l.description?`<div class="lang-item-desc">📝 ${esc(l.description)}</div>`:''}`;
         list.appendChild(div);
       });
     }
@@ -604,14 +674,16 @@
       const description=val('lang-desc');
       if(!lang)return showToast('اختر اللغة','error');
       if(!level)return showToast('اختر المستوى','error');
+      const body={language:lang,level,needed_count:parseInt(count),position,salary_min,salary_max,interview_time,deadline,notify_days,description};
       try{
-        await api('/api/company/languages',{method:'POST',body:JSON.stringify({language:lang,level,needed_count:parseInt(count),position,salary_min,salary_max,interview_time,deadline,notify_days,description})});
-        showToast('تمت الإضافة بنجاح','success');
-        ['lang-select','lang-level','lang-position','lang-interview','lang-deadline','lang-desc'].forEach(id=>document.getElementById(id).value='');
-        document.getElementById('lang-count').value='1';
-        document.getElementById('lang-salary-min').value='';
-        document.getElementById('lang-salary-max').value='';
-        document.getElementById('lang-notify-days').value='5';
+        if(editingLangId){
+          await api('/api/company/languages/'+editingLangId,{method:'PUT',body:JSON.stringify(body)});
+          showToast('تم تحديث اللغة','success');
+        }else{
+          await api('/api/company/languages',{method:'POST',body:JSON.stringify(body)});
+          showToast('تمت الإضافة بنجاح','success');
+        }
+        cancelEditLang();
         const data=await api('/api/company/profile');
         renderLanguages(data.languages||[]);
       }catch(e){showToast(e.message,'error')}
@@ -649,66 +721,6 @@
           <td data-label="الوظيفة">${esc(c.position||'-')}</td>
           <td data-label="المقابلة">${esc(c.interview_time||'-')}</td>
         </tr>`).join('');
-      }catch(e){showToast(e.message,'error')}
-    }
-
-    /* ===== JOBS ===== */
-    let editingJobId=null;
-    async function loadJobs(){
-      try{
-        const data=await api('/api/company/jobs');
-        const jobs=data.jobs||[];
-        const list=document.getElementById('jobs-list');
-        if(!jobs.length){list.innerHTML='<p style="color:#94a3b8;text-align:center;padding:30px;">لا توجد وظائف بعد</p>';return}
-        list.innerHTML=jobs.map(j=>`
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;margin-bottom:8px;background:rgba(212,168,83,0.04);border:1px solid rgba(212,168,83,0.08);border-radius:12px;flex-wrap:wrap;gap:10px;">
-            <div style="flex:1;min-width:200px;">
-              <div style="font-size:15px;font-weight:700;color:#f0d78c;">${esc(j.position)}</div>
-              <div style="font-size:12px;color:#94a3b8;margin-top:4px;">
-                ${j.interview_time?'🕐 '+esc(j.interview_time):''}
-                ${(j.salary_min||j.salary_max)?' | 💰 '+ (j.salary_min||0)+'-'+(j.salary_max||0)+' ج':''}
-              </div>
-              ${j.description?`<div style="font-size:12px;color:#64748b;margin-top:4px;">${esc(j.description)}</div>`:''}
-            </div>
-            <div style="display:flex;gap:6px;">
-              <button onclick="editJob(${j.id},'${esc(j.position).replace(/'/g,"\\'")}','${esc(j.interview_time||'').replace(/'/g,"\\'")}',${j.salary_min||0},${j.salary_max||0},'${esc(j.description||'').replace(/'/g,"\\'")}')" style="padding:8px 16px;background:rgba(212,168,83,0.1);border:1px solid rgba(212,168,83,0.2);border-radius:8px;color:#d4a853;cursor:pointer;font-family:'Tajawal',sans-serif;font-size:12px;font-weight:600;">تعديل</button>
-              <button onclick="deleteJob(${j.id})" style="padding:8px 16px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.15);border-radius:8px;color:#ef4444;cursor:pointer;font-family:'Tajawal',sans-serif;font-size:12px;font-weight:600;">حذف</button>
-            </div>
-          </div>`).join('');
-      }catch(e){showToast(e.message,'error')}
-    }
-    async function addJob(){
-      const position=val('j-position');
-      if(!position)return showToast('اسم الوظيفة مطلوب','error');
-      const body={position,interview_time:val('j-interview'),salary_min:parseFloat(val('j-salary-min'))||0,salary_max:parseFloat(val('j-salary-max'))||0,description:val('j-desc')};
-      try{
-        if(editingJobId){
-          await api('/api/company/jobs/'+editingJobId,{method:'PUT',body:JSON.stringify(body)});
-          showToast('تم تحديث الوظيفة','success');
-          editingJobId=null;
-        }else{
-          await api('/api/company/jobs',{method:'POST',body:JSON.stringify(body)});
-          showToast('تمت إضافة الوظيفة','success');
-        }
-        ['j-position','j-interview','j-salary-min','j-salary-max','j-desc'].forEach(id=>document.getElementById(id).value='');
-        loadJobs();
-      }catch(e){showToast(e.message,'error')}
-    }
-    function editJob(id,position,interview,smin,smax,desc){
-      editingJobId=id;
-      document.getElementById('j-position').value=position;
-      document.getElementById('j-interview').value=interview;
-      document.getElementById('j-salary-min').value=smin||'';
-      document.getElementById('j-salary-max').value=smax||'';
-      document.getElementById('j-desc').value=desc||'';
-      document.getElementById('j-position').focus();
-    }
-    async function deleteJob(id){
-      if(!confirm('هل أنت متأكد من حذف هذه الوظيفة؟'))return;
-      try{
-        await api('/api/company/jobs/'+id,{method:'DELETE'});
-        showToast('تم الحذف','success');
-        loadJobs();
       }catch(e){showToast(e.message,'error')}
     }
 

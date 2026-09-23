@@ -2930,6 +2930,16 @@ app.delete('/api/company/languages/:id', companyAuthMiddleware, (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Update company language
+app.put('/api/company/languages/:id', companyAuthMiddleware, (req, res) => {
+  try {
+    const { language, level, needed_count, position, salary_min, salary_max, interview_time, deadline, notify_days, description } = req.body;
+    if (!language || !level) return res.status(400).json({ error: 'Language and level required' });
+    db.prepare('UPDATE company_languages SET language=?, level=?, needed_count=?, position=?, salary_min=?, salary_max=?, interview_time=?, deadline=?, notify_days=?, description=? WHERE id=? AND company_id=?').run(language, level, needed_count || 1, position || '', salary_min || 0, salary_max || 0, interview_time || '', deadline || '', notify_days || 5, description || '', req.params.id, req.user.company_id);
+    res.json({ success: true, message: 'تم التحديث' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // Get company candidates (users selected for this company's jobs)
 app.get('/api/company/candidates', companyAuthMiddleware, (req, res) => {
   try {

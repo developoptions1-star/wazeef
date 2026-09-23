@@ -2876,7 +2876,16 @@ app.post('/api/company/login', async (req, res) => {
 function companyAuthMiddleware(req, res, next) {
   const h = req.headers.authorization;
   if (!h) return res.status(401).json({ error: 'No token' });
-  try { req.user = jwt.verify(h.replace('Bearer ', ''), JWT_SECRET); if (req.user.role !== 'company') return res.status(403).json({ error: 'Not company' }); next(); } catch(e) { res.status(401).json({ error: 'Invalid token' }); }
+  try {
+    req.user = jwt.verify(h.replace('Bearer ', ''), JWT_SECRET);
+    if (req.user.role !== 'company') return res.status(403).json({ error: 'Not company' });
+    const cu = db.prepare('SELECT * FROM company_users WHERE id = ?').get(req.user.company_id);
+    if (!cu) return res.status(401).json({ error: 'Company user not found' });
+    const company = db.prepare('SELECT * FROM companies WHERE id = ?').get(cu.company_id);
+    if (!company) return res.status(401).json({ error: 'Company not found' });
+    req.user.company_id = cu.company_id;
+    next();
+  } catch(e) { res.status(401).json({ error: 'Invalid token' }); }
 }
 
 // Get company profile

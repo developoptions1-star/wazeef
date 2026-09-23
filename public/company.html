@@ -260,14 +260,7 @@
             <div class="section-label">معلومات الشركة</div>
             <div class="profile-grid">
               <div class="form-group"><label>اسم الشركة</label><input type="text" id="p-name" placeholder="اسم الشركة" autocomplete="off"></div>
-              <div class="form-group"><label>المسمى الوظيفي</label><input type="text" id="p-position" placeholder="مثال: مطور ويب" autocomplete="off"></div>
-              <div class="form-group full-width"><label>وصف الشركة</label><textarea id="p-description" placeholder="وصف مختصر للشركة والوظيفة"></textarea></div>
-              <div class="form-group"><label>وقت المقابلة</label><input type="text" id="p-interview_time" placeholder="مثال: السبت 2 م" autocomplete="off"></div>
               <div class="form-group"><label>البريد الإلكتروني للشركة</label><input type="email" id="p-company_email" placeholder="hr@company.com" autocomplete="off" dir="ltr" style="text-align:left"></div>
-              <div class="form-group"><label>الحد الأدنى للمرتب (جنيه)</label><input type="number" id="p-salary_min" placeholder="5000" autocomplete="off"></div>
-              <div class="form-group"><label>الحد الأقصى للمرتب (جنيه)</label><input type="number" id="p-salary_max" placeholder="15000" autocomplete="off"></div>
-              <div class="form-group"><label>عدد المقاعد المتاحة</label><input type="number" id="p-available_slots" placeholder="5" autocomplete="off"></div>
-              <div class="form-group"><label>الموعد النهائي للتقديم</label><input type="date" id="p-deadline" autocomplete="off"></div>
             </div>
             <button class="btn-save" onclick="saveProfile()">حفظ التعديلات</button>
 
@@ -553,14 +546,7 @@
         const data=await api('/api/company/profile');
         const c=data.company;
         document.getElementById('p-name').value=c.name||'';
-        document.getElementById('p-position').value=c.position||'';
-        document.getElementById('p-description').value=c.description||'';
-        document.getElementById('p-interview_time').value=c.interview_time||'';
         document.getElementById('p-company_email').value=c.company_email||'';
-        document.getElementById('p-salary_min').value=c.salary_min||'';
-        document.getElementById('p-salary_max').value=c.salary_max||'';
-        document.getElementById('p-available_slots').value=c.available_slots||'';
-        document.getElementById('p-deadline').value=c.deadline||'';
         renderLanguages(data.languages||[]);
       }catch(e){showToast(e.message,'error')}
     }
@@ -568,10 +554,7 @@
     async function saveProfile(){
       try{
         await api('/api/company/profile',{method:'PUT',body:JSON.stringify({
-          name:val('p-name'),position:val('p-position'),description:val('p-description'),
-          interview_time:val('p-interview_time'),salary_min:val('p-salary_min')||null,
-          salary_max:val('p-salary_max')||null,company_email:val('p-company_email'),
-          available_slots:val('p-available_slots')||null,deadline:val('p-deadline')||null
+          name:val('p-name'),company_email:val('p-company_email')
         })});
         showToast('تم حفظ التعديلات بنجاح','success');
         const u=getUser();if(u){u.company_name=val('p-name');setUser(u);document.getElementById('company-title').textContent=val('p-name')}

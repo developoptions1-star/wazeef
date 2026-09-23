@@ -324,6 +324,13 @@ db.exec(`
     level TEXT NOT NULL,
     needed_count INTEGER DEFAULT 1,
     filled_count INTEGER DEFAULT 0,
+    position TEXT DEFAULT '',
+    salary_min REAL DEFAULT 0,
+    salary_max REAL DEFAULT 0,
+    interview_time TEXT DEFAULT '',
+    deadline TEXT DEFAULT '',
+    notify_days INTEGER DEFAULT 5,
+    description TEXT DEFAULT '',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (company_id) REFERENCES companies(id)
   );
@@ -2906,13 +2913,11 @@ app.put('/api/company/password', companyAuthMiddleware, (req, res) => {
 // Add company language
 app.post('/api/company/languages', companyAuthMiddleware, (req, res) => {
   try {
-    const { language, level, needed_count } = req.body;
+    const { language, level, needed_count, position, salary_min, salary_max, interview_time, deadline, notify_days, description } = req.body;
     if (!language || !level) return res.status(400).json({ error: 'Language and level required' });
     const validLevels = ['A1','A2','B1','B2','C1','C2'];
     if (!validLevels.includes(level)) return res.status(400).json({ error: 'Invalid level' });
-    const exists = db.prepare('SELECT id FROM company_languages WHERE company_id=? AND language=? AND level=?').get(req.user.company_id, language, level);
-    if (exists) return res.status(400).json({ error: 'This language/level already exists' });
-    db.prepare('INSERT INTO company_languages (company_id, language, level, needed_count) VALUES (?,?,?,?)').run(req.user.company_id, language, level, needed_count || 1);
+    db.prepare('INSERT INTO company_languages (company_id, language, level, needed_count, position, salary_min, salary_max, interview_time, deadline, notify_days, description) VALUES (?,?,?,?,?,?,?,?,?,?,?)').run(req.user.company_id, language, level, needed_count || 1, position || '', salary_min || 0, salary_max || 0, interview_time || '', deadline || '', notify_days || 5, description || '');
     res.json({ success: true, message: 'تمت الإضافة' });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -2935,6 +2940,55 @@ app.get('/api/company/candidates', companyAuthMiddleware, (req, res) => {
     const placeholders = jobIds.map(() => '?').join(',');
     const selections = db.prepare(`SELECT s.*, u.name, u.email, u.phone, u.nationality, u.city, u.age, u.national_id, u.college, u.education_level, u.military_status, u.call_center_experience, u.language_applied, j.position, j.company_name, j.interview_time, j.salary_min, j.salary_max FROM selections s JOIN users u ON s.user_id = u.id JOIN jobs j ON s.job_id = j.id WHERE s.job_id IN (${placeholders})`).all(...jobIds);
     res.json({ candidates: selections });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Get company confirmed candidates (after تثبيت - going to this company)
+app.get('/api/company/confirmed', companyAuthMiddleware, (req, res) => {
+  try {
+    const cid = req.user.company_id;
+    const selections = db.prepare(`SELECT s.*, u.name, u.email, u.phone, u.nationality, u.city, u.age, u.national_id, u.college, u.education_level, u.military_status, u.call_center_experience, u.language_applied, j.position, j.company_name, j.interview_time, j.salary_min, j.salary_max FROM selections s JOIN users u ON s.user_id = u.id JOIN jobs j ON s.job_id = j.id WHERE s.status = 'confirmed' AND j.company_name = (SELECT name FROM companies WHERE id=?) ORDER BY s.created_at DESC`).all(cid);
+    res.json({ candidates: selections });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Get company jobs
+app.get('/api/company/jobs', companyAuthMiddleware, (req, res) => {
+  try {
+    const jobs = db.prepare('SELECT * FROM jobs WHERE company_name = (SELECT name FROM companies WHERE id=?) ORDER BY created_at DESC').all(req.user.company_id);
+    res.json({ jobs });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Create company job
+app.post('/api/company/jobs', companyAuthMiddleware, (req, res) => {
+  try {
+    const { position, interview_time, salary_min, salary_max, description } = req.body;
+    if (!position) return res.status(400).json({ error: 'اسم الوظيفة مطلوب' });
+    const company = db.prepare('SELECT name FROM companies WHERE id=?').get(req.user.company_id);
+    const result = db.prepare('INSERT INTO jobs (company_name, position, interview_time, salary_min, salary_max, description) VALUES (?,?,?,?,?,?)').run(company.name, position, interview_time || '', salary_min || 0, salary_max || 0, description || '');
+    res.json({ success: true, id: result.lastInsertRowid, message: 'تمت إضافة الوظيفة' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Update company job
+app.put('/api/company/jobs/:id', companyAuthMiddleware, (req, res) => {
+  try {
+    const { position, interview_time, salary_min, salary_max, description } = req.body;
+    const company = db.prepare('SELECT name FROM companies WHERE id=?').get(req.user.company_id);
+    db.prepare('UPDATE jobs SET position=?, interview_time=?, salary_min=?, salary_max=?, description=? WHERE id=? AND company_name=?').run(position || '', interview_time || '', salary_min || 0, salary_max || 0, description || '', req.params.id, company.name);
+    res.json({ success: true, message: 'تم التحديث' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Delete company job
+app.delete('/api/company/jobs/:id', companyAuthMiddleware, (req, res) => {
+  try {
+    const company = db.prepare('SELECT name FROM companies WHERE id=?').get(req.user.company_id);
+    const hasSelections = db.prepare('SELECT id FROM selections WHERE job_id=? AND status IN (\'selected\',\'confirmed\')').get(req.params.id);
+    if (hasSelections) return res.status(400).json({ error: 'لا يمكن حذف وظيفة فيها متقدمين' });
+    db.prepare('DELETE FROM jobs WHERE id=? AND company_name=?').run(req.params.id, company.name);
+    res.json({ success: true, message: 'تم الحذف' });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -2979,9 +3033,9 @@ app.get('/api/admin/company-languages/:companyId', authMiddleware, adminMiddlewa
 // Admin: add company language
 app.post('/api/admin/company-languages', authMiddleware, adminMiddleware, (req, res) => {
   try {
-    const { company_id, language, level, needed_count } = req.body;
+    const { company_id, language, level, needed_count, position, salary_min, salary_max, interview_time, deadline, notify_days, description } = req.body;
     if (!company_id || !language || !level) return res.status(400).json({ error: 'Missing fields' });
-    db.prepare('INSERT INTO company_languages (company_id, language, level, needed_count) VALUES (?,?,?,?)').run(company_id, language, level, needed_count || 1);
+    db.prepare('INSERT INTO company_languages (company_id, language, level, needed_count, position, salary_min, salary_max, interview_time, deadline, notify_days, description) VALUES (?,?,?,?,?,?,?,?,?,?,?)').run(company_id, language, level, needed_count || 1, position || '', salary_min || 0, salary_max || 0, interview_time || '', deadline || '', notify_days || 5, description || '');
     res.json({ success: true, message: 'تمت الإضافة' });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });

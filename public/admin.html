@@ -1571,58 +1571,53 @@
       <h2 id="company-modal-title">إضافة شركة</h2>
       <input type="hidden" id="company-edit-id">
       <div class="form-group"><label>اسم الشركة</label><input type="text" id="company-name" placeholder="اسم الشركة" autocomplete="off"></div>
-       <div class="form-group"><label>اسم الوظيفة</label><input type="text" id="company-position" placeholder="مثال: مطور ويب" autocomplete="off"></div>
-       <div class="form-group"><label>وقت المقابلة</label><input type="text" id="company-interview" placeholder="مثال: السبت 2 م" autocomplete="off"></div>
-
-       <div class="form-group"><label>المرتب (جنيه) - اختياري</label>
-        <div style="display:flex;gap:10px;align-items:center;">
-          <input type="number" id="company-salary-min" placeholder="الحد الأدنى" autocomplete="off" style="flex:1;">
-          <span style="color:#94a3b8;font-size:14px;">-</span>
-          <input type="number" id="company-salary-max" placeholder="الحد الأقصى" autocomplete="off" style="flex:1;">
-        </div>
-      </div>
-      <div class="form-group"><label>وصف الشركة</label><textarea id="company-desc" placeholder="وصف مختصر للشركة والوظيفة" autocomplete="off" style="width:100%;padding:12px 16px;background:rgba(212,168,83,0.04);border:1.5px solid rgba(212,168,83,0.12);border-radius:12px;color:#e2e8f0;font-family:'Tajawal',sans-serif;font-size:14px;min-height:70px;resize:vertical;outline:none;"></textarea></div>
-      <div class="form-group"><label>جيميل الشركة</label><input type="email" id="company-email" placeholder="example@company.com" autocomplete="off" style="direction:ltr;text-align:left;"></div>
- <div class="form-group"><label>عدد المقاعد المتاحة</label><input type="number" id="company-slots" placeholder="0" autocomplete="off" min="0"></div>
-       <div class="form-group"><label>📅 تاريخ انتهاء المهلة</label><input type="date" id="company-deadline" autocomplete="off" style="direction:ltr;text-align:left;" onchange="updateDeadlineInfo()"></div>
-       <div id="deadline-info" style="display:none;padding:10px 14px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.12);border-radius:10px;margin-bottom:10px;">
-         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-           <span style="font-size:12px;color:#94a3b8;">الأيام المتبقية: <strong id="deadline-days" style="color:#ef4444;">-</strong></span>
-           <span style="font-size:12px;color:#94a3b8;">الناس الناقصة: <strong id="deadline-needed" style="color:#fbbf24;">-</strong></span>
-         </div>
-       </div>
-       <div class="form-group"><label>🔔 يُنبه قبل كم يوم من الانتهاء</label><input type="number" id="company-notify-days" placeholder="5" autocomplete="off" min="1" max="30" value="5"></div>
+       <div class="form-group"><label>جيميل الشركه (للدخول على /company)</label><input type="email" id="company-email" placeholder="example@company.com" autocomplete="off" style="direction:ltr;text-align:left;"></div>
 
        <div style="border-top:1px solid rgba(212,168,83,0.1);margin:14px 0;padding-top:14px;">
-         <label style="font-size:13px;font-weight:700;color:#d4a853;margin-bottom:10px;display:block;">🔑 حساب دخول الشركة</label>
-         <div class="form-group"><label>إيميل الدخول</label><input type="email" id="company-login-email" placeholder="login@company.com" autocomplete="off" style="direction:ltr;text-align:left;"></div>
-         <div class="form-group"><label>باسورد الدخول</label><input type="password" id="company-login-password" placeholder="••••••••" autocomplete="new-password"></div>
+         <label style="font-size:13px;font-weight:700;color:#d4a853;margin-bottom:10px;display:block;">🔑 باسورد دخول الشركة</label>
+         <div class="form-group"><input type="password" id="company-login-password" placeholder="••••••••" autocomplete="new-password"></div>
        </div>
 
        <div style="border-top:1px solid rgba(212,168,83,0.1);margin:14px 0;padding-top:14px;">
          <label style="font-size:13px;font-weight:700;color:#d4a853;margin-bottom:10px;display:block;">🌍 اللغات المطلوبة</label>
          <div id="company-languages-list"></div>
-         <div style="display:flex;gap:6px;align-items:center;margin-top:8px;">
-           <select id="new-lang" style="flex:2;padding:10px 12px;background:rgba(212,168,83,0.04);border:1.5px solid rgba(212,168,83,0.12);border-radius:10px;color:#e2e8f0;font-family:'Tajawal',sans-serif;font-size:13px;outline:none;">
-             <option value="">اختر اللغة</option>
-             <option value="العربية">العربية</option>
-             <option value="الإنجليزية">الإنجليزية</option>
-             <option value="الفرنسية">الفرنسية</option>
-             <option value="الألمانية">الألمانية</option>
-             <option value="الإسبانية">الإسبانية</option>
-             <option value="التركية">التركية</option>
-             <option value="الإيطالية">الإيطالية</option>
-             <option value="الروسية">الروسية</option>
-             <option value="أخرى">أخرى</option>
-           </select>
-           <select id="new-level" style="flex:1;padding:10px 12px;background:rgba(212,168,83,0.04);border:1.5px solid rgba(212,168,83,0.12);border-radius:10px;color:#e2e8f0;font-family:'Tajawal',sans-serif;font-size:13px;outline:none;">
-             <option value="">المستوى</option>
-             <option value="A1">A1</option><option value="A2">A2</option>
-             <option value="B1">B1</option><option value="B2">B2</option>
-             <option value="C1">C1</option><option value="C2">C2</option>
-           </select>
-           <input type="number" id="new-count" placeholder="العدد" min="1" value="1" style="flex:1;padding:10px 12px;background:rgba(212,168,83,0.04);border:1.5px solid rgba(212,168,83,0.12);border-radius:10px;color:#e2e8f0;font-family:'Tajawal',sans-serif;font-size:13px;outline:none;text-align:center;">
-           <button onclick="addLangRow()" style="padding:10px 14px;background:linear-gradient(135deg,#d4a853,#b8860b);border:none;border-radius:10px;color:#0a0a0f;font-weight:700;cursor:pointer;font-size:16px;">+</button>
+
+         <div style="padding:12px;background:rgba(212,168,83,0.04);border:1px solid rgba(212,168,83,0.1);border-radius:10px;margin-top:8px;">
+           <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;">
+             <select id="new-lang" style="flex:2;padding:10px 12px;background-color:#0f1117;background:rgba(212,168,83,0.04);border:1.5px solid rgba(212,168,83,0.12);border-radius:10px;color:#e2e8f0;font-family:'Tajawal',sans-serif;font-size:13px;outline:none;appearance:auto;-webkit-appearance:auto;">
+               <option value="" style="background:#0f1117;color:#e2e8f0;">اختر اللغة</option>
+               <option value="العربية" style="background:#0f1117;color:#e2e8f0;">العربية</option>
+               <option value="الإنجليزية" style="background:#0f1117;color:#e2e8f0;">الإنجليزية</option>
+               <option value="الفرنسية" style="background:#0f1117;color:#e2e8f0;">الفرنسية</option>
+               <option value="الألمانية" style="background:#0f1117;color:#e2e8f0;">الألمانية</option>
+               <option value="الإسبانية" style="background:#0f1117;color:#e2e8f0;">الإسبانية</option>
+               <option value="التركية" style="background:#0f1117;color:#e2e8f0;">التركية</option>
+               <option value="الإيطالية" style="background:#0f1117;color:#e2e8f0;">الإيطالية</option>
+               <option value="الروسية" style="background:#0f1117;color:#e2e8f0;">الروسية</option>
+             </select>
+             <select id="new-level" style="flex:1;padding:10px 12px;background-color:#0f1117;background:rgba(212,168,83,0.04);border:1.5px solid rgba(212,168,83,0.12);border-radius:10px;color:#e2e8f0;font-family:'Tajawal',sans-serif;font-size:13px;outline:none;appearance:auto;-webkit-appearance:auto;">
+               <option value="" style="background:#0f1117;color:#e2e8f0;">المستوى</option>
+               <option value="A1" style="background:#0f1117;color:#e2e8f0;">A1</option><option value="A2" style="background:#0f1117;color:#e2e8f0;">A2</option>
+               <option value="B1" style="background:#0f1117;color:#e2e8f0;">B1</option><option value="B2" style="background:#0f1117;color:#e2e8f0;">B2</option>
+               <option value="C1" style="background:#0f1117;color:#e2e8f0;">C1</option><option value="C2" style="background:#0f1117;color:#e2e8f0;">C2</option>
+             </select>
+             <input type="number" id="new-count" placeholder="العدد" min="1" value="1" style="flex:1;padding:10px 12px;background-color:#0f1117;background:rgba(212,168,83,0.04);border:1.5px solid rgba(212,168,83,0.12);border-radius:10px;color:#e2e8f0;font-family:'Tajawal',sans-serif;font-size:13px;outline:none;text-align:center;">
+           </div>
+           <div class="form-group" style="margin-bottom:8px;"><input type="text" id="new-position" placeholder="اسم الوظيفة (مثال: مطور ويب)" autocomplete="off" style="width:100%;padding:10px 12px;background-color:#0f1117;background:rgba(212,168,83,0.04);border:1.5px solid rgba(212,168,83,0.12);border-radius:10px;color:#e2e8f0;font-family:'Tajawal',sans-serif;font-size:13px;outline:none;"></div>
+           <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;">
+             <input type="number" id="new-salary-min" placeholder="المرتب الأدنى" autocomplete="off" style="flex:1;padding:10px 12px;background-color:#0f1117;background:rgba(212,168,83,0.04);border:1.5px solid rgba(212,168,83,0.12);border-radius:10px;color:#e2e8f0;font-family:'Tajawal',sans-serif;font-size:13px;outline:none;text-align:center;">
+             <span style="color:#94a3b8;font-size:14px;">-</span>
+             <input type="number" id="new-salary-max" placeholder="المرتب الأقصى" autocomplete="off" style="flex:1;padding:10px 12px;background-color:#0f1117;background:rgba(212,168,83,0.04);border:1.5px solid rgba(212,168,83,0.12);border-radius:10px;color:#e2e8f0;font-family:'Tajawal',sans-serif;font-size:13px;outline:none;text-align:center;">
+           </div>
+           <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;">
+             <input type="text" id="new-interview" placeholder="وقت المقابلة (مثال: السبت 2 م)" autocomplete="off" style="flex:2;padding:10px 12px;background-color:#0f1117;background:rgba(212,168,83,0.04);border:1.5px solid rgba(212,168,83,0.12);border-radius:10px;color:#e2e8f0;font-family:'Tajawal',sans-serif;font-size:13px;outline:none;">
+             <input type="date" id="new-deadline" autocomplete="off" style="flex:1;padding:10px 12px;background-color:#0f1117;background:rgba(212,168,83,0.04);border:1.5px solid rgba(212,168,83,0.12);border-radius:10px;color:#e2e8f0;font-family:'Tajawal',sans-serif;font-size:13px;outline:none;direction:ltr;text-align:left;color-scheme:dark;">
+           </div>
+           <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;">
+             <input type="number" id="new-notify-days" placeholder="تنبيه قبل كام يوم" min="1" max="30" value="5" autocomplete="off" style="flex:1;padding:10px 12px;background-color:#0f1117;background:rgba(212,168,83,0.04);border:1.5px solid rgba(212,168,83,0.12);border-radius:10px;color:#e2e8f0;font-family:'Tajawal',sans-serif;font-size:13px;outline:none;text-align:center;">
+           </div>
+           <textarea id="new-desc" placeholder="وصف الشركة / الوظيفة" autocomplete="off" style="width:100%;padding:10px 12px;background-color:#0f1117;background:rgba(212,168,83,0.04);border:1.5px solid rgba(212,168,83,0.12);border-radius:10px;color:#e2e8f0;font-family:'Tajawal',sans-serif;font-size:13px;min-height:55px;resize:vertical;outline:none;margin-bottom:8px;"></textarea>
+           <button onclick="addLangRow()" style="width:100%;padding:10px;background:linear-gradient(135deg,#d4a853,#b8860b);border:none;border-radius:10px;color:#0a0a0f;font-weight:700;cursor:pointer;font-size:14px;font-family:'Tajawal',sans-serif;">+ إضافة</button>
          </div>
        </div>
 
@@ -2860,27 +2855,44 @@ function toggleAgentsSection(forceOpen) {
       const box = document.getElementById('company-languages-list');
       if (!companyLangRows.length) { box.innerHTML = '<p style="font-size:11px;color:#64748b;margin:4px 0;">لا توجد لغات مضافة بعد</p>'; return; }
       box.innerHTML = companyLangRows.map((l,i) => `
-        <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;padding:6px 8px;background:rgba(212,168,83,0.06);border-radius:8px;">
-          <span style="flex:2;font-size:13px;color:#f0d78c;">${l.language}</span>
-          <span style="flex:1;font-size:12px;padding:3px 8px;background:rgba(212,168,83,0.15);border-radius:6px;color:#d4a853;text-align:center;font-weight:700;">${l.level}</span>
-          <span style="flex:1;font-size:12px;color:#94a3b8;text-align:center;">${l.needed_count} شخص</span>
-          ${l.id ? `<button onclick="removeLangServer(${l.id},${i})" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;padding:2px 6px;" title="حذف">✕</button>` : `<button onclick="companyLangRows.splice(${i},1);renderLangRows();" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;padding:2px 6px;" title="حذف">✕</button>`}
+        <div style="margin-bottom:8px;padding:10px;background:rgba(212,168,83,0.06);border:1px solid rgba(212,168,83,0.1);border-radius:8px;">
+          <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
+            <span style="flex:2;font-size:13px;color:#f0d78c;font-weight:700;">${l.language}</span>
+            <span style="flex:1;font-size:12px;padding:3px 8px;background:rgba(212,168,83,0.15);border-radius:6px;color:#d4a853;text-align:center;font-weight:700;">${l.level}</span>
+            <span style="flex:1;font-size:12px;color:#94a3b8;text-align:center;">${l.needed_count} شخص</span>
+            <button onclick="removeLangServer(${l.id||0},${i})" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;padding:2px 6px;" title="حذف">✕</button>
+          </div>
+          <div style="font-size:11px;color:#94a3b8;display:flex;flex-wrap:wrap;gap:8px;">
+            ${l.position ? `<span>💼 ${l.position}</span>` : ''}
+            ${(l.salary_min||l.salary_max) ? `<span>💰 ${l.salary_min||0}-${l.salary_max||0} ج</span>` : ''}
+            ${l.interview_time ? `<span>🕐 ${l.interview_time}</span>` : ''}
+            ${l.deadline ? `<span>📅 ${l.deadline}</span>` : ''}
+            ${l.notify_days ? `<span>🔔 ${l.notify_days} يوم</span>` : ''}
+          </div>
+          ${l.description ? `<div style="font-size:11px;color:#64748b;margin-top:4px;">📝 ${l.description}</div>` : ''}
         </div>`).join('');
     }
     function addLangRow() {
       const lang = document.getElementById('new-lang').value;
       const level = document.getElementById('new-level').value;
       const count = parseInt(document.getElementById('new-count').value) || 1;
+      const position = document.getElementById('new-position').value.trim();
+      const salary_min = parseFloat(document.getElementById('new-salary-min').value) || 0;
+      const salary_max = parseFloat(document.getElementById('new-salary-max').value) || 0;
+      const interview_time = document.getElementById('new-interview').value.trim();
+      const deadline = document.getElementById('new-deadline').value;
+      const notify_days = parseInt(document.getElementById('new-notify-days').value) || 5;
+      const description = document.getElementById('new-desc').value.trim();
       if (!lang || !level) return alert('اختر اللغة والمستوى');
-      if (companyLangRows.some(l => l.language === lang && l.level === level)) return alert('اللغة والمستوى دي مضافة بالفعل');
-      companyLangRows.push({ language: lang, level: level, needed_count: count });
-      document.getElementById('new-lang').value = '';
-      document.getElementById('new-level').value = '';
+      companyLangRows.push({ language: lang, level: level, needed_count: count, position, salary_min, salary_max, interview_time, deadline, notify_days, description });
+      ['new-lang','new-level','new-position','new-interview','new-deadline','new-desc'].forEach(id => document.getElementById(id).value = '');
       document.getElementById('new-count').value = '1';
+      document.getElementById('new-salary-min').value = '';
+      document.getElementById('new-salary-max').value = '';
+      document.getElementById('new-notify-days').value = '5';
       renderLangRows();
     }
     async function removeLangServer(id, idx) {
-      const editId = document.getElementById('company-edit-id').value;
       if (id) {
         try { await fetch(`/api/admin/company-languages/${id}`, { method:'DELETE', headers:{'Authorization':`Bearer ${token}`} }); } catch(e){}
       }
@@ -2899,7 +2911,7 @@ function toggleAgentsSection(forceOpen) {
         const res = await fetch('/api/admin/company-users', { headers:{'Authorization':`Bearer ${token}`} });
         const users = await res.json();
         const u = users.find(x => x.company_id === companyId);
-        document.getElementById('company-login-email').value = u ? u.email : '';
+        document.getElementById('company-email').value = u ? u.email : '';
         document.getElementById('company-login-password').value = '';
         document.getElementById('company-login-password').placeholder = u ? '•••• (اتغير لو عايز)' : '••••••••';
       } catch(e) {}
@@ -2908,26 +2920,12 @@ function toggleAgentsSection(forceOpen) {
     function openCompanyModal() {
       document.getElementById('company-modal-title').textContent = 'إضافة شركة';
       document.getElementById('company-edit-id').value = '';
-      ['company-name','company-position','company-interview','company-salary-min','company-salary-max','company-desc','company-email','company-slots','company-deadline','company-notify-days','company-login-email','company-login-password'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
-      document.getElementById('deadline-info').style.display = 'none';
+      ['company-name','company-email','company-login-password'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
       companyLangRows = [];
       renderLangRows();
       document.getElementById('company-modal').classList.add('show');
     }
     function closeCompanyModal() { document.getElementById('company-modal').classList.remove('show'); }
-
-    function updateDeadlineInfo() {
-      const deadlineVal = document.getElementById('company-deadline').value;
-      const slots = parseInt(document.getElementById('company-slots').value) || 0;
-      const infoDiv = document.getElementById('deadline-info');
-      if (!deadlineVal) { infoDiv.style.display = 'none'; return; }
-      const diffDays = Math.ceil((new Date(deadlineVal + 'T00:00:00') - new Date()) / (1000*60*60*24));
-      const daysEl = document.getElementById('deadline-days');
-      daysEl.textContent = diffDays <= 0 ? 'منتهي!' : diffDays + ' يوم';
-      daysEl.style.color = diffDays <= 3 ? '#ef4444' : diffDays <= 7 ? '#fbbf24' : '#66bb6a';
-      document.getElementById('deadline-needed').textContent = slots + ' شخص';
-      infoDiv.style.display = 'block';
-    }
 
     function showCompanyActions(e, id, name) {
       e.stopPropagation();
@@ -3062,20 +3060,15 @@ function toggleAgentsSection(forceOpen) {
          document.getElementById('company-modal-title').textContent = 'تعديل شركة';
          document.getElementById('company-edit-id').value = c.id;
          document.getElementById('company-name').value = c.name || '';
-         document.getElementById('company-position').value = c.position || '';
-         document.getElementById('company-interview').value = c.interview_time || '';
-         document.getElementById('company-salary-min').value = c.salary_min || '';
-         document.getElementById('company-salary-max').value = c.salary_max || '';
-         document.getElementById('company-desc').value = c.description || '';
          document.getElementById('company-email').value = c.company_email || '';
-         document.getElementById('company-slots').value = c.available_slots || 0;
-         document.getElementById('company-deadline').value = c.deadline || '';
-         document.getElementById('company-notify-days').value = c.notify_days_before || 5;
-         updateDeadlineInfo();
-         document.getElementById('company-login-email').value = '';
          document.getElementById('company-login-password').value = '';
          document.getElementById('company-login-password').placeholder = '••••••••';
-         loadCompanyLoginEmail(id);
+         try {
+           const ures = await fetch('/api/admin/company-users', { headers:{'Authorization':`Bearer ${token}`} });
+           const users = await ures.json();
+           const u = users.find(x => x.company_id === id);
+           if (u) document.getElementById('company-login-password').placeholder = '•••• (اتغير لو عايز)';
+         } catch(e) {}
          loadCompanyLangs(id);
          document.getElementById('company-modal').classList.add('show');
        } catch (e) {}
@@ -3154,17 +3147,17 @@ function toggleAgentsSection(forceOpen) {
 
      async function saveCompany() {
        const editId = document.getElementById('company-edit-id').value;
+       const firstLang = companyLangRows[0] || {};
        const data = {
          name: document.getElementById('company-name').value,
-         position: document.getElementById('company-position').value,
-         interview_time: document.getElementById('company-interview').value,
-         salary_min: parseFloat(document.getElementById('company-salary-min').value) || 0,
-         salary_max: parseFloat(document.getElementById('company-salary-max').value) || 0,
-         description: document.getElementById('company-desc').value,
          company_email: document.getElementById('company-email').value,
-         available_slots: parseInt(document.getElementById('company-slots').value) || 0,
-         deadline: document.getElementById('company-deadline').value || '',
-         notify_days_before: parseInt(document.getElementById('company-notify-days').value) || 5
+         position: firstLang.position || '',
+         interview_time: firstLang.interview_time || '',
+         salary_min: firstLang.salary_min || 0,
+         salary_max: firstLang.salary_max || 0,
+         description: firstLang.description || '',
+         deadline: firstLang.deadline || '',
+         notify_days_before: firstLang.notify_days || 5
        };
        if (!data.name) return alert('اسم الشركة مطلوب');
        try {
@@ -3173,14 +3166,13 @@ function toggleAgentsSection(forceOpen) {
          const res = await fetch(url, { method, headers:{'Authorization':`Bearer ${token}`,'Content-Type':'application/json'}, body:JSON.stringify(data) });
          const result = await res.json();
          const companyId = editId || result.id;
-         const loginEmail = document.getElementById('company-login-email').value.trim();
+         const loginEmail = document.getElementById('company-email').value.trim();
          const loginPass = document.getElementById('company-login-password').value;
          if (loginEmail && loginPass) {
            const existingUsers = await (await fetch('/api/admin/company-users', { headers:{'Authorization':`Bearer ${token}`} })).json();
            const existing = existingUsers.find(x => x.company_id === parseInt(companyId));
            if (existing) {
              if (loginPass) {
-               // no update-password endpoint yet; delete and recreate
                await fetch(`/api/admin/company-users/${existing.id}`, { method:'DELETE', headers:{'Authorization':`Bearer ${token}`} });
                await fetch('/api/admin/company-users', { method:'POST', headers:{'Authorization':`Bearer ${token}`,'Content-Type':'application/json'}, body:JSON.stringify({ company_id: companyId, email: loginEmail, password: loginPass, name: data.name }) });
              }
@@ -3190,7 +3182,7 @@ function toggleAgentsSection(forceOpen) {
          }
          for (const l of companyLangRows) {
            if (!l.id) {
-             await fetch('/api/admin/company-languages', { method:'POST', headers:{'Authorization':`Bearer ${token}`,'Content-Type':'application/json'}, body:JSON.stringify({ company_id: companyId, language: l.language, level: l.level, needed_count: l.needed_count }) });
+             await fetch('/api/admin/company-languages', { method:'POST', headers:{'Authorization':`Bearer ${token}`,'Content-Type':'application/json'}, body:JSON.stringify({ company_id: companyId, language: l.language, level: l.level, needed_count: l.needed_count, position: l.position, salary_min: l.salary_min, salary_max: l.salary_max, interview_time: l.interview_time, deadline: l.deadline, notify_days: l.notify_days, description: l.description }) });
            }
          }
          closeCompanyModal();

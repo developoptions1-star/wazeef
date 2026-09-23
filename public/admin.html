@@ -1516,6 +1516,7 @@
       <h2>إضافة وظائف</h2>
       <input type="hidden" id="modal-app-id">
       <input type="hidden" id="modal-user-id">
+      <div id="job-lang-hint" style="display:none;padding:8px 14px;background:rgba(212,168,83,0.08);border:1px solid rgba(212,168,83,0.15);border-radius:10px;margin-bottom:12px;font-size:13px;color:#f0d78c;">🌍 لغة المتقدم: <strong id="job-lang-name">-</strong> — الشركات المعروضة مفلترة بنفس اللغة</div>
       <div class="form-group"><label>اختار من شركة جاهزة (اختياري)</label>
         <select id="job-company-select" autocomplete="off" onchange="fillCompanyData()" style="width:100%;padding:12px 16px;background:rgba(212,168,83,0.04);border:1.5px solid rgba(212,168,83,0.12);border-radius:12px;color:#e2e8f0;font-family:'Tajawal',sans-serif;font-size:14px;outline:none;">
           <option value="">-- اكتب يدوي أو اختار شركة --</option>
@@ -1591,6 +1592,40 @@
          </div>
        </div>
        <div class="form-group"><label>🔔 يُنبه قبل كم يوم من الانتهاء</label><input type="number" id="company-notify-days" placeholder="5" autocomplete="off" min="1" max="30" value="5"></div>
+
+       <div style="border-top:1px solid rgba(212,168,83,0.1);margin:14px 0;padding-top:14px;">
+         <label style="font-size:13px;font-weight:700;color:#d4a853;margin-bottom:10px;display:block;">🔑 حساب دخول الشركة</label>
+         <div class="form-group"><label>إيميل الدخول</label><input type="email" id="company-login-email" placeholder="login@company.com" autocomplete="off" style="direction:ltr;text-align:left;"></div>
+         <div class="form-group"><label>باسورد الدخول</label><input type="password" id="company-login-password" placeholder="••••••••" autocomplete="new-password"></div>
+       </div>
+
+       <div style="border-top:1px solid rgba(212,168,83,0.1);margin:14px 0;padding-top:14px;">
+         <label style="font-size:13px;font-weight:700;color:#d4a853;margin-bottom:10px;display:block;">🌍 اللغات المطلوبة</label>
+         <div id="company-languages-list"></div>
+         <div style="display:flex;gap:6px;align-items:center;margin-top:8px;">
+           <select id="new-lang" style="flex:2;padding:10px 12px;background:rgba(212,168,83,0.04);border:1.5px solid rgba(212,168,83,0.12);border-radius:10px;color:#e2e8f0;font-family:'Tajawal',sans-serif;font-size:13px;outline:none;">
+             <option value="">اختر اللغة</option>
+             <option value="العربية">العربية</option>
+             <option value="الإنجليزية">الإنجليزية</option>
+             <option value="الفرنسية">الفرنسية</option>
+             <option value="الألمانية">الألمانية</option>
+             <option value="الإسبانية">الإسبانية</option>
+             <option value="التركية">التركية</option>
+             <option value="الإيطالية">الإيطالية</option>
+             <option value="الروسية">الروسية</option>
+             <option value="أخرى">أخرى</option>
+           </select>
+           <select id="new-level" style="flex:1;padding:10px 12px;background:rgba(212,168,83,0.04);border:1.5px solid rgba(212,168,83,0.12);border-radius:10px;color:#e2e8f0;font-family:'Tajawal',sans-serif;font-size:13px;outline:none;">
+             <option value="">المستوى</option>
+             <option value="A1">A1</option><option value="A2">A2</option>
+             <option value="B1">B1</option><option value="B2">B2</option>
+             <option value="C1">C1</option><option value="C2">C2</option>
+           </select>
+           <input type="number" id="new-count" placeholder="العدد" min="1" value="1" style="flex:1;padding:10px 12px;background:rgba(212,168,83,0.04);border:1.5px solid rgba(212,168,83,0.12);border-radius:10px;color:#e2e8f0;font-family:'Tajawal',sans-serif;font-size:13px;outline:none;text-align:center;">
+           <button onclick="addLangRow()" style="padding:10px 14px;background:linear-gradient(135deg,#d4a853,#b8860b);border:none;border-radius:10px;color:#0a0a0f;font-weight:700;cursor:pointer;font-size:16px;">+</button>
+         </div>
+       </div>
+
        <div class="btn-row">
          <button class="btn-cancel" onclick="closeCompanyModal()">إلغاء</button>
          <button class="btn-submit" onclick="saveCompany()">حفظ</button>
@@ -1819,7 +1854,7 @@
               ${a.status==='pending' && a.rerecord_request ? `<button class="app-action-btn muted" disabled>تم طلب إعادة التسجيل</button>` : ''}
               ${a.status==='approved' ? `
                 ${a.jobs_count > 0 ? `<span class="app-jobs-badge"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> تم إرسال ${a.jobs_count} وظيفة</span>` : ''}
-                <button class="app-action-btn gold" onclick="openJobModal(${a.id},${a.user_id})">${a.jobs_count > 0 ? '+ إضافة وظائف' : 'إضافة وظيفة'}</button>
+                <button class="app-action-btn gold" onclick="openJobModal(${a.id},${a.user_id},'${a.language||''}')">${a.jobs_count > 0 ? '+ إضافة وظائف' : 'إضافة وظيفة'}</button>
               ` : ''}
               ${a.status==='rejected' ? `
                 <div style="width:100%;">
@@ -1943,15 +1978,24 @@
     setInterval(updateCountdowns, 60000);
 
     let pendingJobs = [];
+    let currentJobLang = '';
 
-    function openJobModal(appId, userId) {
+    function openJobModal(appId, userId, lang) {
       document.getElementById('modal-app-id').value = appId;
       document.getElementById('modal-user-id').value = userId;
+      currentJobLang = lang || '';
+      const hint = document.getElementById('job-lang-hint');
+      if (currentJobLang) {
+        hint.style.display = 'block';
+        document.getElementById('job-lang-name').textContent = getLangName(currentJobLang);
+      } else {
+        hint.style.display = 'none';
+      }
       document.getElementById('job-modal').classList.add('show');
       pendingJobs = [];
       renderPendingJobs();
       loadJobsInModal(appId);
-      loadCompanyDropdown();
+      loadCompanyDropdown(currentJobLang);
     }
     function closeModal() {
       document.getElementById('job-modal').classList.remove('show');
@@ -1960,11 +2004,29 @@
       document.getElementById('job-company-select').value = '';
     }
 
-    async function loadCompanyDropdown() {
+    async function loadCompanyDropdown(lang) {
       try {
+        const sel = document.getElementById('job-company-select');
+        if (lang) {
+          const encoded = encodeURIComponent(lang);
+          const r = await fetch(`/api/admin/jobs-by-language/${encoded}`, { headers:{'Authorization':`Bearer ${token}`} });
+          const d = await r.json();
+          if (d.notification_sent || !d.companies || !d.companies.length) {
+            sel.innerHTML = '<option value="">⚠️ لا توجد شركة توفر هذه اللغة</option>';
+            sel.disabled = true;
+            alert('اللغة دي مش متاح ليها أي شركه موجوده حاليا.\nبرجاء التعاقد مع شركه توفر هذا الوظيفه');
+            return;
+          }
+          sel.disabled = false;
+          sel.innerHTML = '<option value="">-- اكتب يدوي أو اختار شركة --</option>';
+          d.companies.forEach(c => {
+            sel.innerHTML += `<option value="${c.id}" data-name="${c.name}">${c.name}</option>`;
+          });
+          return;
+        }
+        sel.disabled = false;
         const res = await fetch('/api/companies', { headers:{'Authorization':`Bearer ${token}`} });
         const companies = await res.json();
-        const sel = document.getElementById('job-company-select');
         sel.innerHTML = '<option value="">-- اكتب يدوي أو اختار شركة --</option>';
         companies.forEach(c => {
           const remaining = c.available_slots - (c.pending_count || 0) - (c.hired_count || 0);
@@ -2793,11 +2855,63 @@ function toggleAgentsSection(forceOpen) {
       } catch (e) {}
     }
 
+    let companyLangRows = [];
+    function renderLangRows() {
+      const box = document.getElementById('company-languages-list');
+      if (!companyLangRows.length) { box.innerHTML = '<p style="font-size:11px;color:#64748b;margin:4px 0;">لا توجد لغات مضافة بعد</p>'; return; }
+      box.innerHTML = companyLangRows.map((l,i) => `
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;padding:6px 8px;background:rgba(212,168,83,0.06);border-radius:8px;">
+          <span style="flex:2;font-size:13px;color:#f0d78c;">${l.language}</span>
+          <span style="flex:1;font-size:12px;padding:3px 8px;background:rgba(212,168,83,0.15);border-radius:6px;color:#d4a853;text-align:center;font-weight:700;">${l.level}</span>
+          <span style="flex:1;font-size:12px;color:#94a3b8;text-align:center;">${l.needed_count} شخص</span>
+          ${l.id ? `<button onclick="removeLangServer(${l.id},${i})" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;padding:2px 6px;" title="حذف">✕</button>` : `<button onclick="companyLangRows.splice(${i},1);renderLangRows();" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;padding:2px 6px;" title="حذف">✕</button>`}
+        </div>`).join('');
+    }
+    function addLangRow() {
+      const lang = document.getElementById('new-lang').value;
+      const level = document.getElementById('new-level').value;
+      const count = parseInt(document.getElementById('new-count').value) || 1;
+      if (!lang || !level) return alert('اختر اللغة والمستوى');
+      if (companyLangRows.some(l => l.language === lang && l.level === level)) return alert('اللغة والمستوى دي مضافة بالفعل');
+      companyLangRows.push({ language: lang, level: level, needed_count: count });
+      document.getElementById('new-lang').value = '';
+      document.getElementById('new-level').value = '';
+      document.getElementById('new-count').value = '1';
+      renderLangRows();
+    }
+    async function removeLangServer(id, idx) {
+      const editId = document.getElementById('company-edit-id').value;
+      if (id) {
+        try { await fetch(`/api/admin/company-languages/${id}`, { method:'DELETE', headers:{'Authorization':`Bearer ${token}`} }); } catch(e){}
+      }
+      companyLangRows.splice(idx, 1);
+      renderLangRows();
+    }
+    async function loadCompanyLangs(companyId) {
+      try {
+        const res = await fetch(`/api/admin/company-languages/${companyId}`, { headers:{'Authorization':`Bearer ${token}`} });
+        companyLangRows = await res.json();
+      } catch(e) { companyLangRows = []; }
+      renderLangRows();
+    }
+    async function loadCompanyLoginEmail(companyId) {
+      try {
+        const res = await fetch('/api/admin/company-users', { headers:{'Authorization':`Bearer ${token}`} });
+        const users = await res.json();
+        const u = users.find(x => x.company_id === companyId);
+        document.getElementById('company-login-email').value = u ? u.email : '';
+        document.getElementById('company-login-password').value = '';
+        document.getElementById('company-login-password').placeholder = u ? '•••• (اتغير لو عايز)' : '••••••••';
+      } catch(e) {}
+    }
+
     function openCompanyModal() {
       document.getElementById('company-modal-title').textContent = 'إضافة شركة';
       document.getElementById('company-edit-id').value = '';
-      ['company-name','company-position','company-interview','company-salary-min','company-salary-max','company-desc','company-email','company-slots','company-deadline','company-notify-days'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+      ['company-name','company-position','company-interview','company-salary-min','company-salary-max','company-desc','company-email','company-slots','company-deadline','company-notify-days','company-login-email','company-login-password'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
       document.getElementById('deadline-info').style.display = 'none';
+      companyLangRows = [];
+      renderLangRows();
       document.getElementById('company-modal').classList.add('show');
     }
     function closeCompanyModal() { document.getElementById('company-modal').classList.remove('show'); }
@@ -2958,6 +3072,11 @@ function toggleAgentsSection(forceOpen) {
          document.getElementById('company-deadline').value = c.deadline || '';
          document.getElementById('company-notify-days').value = c.notify_days_before || 5;
          updateDeadlineInfo();
+         document.getElementById('company-login-email').value = '';
+         document.getElementById('company-login-password').value = '';
+         document.getElementById('company-login-password').placeholder = '••••••••';
+         loadCompanyLoginEmail(id);
+         loadCompanyLangs(id);
          document.getElementById('company-modal').classList.add('show');
        } catch (e) {}
      }
@@ -3051,7 +3170,29 @@ function toggleAgentsSection(forceOpen) {
        try {
          const url = editId ? `/api/admin/companies/${editId}` : '/api/admin/companies';
          const method = editId ? 'PUT' : 'POST';
-         await fetch(url, { method, headers:{'Authorization':`Bearer ${token}`,'Content-Type':'application/json'}, body:JSON.stringify(data) });
+         const res = await fetch(url, { method, headers:{'Authorization':`Bearer ${token}`,'Content-Type':'application/json'}, body:JSON.stringify(data) });
+         const result = await res.json();
+         const companyId = editId || result.id;
+         const loginEmail = document.getElementById('company-login-email').value.trim();
+         const loginPass = document.getElementById('company-login-password').value;
+         if (loginEmail && loginPass) {
+           const existingUsers = await (await fetch('/api/admin/company-users', { headers:{'Authorization':`Bearer ${token}`} })).json();
+           const existing = existingUsers.find(x => x.company_id === parseInt(companyId));
+           if (existing) {
+             if (loginPass) {
+               // no update-password endpoint yet; delete and recreate
+               await fetch(`/api/admin/company-users/${existing.id}`, { method:'DELETE', headers:{'Authorization':`Bearer ${token}`} });
+               await fetch('/api/admin/company-users', { method:'POST', headers:{'Authorization':`Bearer ${token}`,'Content-Type':'application/json'}, body:JSON.stringify({ company_id: companyId, email: loginEmail, password: loginPass, name: data.name }) });
+             }
+           } else {
+             await fetch('/api/admin/company-users', { method:'POST', headers:{'Authorization':`Bearer ${token}`,'Content-Type':'application/json'}, body:JSON.stringify({ company_id: companyId, email: loginEmail, password: loginPass, name: data.name }) });
+           }
+         }
+         for (const l of companyLangRows) {
+           if (!l.id) {
+             await fetch('/api/admin/company-languages', { method:'POST', headers:{'Authorization':`Bearer ${token}`,'Content-Type':'application/json'}, body:JSON.stringify({ company_id: companyId, language: l.language, level: l.level, needed_count: l.needed_count }) });
+           }
+         }
          closeCompanyModal();
          loadCompanies();
        } catch (e) { alert('حدث خطأ'); }

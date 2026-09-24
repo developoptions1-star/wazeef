@@ -1543,6 +1543,21 @@
           <option value="B2" style="background:#1a1a1a;color:#e2e8f0;">B2</option>
           <option value="C1" style="background:#1a1a1a;color:#e2e8f0;">C1</option>
           <option value="C2" style="background:#1a1a1a;color:#e2e8f0;">C2</option>
+          <option value="A1-A2" style="background:#1a1a1a;color:#e2e8f0;">A1 - A2</option>
+          <option value="A1-B1" style="background:#1a1a1a;color:#e2e8f0;">A1 - B1</option>
+          <option value="A1-B2" style="background:#1a1a1a;color:#e2e8f0;">A1 - B2</option>
+          <option value="A1-C1" style="background:#1a1a1a;color:#e2e8f0;">A1 - C1</option>
+          <option value="A1-C2" style="background:#1a1a1a;color:#e2e8f0;">A1 - C2</option>
+          <option value="A2-B1" style="background:#1a1a1a;color:#e2e8f0;">A2 - B1</option>
+          <option value="A2-B2" style="background:#1a1a1a;color:#e2e8f0;">A2 - B2</option>
+          <option value="A2-C1" style="background:#1a1a1a;color:#e2e8f0;">A2 - C1</option>
+          <option value="A2-C2" style="background:#1a1a1a;color:#e2e8f0;">A2 - C2</option>
+          <option value="B1-B2" style="background:#1a1a1a;color:#e2e8f0;">B1 - B2</option>
+          <option value="B1-C1" style="background:#1a1a1a;color:#e2e8f0;">B1 - C1</option>
+          <option value="B1-C2" style="background:#1a1a1a;color:#e2e8f0;">B1 - C2</option>
+          <option value="B2-C1" style="background:#1a1a1a;color:#e2e8f0;">B2 - C1</option>
+          <option value="B2-C2" style="background:#1a1a1a;color:#e2e8f0;">B2 - C2</option>
+          <option value="C1-C2" style="background:#1a1a1a;color:#e2e8f0;">C1 - C2</option>
         </select>
         <span id="job-level-hint" style="color:#94a3b8;font-size:12px;"></span>
       </div>
@@ -2098,19 +2113,30 @@
         hint.style.display = 'flex';
         document.getElementById('job-lang-name').textContent = getLangName(currentJobLang);
         if (lvlSel) {
-          if (appLevel && /-/.test(appLevel)) {
-            const opt = document.createElement('option');
-            opt.value = appLevel;
-            opt.textContent = appLevel + ' (مستوى المتقدم)';
-            opt.style.cssText = 'background:#1a1a1a;color:#6ee7b7;font-weight:700';
-            lvlSel.innerHTML = '<option value="" style="background:#1a1a1a;color:#e2e8f0;">كل المستويات</option>'
-              + LEVELS.map(l=>`<option value="${l}" style="background:#1a1a1a;color:#e2e8f0;">${l}</option>`).join('');
-            lvlSel.appendChild(opt);
-            lvlSel.value = appLevel;
+          // Always rebuild: singles + all ranges, so any range (incl. applicant's) can be selected
+          const ranges = [];
+          const L = LEVELS;
+          for (let i = 0; i < L.length; i++) {
+            for (let j = i + 1; j < L.length; j++) ranges.push(L[i] + '-' + L[j]);
+          }
+          const rangeOpts = ranges.map(r => `<option value="${r}" style="background:#1a1a1a;color:#a78bfa;">${r.replace('-',' - ')}</option>`).join('');
+          lvlSel.innerHTML = '<option value="" style="background:#1a1a1a;color:#e2e8f0;">كل المستويات</option>'
+            + L.map(l=>`<option value="${l}" style="background:#1a1a1a;color:#e2e8f0;">${l}</option>`).join('')
+            + rangeOpts;
+          if (appLevel) {
+            // normalize spaces around dash: "A1 - B1" -> "A1-B1"
+            const norm = appLevel.replace(/\s*[-–]\s*/g, '-').toUpperCase();
+            let opt = [...lvlSel.options].find(o => o.value === norm);
+            if (!opt) {
+              opt = document.createElement('option');
+              opt.value = norm;
+              opt.textContent = norm.replace('-',' - ') + ' (مستوى المتقدم)';
+              opt.style.cssText = 'background:#1a1a1a;color:#6ee7b7;font-weight:700';
+              lvlSel.appendChild(opt);
+            }
+            lvlSel.value = norm;
           } else {
-            lvlSel.innerHTML = '<option value="" style="background:#1a1a1a;color:#e2e8f0;">كل المستويات</option>'
-              + LEVELS.map(l=>`<option value="${l}" style="background:#1a1a1a;color:#e2e8f0;">${l}</option>`).join('');
-            lvlSel.value = appLevel && LEVELS.includes(appLevel) ? appLevel : '';
+            lvlSel.value = '';
           }
         }
       } else {
@@ -2156,14 +2182,27 @@
           const levelQ = level ? `?level=${encodeURIComponent(level)}` : '';
           const r = await fetch(`/api/admin/jobs-by-language/${encoded}${levelQ}`, { headers:{'Authorization':`Bearer ${token}`} });
           const d = await r.json();
-          const available = (d.companies || []).filter(c => !assignedCompanyNames.includes(c.name));
+          const rank = {A1:1,A2:2,B1:3,B2:4,C1:5,C2:6};
+          let companies = d.companies || [];
+          // Extra safety: if level is a range, keep only companies with at least one level inside the range
+          const rangeM = level && level.match(/^(A1|A2|B1|B2|C1|C2)-(A1|A2|B1|B2|C1|C2)$/i);
+          if (rangeM) {
+            const from = rank[rangeM[1].toUpperCase()], to = rank[rangeM[2].toUpperCase()];
+            companies = companies.filter(c => String(c.levels||'').split(',').some(lv => {
+              const r = rank[String(lv).trim().toUpperCase()];
+              return r >= from && r <= to;
+            }));
+          } else if (level) {
+            companies = companies.filter(c => String(c.levels||'').split(',').some(lv => String(lv).trim().toUpperCase() === level.toUpperCase()));
+          }
+          const available = companies.filter(c => !assignedCompanyNames.includes(c.name));
           const levelHint = document.getElementById('job-level-hint');
-          if (levelHint) levelHint.textContent = level ? `(${available.length} شركة مطابقة للمستوى ${level})` : `(${available.length} شركة)`;
-          if (d.notification_sent || !available.length) {
+          if (levelHint) levelHint.textContent = level ? `(${available.length} شركة مطابقة للمستوى ${level.replace('-',' - ')})` : `(${available.length} شركة)`;
+          if (!available.length) {
             sel.innerHTML = '<option value="" style="background:#1a1a1a;color:#e2e8f0;">⚠️ لا توجد شركة متاحة</option>';
             sel.disabled = true;
-            if (!d.companies || !d.companies.length) {
-              showResultModal('⚠️', `لا توجد شركة توفر اللغة ${getLangName(lang)}${level ? ' - مستوى ' + level : ''} حاليا.<br>برجاء التعاقد مع شركة توفر هذا التخصص`);
+            if (!companies.length) {
+              showResultModal('⚠️', `لا توجد شركة توفر اللغة ${getLangName(lang)}${level ? ' - مستوى ' + level.replace('-',' - ') : ''} حاليا.<br>برجاء التعاقد مع شركة توفر هذا التخصص`);
             }
             return;
           }
@@ -2223,7 +2262,7 @@
       try {
         const companyId = sel.value;
         const lang = currentJobLang;
-        const levelVal = (document.getElementById('job-level-select')?.value || '').trim();
+        const levelVal = ((document.getElementById('job-level-select')?.value || '').replace(/\s*[-–]\s*/g,'-')).trim().toUpperCase();
         const r = await fetch(`/api/admin/company-languages/${companyId}`, { headers:{'Authorization':`Bearer ${token}`} });
         const langs = await r.json();
         const rank = {A1:1,A2:2,B1:3,B2:4,C1:5,C2:6};

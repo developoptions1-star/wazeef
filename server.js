@@ -3105,26 +3105,23 @@ app.delete('/api/admin/company-languages/:id', authMiddleware, adminMiddleware, 
 app.get('/api/admin/jobs-by-language/:language', authMiddleware, adminMiddleware, (req, res) => {
   try {
     const lang = req.params.language;
-    const level = (req.query.level || '').trim();
+    const level = (req.query.level || '').trim().replace(/\s*[-–]\s*/g, '-').toUpperCase();
     const rank = {A1:1,A2:2,B1:3,B2:4,C1:5,C2:6};
     let levelClause = '';
     let neededLevelClause = '';
-    const params = [lang];
     let neededParams = [];
     if (level) {
-      const rangeM = level.match(/^(A1|A2|B1|B2|C1|C2)\s*[-–]\s*(A1|A2|B1|B2|C1|C2)$/i);
+      const rangeM = level.match(/^(A1|A2|B1|B2|C1|C2)-(A1|A2|B1|B2|C1|C2)$/);
       if (rangeM) {
-        const from = rangeM[1].toUpperCase(), to = rangeM[2].toUpperCase();
+        const from = rangeM[1], to = rangeM[2];
         const inRange = Object.keys(rank).filter(l => rank[l] >= rank[from] && rank[l] <= rank[to]);
         const ph = inRange.map(() => '?').join(',');
         levelClause = ` AND cl.level IN (${ph})`;
         neededLevelClause = ` AND cl2.level IN (${ph})`;
-        params.push(...inRange);
         neededParams = [...inRange];
       } else {
         levelClause = ' AND cl.level = ?';
         neededLevelClause = ' AND cl2.level = ?';
-        params.push(level);
         neededParams = [level];
       }
     }

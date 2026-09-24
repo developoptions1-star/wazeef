@@ -1641,6 +1641,17 @@
     </div>
   </div>
 
+  <!-- Result message modal -->
+  <div class="modal-overlay" id="result-modal">
+    <div class="modal" style="width:400px;text-align:center;">
+      <div id="result-icon" style="font-size:48px;margin-bottom:12px;"></div>
+      <p id="result-msg" style="color:#e2e8f0;font-size:15px;line-height:1.7;margin-bottom:24px;"></p>
+      <div class="btn-row" style="justify-content:center;">
+        <button class="btn-submit" onclick="closeResultModal()" style="min-width:140px;">موافق</button>
+      </div>
+    </div>
+  </div>
+
   <div class="audio-modal" id="audio-modal">
     <div class="audio-modal-box">
       <h3 id="audio-modal-title">تسجيل صوتي</h3>
@@ -2009,7 +2020,7 @@
           if (d.notification_sent || !d.companies || !d.companies.length) {
             sel.innerHTML = '<option value="">⚠️ لا توجد شركة توفر هذه اللغة</option>';
             sel.disabled = true;
-            alert('اللغة دي مش متاح ليها أي شركه موجوده حاليا.\nبرجاء التعاقد مع شركه توفر هذا الوظيفه');
+            showResultModal('⚠️', 'اللغة دي مش متاح ليها أي شركه موجوده حاليا.<br>برجاء التعاقد مع شركه توفر هذا الوظيفه');
             return;
           }
           sel.disabled = false;
@@ -2107,7 +2118,7 @@
       const companySelect = document.getElementById('job-company-select');
       const companyId = companySelect.value || null;
       const selectedOption = companySelect.options[companySelect.selectedIndex];
-      if (!company || !position) return alert('من فضلك أكمل البيانات (اسم الشركة + اسم الوظيفة)');
+      if (!company || !position) return showResultModal('⚠️', 'من فضلك أكمل البيانات<br>(اسم الشركة + اسم الوظيفة)');
       pendingJobs.push({ company_id: companyId ? parseInt(companyId) : null, company_name: company, position, interview_time: time, salary_min: salaryMin ? parseFloat(salaryMin) : 0, salary_max: salaryMax ? parseFloat(salaryMax) : 0, description: desc, company_email: companyEmail || '' });
       if (companyId && selectedOption && selectedOption.value) {
         pendingJobs[pendingJobs.length - 1]._removedOption = selectedOption.outerHTML;
@@ -2166,18 +2177,27 @@
           body: JSON.stringify({ application_id: parseInt(appId), user_id: parseInt(userId), jobs: pendingJobs })
         });
         const data = await res.json();
-        if (data.error) { alert(data.error); return; }
+        if (data.error) { showResultModal('❌', data.error); return; }
         pendingJobs = [];
         closeModal();
         loadApplications();
         loadStats();
-        alert('تم إرسال جميع الوظائف بنجاح! سيتم إرسال إشعارات بالبريد الإلكتروني.');
+        showResultModal('✅', 'تم إرسال جميع الوظائف بنجاح!<br>سيتم إرسال إشعارات بالبريد الإلكتروني.');
       } catch (e) {
-        alert('حدث خطأ أثناء الإرسال');
+        showResultModal('❌', 'حدث خطأ أثناء الإرسال');
       } finally {
         btn.disabled = false;
         btn.textContent = 'تأكيد وإرسال الكل';
       }
+    }
+
+    function showResultModal(icon, msg) {
+      document.getElementById('result-icon').textContent = icon;
+      document.getElementById('result-msg').innerHTML = msg;
+      document.getElementById('result-modal').classList.add('show');
+    }
+    function closeResultModal() {
+      document.getElementById('result-modal').classList.remove('show');
     }
 
     async function loadSelections() {

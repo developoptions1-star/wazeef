@@ -478,8 +478,10 @@ db.exec('DELETE FROM jobs');
 db.exec('DELETE FROM applications');
 db.exec('DELETE FROM agents');
 db.exec('DELETE FROM companies');
+db.exec('DELETE FROM company_users');
+db.exec('DELETE FROM company_languages');
 db.exec('DELETE FROM users');
-try { db.exec("DELETE FROM sqlite_sequence WHERE name IN ('users','applications','jobs','selections','companies','agents','notifications','admin_notifications')"); } catch(e) {}
+try { db.exec("DELETE FROM sqlite_sequence WHERE name IN ('users','applications','jobs','selections','companies','agents','notifications','admin_notifications','company_users','company_languages')"); } catch(e) {}
 
 // Seed admin users
 const admins = [
@@ -493,6 +495,17 @@ for (const a of admins) {
   insertAdmin.run(a.name, a.email, bcrypt.hashSync(a.password, 10), 'admin');
 }
 console.log('Database reset: only 4 admins seeded');
+
+// Seed default test company (so company login always works after restart)
+try {
+  db.prepare('INSERT INTO companies (name, position, company_email) VALUES (?,?,?)').run('TestCo', 'Dev', 'test@co.com');
+  const coId = db.prepare('SELECT last_insert_rowid() as id').get().id;
+  db.prepare('INSERT INTO company_users (company_id, email, password, name) VALUES (?,?,?,?)').run(coId, 'test@co.com', bcrypt.hashSync('Test@123', 10), 'TestCo');
+  console.log('Test company seeded: test@co.com / Test@123');
+} catch(e) { console.log('Test company seed error:', e.message); }
+
+// Force save so CREATE TABLE statements persist to disk
+try { db._save && db._save(); } catch(e) {}
 
 } // end initDatabase
 

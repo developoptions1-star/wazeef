@@ -44,6 +44,8 @@ class SqlJsWrapper {
 
   _markDirty() {
     this._dirty = true;
+    clearTimeout(this._saveTimer);
+    this._saveTimer = setTimeout(() => this._save(), 300);
   }
 
   exec(sql) {
@@ -62,6 +64,7 @@ class SqlJsWrapper {
   }
 
   close() {
+    clearTimeout(this._saveTimer);
     this._save();
     this.db.close();
   }

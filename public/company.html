@@ -106,10 +106,16 @@
 
     /* Languages */
     .lang-section{padding:28px 32px}
-    .lang-search-wrap{margin-bottom:14px}
-    .lang-search-wrap input{width:100%;padding:11px 16px;background:rgba(212,168,83,0.04);border:1.5px solid rgba(212,168,83,0.12);border-radius:12px;color:#e2e8f0;font-family:'Tajawal',sans-serif;font-size:14px;outline:none;transition:border-color .2s}
-    .lang-search-wrap input:focus{border-color:rgba(212,168,83,0.35)}
+    .lang-search-wrap{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+    .lang-search-wrap input{flex:2;min-width:200px;padding:11px 16px;background:rgba(212,168,83,0.04);border:1.5px solid rgba(212,168,83,0.12);border-radius:12px;color:#e2e8f0;font-family:'Tajawal',sans-serif;font-size:14px;outline:none;transition:border-color .2s}
+    .lang-search-wrap select{flex:1;min-width:140px;padding:11px 14px;background:rgba(212,168,83,0.04);border:1.5px solid rgba(212,168,83,0.12);border-radius:12px;color:#e2e8f0;font-family:'Tajawal',sans-serif;font-size:13px;outline:none;color-scheme:dark}
+    .lang-search-wrap input:focus,.lang-search-wrap select:focus{border-color:rgba(212,168,83,0.35)}
     .lang-search-wrap input::placeholder{color:#64748b}
+    .lang-search-wrap option{background:#0f1117;color:#e2e8f0}
+    @media(max-width:600px){
+      .lang-search-wrap{flex-direction:column}
+      .lang-search-wrap input,.lang-search-wrap select{min-width:0;width:100%}
+    }
     .lang-item-sent{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;background:rgba(34,197,94,0.1);color:#4ade80;border:1px solid rgba(34,197,94,0.2);white-space:nowrap}
     .lang-list{margin-bottom:24px;display:flex;flex-direction:column;gap:10px}
     .lang-item{padding:16px 18px;padding-left:80px;background:linear-gradient(145deg,rgba(212,168,83,0.05),rgba(212,168,83,0.02));border:1px solid rgba(212,168,83,0.1);border-radius:16px;transition:all .3s;position:relative;overflow:hidden}
@@ -295,6 +301,8 @@
             <div class="section-label">اللغات المطلوبة</div>
             <div class="lang-search-wrap">
               <input type="text" id="lang-search" placeholder="🔍 بحث باللغة أو الوظيفة..." oninput="filterLangs()" autocomplete="off">
+              <select id="lang-lang-filter" onchange="onLangFilterChange()"><option value="">كل اللغات</option></select>
+              <select id="lang-pos-filter" onchange="filterLangs()"><option value="">كل الوظائف</option></select>
             </div>
             <div class="lang-list" id="lang-list">
               <div class="empty-state" id="lang-empty">
@@ -607,13 +615,41 @@
 
     function renderLanguages(langs){
       currentLanguages=langs;
+      populateLangFilters();
+      filterLangs();
+    }
+    function populateLangFilters(){
+      const langSel=document.getElementById('lang-lang-filter');
+      const posSel=document.getElementById('lang-pos-filter');
+      const curLang=langSel.value, curPos=posSel.value;
+      const langs=[...new Set(currentLanguages.map(l=>l.language).filter(Boolean))];
+      langSel.innerHTML='<option value="">كل اللغات</option>'+langs.map(l=>`<option value="${esc(l)}"${l===curLang?' selected':''}>${esc(l)}</option>`).join('');
+      // Positions filtered by selected language
+      const langFilter=langSel.value;
+      let positions=currentLanguages;
+      if(langFilter) positions=positions.filter(l=>l.language===langFilter);
+      const posList=[...new Set(positions.map(l=>l.position).filter(Boolean))];
+      posSel.innerHTML='<option value="">كل الوظائف</option>'+posList.map(p=>`<option value="${esc(p)}"${p===curPos?' selected':''}>${esc(p)}</option>`).join('');
+    }
+    function onLangFilterChange(){
+      // Repopulate positions based on selected language
+      const posSel=document.getElementById('lang-pos-filter');
+      const langFilter=document.getElementById('lang-lang-filter').value;
+      let positions=currentLanguages;
+      if(langFilter) positions=positions.filter(l=>l.language===langFilter);
+      const posList=[...new Set(positions.map(l=>l.position).filter(Boolean))];
+      posSel.innerHTML='<option value="">كل الوظائف</option>'+posList.map(p=>`<option value="${esc(p)}">${esc(p)}</option>`).join('');
       filterLangs();
     }
     function filterLangs(){
       const list=document.getElementById('lang-list');
       const empty=document.getElementById('lang-empty');
       const q=(document.getElementById('lang-search')?.value||'').trim().toLowerCase();
+      const langFilter=document.getElementById('lang-lang-filter')?.value||'';
+      const posFilter=document.getElementById('lang-pos-filter')?.value||'';
       let langs=currentLanguages;
+      if(langFilter) langs=langs.filter(l=>l.language===langFilter);
+      if(posFilter) langs=langs.filter(l=>l.position===posFilter);
       if(q){
         langs=langs.filter(l=>{
           const hay=((l.language||'')+' '+(l.position||'')+' '+(l.level||'')).toLowerCase();

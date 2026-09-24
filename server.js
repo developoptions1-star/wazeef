@@ -2933,7 +2933,16 @@ app.get('/api/company/profile', companyAuthMiddleware, (req, res) => {
 // Update company profile
 app.put('/api/company/profile', companyAuthMiddleware, (req, res) => {
   try {
-    const { name, position, description, interview_time, salary_min, salary_max, company_email, available_slots, deadline } = req.body;
+    const body = req.body || {};
+    const name = body.name ?? null;
+    const position = body.position ?? null;
+    const description = body.description ?? null;
+    const interview_time = body.interview_time ?? null;
+    const salary_min = body.salary_min ?? null;
+    const salary_max = body.salary_max ?? null;
+    const company_email = body.company_email ?? null;
+    const available_slots = body.available_slots ?? null;
+    const deadline = body.deadline ?? null;
     db.prepare('UPDATE companies SET name=COALESCE(?,name), position=COALESCE(?,position), description=COALESCE(?,description), interview_time=COALESCE(?,interview_time), salary_min=COALESCE(?,salary_min), salary_max=COALESCE(?,salary_max), company_email=COALESCE(?,company_email), available_slots=COALESCE(?,available_slots), deadline=COALESCE(?,deadline) WHERE id=?').run(name, position, description, interview_time, salary_min, salary_max, company_email, available_slots, deadline, req.user.company_id);
     res.json({ success: true, message: 'تم التحديث' });
   } catch (e) { res.status(500).json({ error: e.message }); }

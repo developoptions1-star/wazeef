@@ -250,7 +250,6 @@
         <button class="tab-btn active" onclick="switchDashTab('profile',this)">الملف الشخصي</button>
         <button class="tab-btn" onclick="switchDashTab('languages',this)">اللغات</button>
         <button class="tab-btn" onclick="switchDashTab('candidates',this)">المتقدمين</button>
-        <button class="tab-btn" onclick="switchDashTab('confirmed',this)">المؤكدين</button>
       </div>
 
       <!-- Tab 1: Profile -->
@@ -372,34 +371,6 @@
       </div>
 
       <!-- Tab 4: Confirmed (after تثبيت) -->
-      <div class="tab-panel" id="tab-confirmed">
-        <div class="glass">
-          <div class="cand-section" style="padding:28px 32px;">
-            <div class="section-label">الأشخاص المؤكدين (هيجوا لشركتك)</div>
-            <div class="table-scroll">
-              <table class="cand-table" id="conf-table">
-                <thead>
-                  <tr>
-                    <th>الاسم</th>
-                    <th>البريد</th>
-                    <th>الهاتف</th>
-                    <th>الجنسية</th>
-                    <th>المدينة</th>
-                    <th>اللغة</th>
-                    <th>الوظيفة</th>
-                    <th>المقابلة</th>
-                  </tr>
-                </thead>
-                <tbody id="conf-body"></tbody>
-              </table>
-            </div>
-            <div class="empty-state" id="conf-empty" style="display:none;text-align:center;padding:40px;color:#94a3b8;">
-              <p>لا يوجد أشخاص مؤكدين بعد</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- Tab 3: Candidates -->
       <div class="tab-panel" id="tab-candidates">
         <div class="glass">
@@ -537,7 +508,6 @@
       document.getElementById('tab-'+tab).classList.add('active');
       if(tab==='languages')loadLanguages();
       if(tab==='candidates')loadCandidates();
-      if(tab==='confirmed')loadConfirmed();
     }
 
     /* ===== PROFILE ===== */
@@ -690,31 +660,6 @@
         const tbody=document.getElementById('cand-body');
         const empty=document.getElementById('cand-empty');
         const table=document.getElementById('cand-table');
-        if(!candidates.length){
-          tbody.innerHTML='';empty.style.display='';table.style.display='none';return;
-        }
-        empty.style.display='none';table.style.display='';
-        tbody.innerHTML=candidates.map(c=>`<tr>
-          <td class="name-cell" data-label="الاسم">${esc(c.name)}</td>
-          <td data-label="البريد" style="direction:ltr;text-align:left;font-size:12px;color:#94a3b8">${esc(c.email)}</td>
-          <td class="phone-cell" data-label="الهاتف">${esc(c.phone||'-')}</td>
-          <td data-label="الجنسية">${esc(c.nationality||'-')}</td>
-          <td data-label="المدينة">${esc(c.city||'-')}</td>
-          <td data-label="اللغة"><span style="padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;background:rgba(212,168,83,0.08);color:#d4a853;border:1px solid rgba(212,168,83,0.12)">${esc(c.language_applied||'-')}</span></td>
-          <td data-label="الوظيفة">${esc(c.position||'-')}</td>
-          <td data-label="المقابلة">${esc(c.interview_time||'-')}</td>
-        </tr>`).join('');
-      }catch(e){showToast(e.message,'error')}
-    }
-
-    /* ===== CONFIRMED ===== */
-    async function loadConfirmed(){
-      try{
-        const data=await api('/api/company/confirmed');
-        const candidates=data.candidates||[];
-        const tbody=document.getElementById('conf-body');
-        const empty=document.getElementById('conf-empty');
-        const table=document.getElementById('conf-table');
         if(!candidates.length){
           tbody.innerHTML='';empty.style.display='';table.style.display='none';return;
         }

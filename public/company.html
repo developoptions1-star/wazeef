@@ -141,6 +141,10 @@
 
     /* Candidates */
     .cand-section{padding:28px 32px}
+    .cand-filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+    .cand-filters input,.cand-filters select{flex:1;min-width:160px;padding:10px 14px;background:rgba(212,168,83,0.04);border:1.5px solid rgba(212,168,83,0.12);border-radius:10px;color:#e2e8f0;font-family:'Tajawal',sans-serif;font-size:13px;outline:none;color-scheme:dark}
+    .cand-filters input:focus,.cand-filters select:focus{border-color:rgba(212,168,83,0.35)}
+    .cand-filters option{background:#0f1117;color:#e2e8f0}
     .cand-table{width:100%;border-collapse:collapse;margin-top:12px}
     .cand-table thead th{padding:12px 14px;text-align:right;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid rgba(212,168,83,0.08);background:rgba(212,168,83,0.03);white-space:nowrap}
     .cand-table tbody tr{border-bottom:1px solid rgba(212,168,83,0.04);transition:background .2s}
@@ -180,6 +184,8 @@
       .lang-add-row select,.lang-add-row input{flex:1 !important;min-width:calc(50% - 4px) !important}
       .btn-add-lang{width:100%;height:46px}
       .cand-section{padding:20px 18px}
+      .cand-filters{flex-direction:column}
+      .cand-filters input,.cand-filters select{min-width:0;width:100%}
       .cand-table thead{display:none}
       .cand-table,.cand-table tbody,.cand-table tr,.cand-table td{display:block}
       .cand-table tbody tr{background:rgba(212,168,83,0.02);border:1px solid rgba(212,168,83,0.06);border-radius:14px;margin-bottom:10px;padding:0;overflow:hidden}
@@ -376,6 +382,12 @@
         <div class="glass">
           <div class="cand-section">
             <div class="section-label">المتقدمين للوظائف</div>
+            <div class="cand-filters">
+              <input type="text" id="cand-search" placeholder="🔍 بحث بالاسم أو الإيميل..." oninput="filterCandidates()" autocomplete="off">
+              <select id="cand-pos-filter" onchange="filterCandidates()"><option value="">كل الوظائف</option></select>
+              <select id="cand-city-filter" onchange="filterCandidates()"><option value="">كل المدن</option></select>
+              <select id="cand-lang-filter" onchange="filterCandidates()"><option value="">كل اللغات</option></select>
+            </div>
             <div class="table-scroll">
               <table class="cand-table" id="cand-table">
                 <thead>
@@ -653,28 +665,61 @@
     }
 
     /* ===== CANDIDATES ===== */
+    let allCandidates=[];
     async function loadCandidates(){
       try{
         const data=await api('/api/company/candidates');
-        const candidates=data.candidates||[];
-        const tbody=document.getElementById('cand-body');
-        const empty=document.getElementById('cand-empty');
-        const table=document.getElementById('cand-table');
-        if(!candidates.length){
-          tbody.innerHTML='';empty.style.display='';table.style.display='none';return;
-        }
-        empty.style.display='none';table.style.display='';
-        tbody.innerHTML=candidates.map(c=>`<tr>
-          <td class="name-cell" data-label="الاسم">${esc(c.name)}</td>
-          <td data-label="البريد" style="direction:ltr;text-align:left;font-size:12px;color:#94a3b8">${esc(c.email)}</td>
-          <td class="phone-cell" data-label="الهاتف">${esc(c.phone||'-')}</td>
-          <td data-label="الجنسية">${esc(c.nationality||'-')}</td>
-          <td data-label="المدينة">${esc(c.city||'-')}</td>
-          <td data-label="اللغة"><span style="padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;background:rgba(212,168,83,0.08);color:#d4a853;border:1px solid rgba(212,168,83,0.12)">${esc(c.language_applied||'-')}</span></td>
-          <td data-label="الوظيفة">${esc(c.position||'-')}</td>
-          <td data-label="المقابلة">${esc(c.interview_time||'-')}</td>
-        </tr>`).join('');
+        allCandidates=data.candidates||[];
+        populateCandidateFilters();
+        filterCandidates();
       }catch(e){showToast(e.message,'error')}
+    }
+    function populateCandidateFilters(){
+      const positions=[...new Set(allCandidates.map(c=>c.position).filter(Boolean))];
+      const cities=[...new Set(allCandidates.map(c=>c.city).filter(Boolean))];
+      const langs=[...new Set(allCandidates.map(c=>c.language_applied).filter(Boolean))];
+      const ps=document.getElementById('cand-pos-filter');
+      const cs=document.getElementById('cand-city-filter');
+      const ls=document.getElementById('cand-lang-filter');
+      ps.innerHTML='<option value="">كل الوظائف</option>'+positions.map(p=>`<option value="${esc(p)}">${esc(p)}</option>`).join('');
+      cs.innerHTML='<option value="">كل المدن</option>'+cities.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+      ls.innerHTML='<option value="">كل اللغات</option>'+langs.map(l=>`<option value="${esc(l)}">${esc(l)}</option>`).join('');
+    }
+    function filterCandidates(){
+      const q=(document.getElementById('cand-search').value||'').trim().toLowerCase();
+      const pos=document.getElementById('cand-pos-filter').value;
+      const city=document.getElementById('cand-city-filter').value;
+      const lang=document.getElementById('cand-lang-filter').value;
+      let filtered=allCandidates.filter(c=>{
+        if(pos && c.position!==pos) return false;
+        if(city && c.city!==city) return false;
+        if(lang && c.language_applied!==lang) return false;
+        if(q){
+          const hay=((c.name||'')+' '+(c.email||'')).toLowerCase();
+          if(!hay.includes(q)) return false;
+        }
+        return true;
+      });
+      renderCandidates(filtered);
+    }
+    function renderCandidates(list){
+      const tbody=document.getElementById('cand-body');
+      const empty=document.getElementById('cand-empty');
+      const table=document.getElementById('cand-table');
+      if(!list.length){
+        tbody.innerHTML='';empty.style.display='';table.style.display='none';return;
+      }
+      empty.style.display='none';table.style.display='';
+      tbody.innerHTML=list.map(c=>`<tr>
+        <td class="name-cell" data-label="الاسم">${esc(c.name)}</td>
+        <td data-label="البريد" style="direction:ltr;text-align:left;font-size:12px;color:#94a3b8">${esc(c.email)}</td>
+        <td class="phone-cell" data-label="الهاتف">${esc(c.phone||'-')}</td>
+        <td data-label="الجنسية">${esc(c.nationality||'-')}</td>
+        <td data-label="المدينة">${esc(c.city||'-')}</td>
+        <td data-label="اللغة"><span style="padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;background:rgba(212,168,83,0.08);color:#d4a853;border:1px solid rgba(212,168,83,0.12)">${esc(c.language_applied||'-')}</span></td>
+        <td data-label="الوظيفة">${esc(c.position||'-')}</td>
+        <td data-label="المقابلة">${esc(c.interview_time||'-')}</td>
+      </tr>`).join('');
     }
 
     function esc(s){const d=document.createElement('div');d.textContent=s||'';return d.innerHTML}

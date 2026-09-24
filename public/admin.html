@@ -2055,17 +2055,27 @@
       } catch (e) {}
     }
 
-    function fillCompanyData() {
+    async function fillCompanyData() {
       const sel = document.getElementById('job-company-select');
       const opt = sel.options[sel.selectedIndex];
       if (!sel.value) return;
       document.getElementById('job-company').value = opt.dataset.name || '';
-      if (opt.dataset.position) document.getElementById('job-position').value = opt.dataset.position;
-      if (opt.dataset.time) document.getElementById('job-time').value = opt.dataset.time;
-      if (opt.dataset.min && Number(opt.dataset.min) > 0) document.getElementById('job-salary-min').value = opt.dataset.min;
-      if (opt.dataset.max && Number(opt.dataset.max) > 0) document.getElementById('job-salary-max').value = opt.dataset.max;
-      if (opt.dataset.desc) document.getElementById('job-desc').value = opt.dataset.desc;
       if (opt.dataset.email) document.getElementById('job-company-email').value = opt.dataset.email;
+      // Fetch job data from company_languages for this language
+      try {
+        const companyId = sel.value;
+        const lang = currentJobLang;
+        const r = await fetch(`/api/admin/company-languages/${companyId}`, { headers:{'Authorization':`Bearer ${token}`} });
+        const langs = await r.json();
+        const match = (Array.isArray(langs) ? langs : []).find(l => l.language === lang) || (Array.isArray(langs) ? langs[0] : null);
+        if (match) {
+          if (match.position) document.getElementById('job-position').value = match.position;
+          if (match.interview_time) document.getElementById('job-time').value = match.interview_time;
+          if (match.salary_min && Number(match.salary_min) > 0) document.getElementById('job-salary-min').value = match.salary_min;
+          if (match.salary_max && Number(match.salary_max) > 0) document.getElementById('job-salary-max').value = match.salary_max;
+          if (match.description) document.getElementById('job-desc').value = match.description;
+        }
+      } catch(e) {}
       if (opt.dataset.near === '1') {
         showToast('⚠️ تنبيه: هذه الشركة قرب المعاد (' + (opt.dataset.days||'?') + ' يوم)', 'error');
       }

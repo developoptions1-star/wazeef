@@ -1533,7 +1533,7 @@
       <h2>إضافة وظائف</h2>
       <input type="hidden" id="modal-app-id">
       <input type="hidden" id="modal-user-id">
-      <div id="job-lang-hint" style="display:none;padding:8px 14px;background:rgba(212,168,83,0.08);border:1px solid rgba(212,168,83,0.15);border-radius:10px;margin-bottom:12px;font-size:13px;color:#f0d78c;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">🌍 لغة المتقدم: <strong id="job-lang-name">-</strong>
+      <div id="job-lang-hint" style="display:none;padding:8px 14px;background:rgba(212,168,83,0.08);border:1px solid rgba(212,168,83,0.15);border-radius:10px;margin-bottom:12px;font-size:13px;color:#f0d78c;align-items:center;gap:10px;flex-wrap:wrap;">🌍 لغة المتقدم: <strong id="job-lang-name">-</strong>
         <span style="color:#94a3b8;">— مستوى اللغة:</span>
         <select id="job-level-select" onchange="onLevelChange()" style="padding:6px 12px;background:#1a1a1a;border:1px solid rgba(212,168,83,0.2);border-radius:8px;color:#e2e8f0;font-family:'Tajawal',sans-serif;font-size:13px;outline:none;color-scheme:dark;">
           <option value="" style="background:#1a1a1a;color:#e2e8f0;">كل المستويات</option>
@@ -1913,7 +1913,7 @@
               ${a.status==='pending' && a.rerecord_request ? `<button class="app-action-btn muted" disabled>تم طلب إعادة التسجيل</button>` : ''}
               ${a.status==='approved' ? `
                 ${a.jobs_count > 0 ? `<span class="app-jobs-badge"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> تم إرسال ${a.jobs_count} وظيفة</span>` : ''}
-                <button class="app-action-btn gold" onclick="openJobModal(${a.id},${a.user_id},'${a.language||''}')">${a.jobs_count > 0 ? '+ إضافة وظائف' : 'إضافة وظيفة'}</button>
+                <button class="app-action-btn gold" onclick="openJobModal(${a.id},${a.user_id},'${a.language||''}','${(a.language_level||'').replace(/'/g,"\\'")}')">${a.jobs_count > 0 ? '+ إضافة وظائف' : 'إضافة وظيفة'}</button>
               ` : ''}
               ${a.status==='rejected' ? `
                 <div style="width:100%;">
@@ -2087,22 +2087,44 @@
     let pendingJobs = [];
     let currentJobLang = '';
 
-    function openJobModal(appId, userId, lang) {
+    function openJobModal(appId, userId, lang, level) {
       document.getElementById('modal-app-id').value = appId;
       document.getElementById('modal-user-id').value = userId;
       currentJobLang = lang || '';
       const hint = document.getElementById('job-lang-hint');
+      const lvlSel = document.getElementById('job-level-select');
+      const appLevel = (level || '').trim();
       if (currentJobLang) {
-        hint.style.display = 'block';
+        hint.style.display = 'flex';
         document.getElementById('job-lang-name').textContent = getLangName(currentJobLang);
+        if (lvlSel) {
+          if (appLevel && /-/.test(appLevel)) {
+            const opt = document.createElement('option');
+            opt.value = appLevel;
+            opt.textContent = appLevel + ' (مستوى المتقدم)';
+            opt.style.cssText = 'background:#1a1a1a;color:#6ee7b7;font-weight:700';
+            lvlSel.innerHTML = '<option value="" style="background:#1a1a1a;color:#e2e8f0;">كل المستويات</option>'
+              + LEVELS.map(l=>`<option value="${l}" style="background:#1a1a1a;color:#e2e8f0;">${l}</option>`).join('');
+            lvlSel.appendChild(opt);
+            lvlSel.value = appLevel;
+          } else {
+            lvlSel.innerHTML = '<option value="" style="background:#1a1a1a;color:#e2e8f0;">كل المستويات</option>'
+              + LEVELS.map(l=>`<option value="${l}" style="background:#1a1a1a;color:#e2e8f0;">${l}</option>`).join('');
+            lvlSel.value = appLevel && LEVELS.includes(appLevel) ? appLevel : '';
+          }
+        }
       } else {
         hint.style.display = 'none';
+        if (lvlSel) lvlSel.value = '';
       }
       document.getElementById('job-modal').classList.add('show');
       pendingJobs = [];
       renderPendingJobs();
       loadJobsInModal(appId);
       loadCompanyDropdown(currentJobLang);
+      const lvlHint = document.getElementById('job-level-hint');
+      if (lvlHint && appLevel) lvlHint.textContent = `مستوى المتقدم: ${appLevel}`;
+      else if (lvlHint) lvlHint.textContent = '';
     }
     function onLevelChange() {
       loadCompanyDropdown(currentJobLang);
@@ -2201,9 +2223,21 @@
       try {
         const companyId = sel.value;
         const lang = currentJobLang;
+        const levelVal = (document.getElementById('job-level-select')?.value || '').trim();
         const r = await fetch(`/api/admin/company-languages/${companyId}`, { headers:{'Authorization':`Bearer ${token}`} });
         const langs = await r.json();
-        const match = (Array.isArray(langs) ? langs : []).find(l => l.language === lang && l.level === (document.getElementById('job-level-select')?.value || l.level)) || (Array.isArray(langs) ? langs : []).find(l => l.language === lang) || (Array.isArray(langs) ? langs[0] : null);
+        const rank = {A1:1,A2:2,B1:3,B2:4,C1:5,C2:6};
+        const matchLevel = (lv) => {
+          if (!levelVal) return true;
+          const rangeM = levelVal.match(/^(A1|A2|B1|B2|C1|C2)\s*[-–]\s*(A1|A2|B1|B2|C1|C2)$/i);
+          if (rangeM) {
+            return rank[lv] >= rank[rangeM[1].toUpperCase()] && rank[lv] <= rank[rangeM[2].toUpperCase()];
+          }
+          return lv === levelVal;
+        };
+        const match = (Array.isArray(langs) ? langs : []).find(l => l.language === lang && matchLevel(l.level))
+          || (Array.isArray(langs) ? langs : []).find(l => l.language === lang)
+          || (Array.isArray(langs) ? langs[0] : null);
         if (match) {
           if (match.position) document.getElementById('job-position').value = match.position;
           if (match.interview_time) document.getElementById('job-time').value = match.interview_time;

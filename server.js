@@ -3101,18 +3101,40 @@ app.delete('/api/admin/company-languages/:id', authMiddleware, adminMiddleware, 
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// Admin: get jobs filtered by language (and optional level) for assignment
+// Admin: get jobs filtered by language (and optional level or level range e.g. A1-B1) for assignment
 app.get('/api/admin/jobs-by-language/:language', authMiddleware, adminMiddleware, (req, res) => {
   try {
     const lang = req.params.language;
-    const level = req.query.level || '';
+    const level = (req.query.level || '').trim();
+    const rank = {A1:1,A2:2,B1:3,B2:4,C1:5,C2:6};
     let levelClause = '';
+    let neededLevelClause = '';
     const params = [lang];
-    if (level) { levelClause = ' AND cl.level = ?'; params.push(level); }
+    let neededParams = [];
+    if (level) {
+      const rangeM = level.match(/^(A1|A2|B1|B2|C1|C2)\s*[-–]\s*(A1|A2|B1|B2|C1|C2)$/i);
+      if (rangeM) {
+        const from = rangeM[1].toUpperCase(), to = rangeM[2].toUpperCase();
+        const inRange = Object.keys(rank).filter(l => rank[l] >= rank[from] && rank[l] <= rank[to]);
+        const ph = inRange.map(() => '?').join(',');
+        levelClause = ` AND cl.level IN (${ph})`;
+        neededLevelClause = ` AND cl2.level IN (${ph})`;
+        params.push(...inRange);
+        neededParams = [...inRange];
+      } else {
+        levelClause = ' AND cl.level = ?';
+        neededLevelClause = ' AND cl2.level = ?';
+        params.push(level);
+        neededParams = [level];
+      }
+    }
+    const neededSql = level
+      ? `IFNULL((SELECT SUM(cl2.needed_count) FROM company_languages cl2 WHERE cl2.company_id = c.id ${neededLevelClause}), 0)`
+      : `IFNULL((SELECT SUM(cl2.needed_count) FROM company_languages cl2 WHERE cl2.company_id = c.id), 0)`;
     const companies = db.prepare(`
       SELECT c.id, c.name, c.deadline, c.available_slots, c.hired_count, c.pending_count,
         c.position, c.interview_time, c.salary_min, c.salary_max, c.description, c.company_email,
-        IFNULL((SELECT SUM(cl2.needed_count) FROM company_languages cl2 WHERE cl2.company_id = c.id ${level ? 'AND cl2.level = ?' : ''}), 0) as needed,
+        ${neededSql} as needed,
         IFNULL((SELECT COUNT(*) FROM jobs j JOIN selections s ON s.job_id = j.id WHERE j.company_name = c.name AND s.status IN ('selected','confirmed')), 0) as applied,
         IFNULL(c.deadline, '') as dl,
         GROUP_CONCAT(DISTINCT cl.level) as levels
@@ -3120,7 +3142,7 @@ app.get('/api/admin/jobs-by-language/:language', authMiddleware, adminMiddleware
       JOIN company_languages cl ON c.id = cl.company_id
       WHERE cl.language = ?${levelClause}
       GROUP BY c.id
-    `).all(...(level ? [level, lang, level] : [lang]));
+    `).all(...params);
     if (!companies.length) {
       db.prepare('INSERT INTO admin_notifications (company_id, type, message, status) VALUES (0, ?, ?, ?)').run('missing_language', `لا توجد شركة توفر وظيفة باللغة: ${lang}${level ? ' - مستوى ' + level : ''}. برجاء التعاقد مع شركة توفر هذا التخصص.`, 'pending');
       return res.json({ jobs: [], companies: [], message: 'لا توجد شركة متاحة لهذه اللغة', notification_sent: true });

@@ -2013,20 +2013,32 @@
     async function loadCompanyDropdown(lang) {
       try {
         const sel = document.getElementById('job-company-select');
+        // Get companies this applicant already has jobs for
+        const appId = document.getElementById('modal-app-id').value;
+        let assignedCompanyIds = [];
+        let assignedCompanyNames = [];
+        try {
+          const jr = await fetch(`/api/admin/jobs/${appId}`, { headers:{'Authorization':`Bearer ${token}`} });
+          const existingJobs = await jr.json();
+          assignedCompanyNames = existingJobs.map(j => j.company_name);
+        } catch(e) {}
         if (lang) {
           const encoded = encodeURIComponent(lang);
           const r = await fetch(`/api/admin/jobs-by-language/${encoded}`, { headers:{'Authorization':`Bearer ${token}`} });
           const d = await r.json();
-          if (d.notification_sent || !d.companies || !d.companies.length) {
-            sel.innerHTML = '<option value="">⚠️ لا توجد شركة توفر هذه اللغة</option>';
+          const available = (d.companies || []).filter(c => !assignedCompanyNames.includes(c.name));
+          if (d.notification_sent || !available.length) {
+            sel.innerHTML = '<option value="">⚠️ لا توجد شركة متاحة (كل الشركات أُرسلت لهذا المتقدم)</option>';
             sel.disabled = true;
-            showResultModal('⚠️', 'اللغة دي مش متاح ليها أي شركه موجوده حاليا.<br>برجاء التعاقد مع شركه توفر هذا الوظيفه');
+            if (!d.companies || !d.companies.length) {
+              showResultModal('⚠️', 'اللغة دي مش متاح ليها أي شركه موجوده حاليا.<br>برجاء التعاقد مع شركه توفر هذا الوظيفه');
+            }
             return;
           }
           sel.disabled = false;
           sel.innerHTML = '<option value="">-- اكتب يدوي أو اختار شركة --</option>';
           let hasNear = false;
-          d.companies.forEach(c => {
+          available.forEach(c => {
             const needed = c.needed || 0;
             const applied = c.applied || 0;
             const filled = c.hired_count || 0;
@@ -2058,6 +2070,7 @@
         const companies = await res.json();
         sel.innerHTML = '<option value="">-- اكتب يدوي أو اختار شركة --</option>';
         companies.forEach(c => {
+          if (assignedCompanyNames.includes(c.name)) return;
           const remaining = c.available_slots - (c.pending_count || 0) - (c.hired_count || 0);
           if (remaining > 0) {
             sel.innerHTML += `<option value="${c.id}" data-name="${c.name}" data-position="${c.position||''}" data-time="${c.interview_time||''}" data-min="${c.salary_min||0}" data-max="${c.salary_max||0}" data-desc="${c.description||''}" data-email="${c.company_email||''}">${c.name} - ${c.position||''} (${remaining} مقعد متاح)</option>`;

@@ -1373,6 +1373,7 @@
       pendingJobs = [];
       document.querySelectorAll('#job-company-select option').forEach(o=>{o.style.display=''; o.disabled=false;});
       renderPendingJobs();
+      loadJobsInModal(appId);
       loadCompanyDropdownAgent();
     }
     function closeJobModal() {
@@ -1414,16 +1415,9 @@
         const res = await fetch(`/api/agent/jobs/${appId}`, { headers:{'Authorization':`Bearer ${token}`} });
         const jobs = await res.json();
         const c = document.getElementById('existing-jobs-modal');
-        const seen = new Set();
-        const uniq = (Array.isArray(jobs) ? jobs : []).filter(j => {
-          const k = (j.company_name||'')+'|'+(j.position||'')+'|'+(j.interview_time||'');
-          if (seen.has(k)) return false;
-          seen.add(k);
-          return true;
-        });
-        if (uniq.length === 0 && pendingJobs.length === 0) { c.innerHTML = ''; return; }
-        c.innerHTML = uniq.length === 0 ? '' : '<h4 style="margin-bottom:12px;color:#64748b;font-size:14px;">الوظائف المضافة مسبقاً:</h4>' +
-          uniq.map(j => `<div style="padding:12px;background:rgba(212,168,83,0.03);border:1px solid rgba(212,168,83,0.06);border-radius:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;"><div><strong>${j.position}</strong> - <span style="color:#d4a853;">${j.company_name}</span> ${(j.salary_min||j.salary_max)?(j.salary_min&&j.salary_max?j.salary_min+' - '+j.salary_max+' ج':j.salary_min?'من '+j.salary_min+' ج':'حتى '+j.salary_max+' ج'):''}</div></div>`).join('');
+        if (jobs.length === 0) { c.innerHTML = ''; return; }
+        c.innerHTML = '<h4 style="margin-bottom:12px;color:#64748b;font-size:14px;">الوظائف المضافة مسبقاً:</h4>' +
+          jobs.map(j => `<div style="padding:12px;background:rgba(212,168,83,0.03);border:1px solid rgba(212,168,83,0.06);border-radius:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;"><div><strong>${j.position}</strong> - <span style="color:#d4a853;">${j.company_name}</span> ${(j.salary_min||j.salary_max)?(j.salary_min&&j.salary_max?j.salary_min+' - '+j.salary_max+' ج':j.salary_min?'من '+j.salary_min+' ج':'حتى '+j.salary_max+' ج'):''}</div></div>`).join('');
       } catch (e) {}
     }
     function addJobToList() {
@@ -1437,9 +1431,6 @@
       const companySelect = document.getElementById('job-company-select');
       const companyId = companySelect.value || null;
       if (!company || !position) return alert('من فضلك أكمل البيانات (اسم الشركة + اسم الوظيفة)');
-      if (pendingJobs.some(j => (j.company_name||'') === company && (j.position||'') === position)) {
-        return alert('هذه الوظيفة مضافة بالفعل');
-      }
       pendingJobs.push({ company_id: companyId ? parseInt(companyId) : null, company_name: company, position, interview_time: time, salary_min: salaryMin ? parseFloat(salaryMin) : 0, salary_max: salaryMax ? parseFloat(salaryMax) : 0, description: desc, company_email: companyEmail || '' });
       if (companyId) {
         const opt = companySelect.querySelector(`option[value="${companyId}"]`);
@@ -1476,13 +1467,11 @@
       `).join('');
       c.innerHTML = html;
     }
-    let confirmingJobs = false;
     async function confirmAllJobs() {
-      if (pendingJobs.length === 0 || confirmingJobs) return;
+      if (pendingJobs.length === 0) return;
       const appId = document.getElementById('modal-app-id').value;
       const userId = document.getElementById('modal-user-id').value;
       const btn = document.getElementById('btn-confirm-all');
-      confirmingJobs = true;
       btn.disabled = true;
       btn.textContent = 'جاري الإرسال...';
       try {
@@ -1496,11 +1485,10 @@
         pendingJobs = [];
         closeJobModal();
         loadStats();
-        alert(data.count === 0 ? 'هذه الوظائف مضافة بالفعل' : 'تم إرسال جميع الوظائف بنجاح! سيتم إرسال إشعارات بالبريد الإلكتروني.');
+        alert('تم إرسال جميع الوظائف بنجاح! سيتم إرسال إشعارات بالبريد الإلكتروني.');
       } catch (e) {
         alert('حدث خطأ أثناء الإرسال');
       } finally {
-        confirmingJobs = false;
         btn.disabled = false;
         btn.textContent = 'تأكيد وإرسال الكل';
       }

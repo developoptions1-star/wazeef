@@ -1016,8 +1016,6 @@ app.put('/api/admin/applications/:id/rerecord', authMiddleware, adminOrQualtyMid
 app.post('/api/admin/jobs', authMiddleware, adminMiddleware, (req, res) => {
   try {
     const { application_id, company_name, position, interview_time, salary_min, salary_max, description } = req.body;
-    const already = db.prepare("SELECT id FROM jobs WHERE application_id = ? AND company_name = ? AND position = ? AND IFNULL(interview_time,'') = ?").get(application_id, company_name, position, interview_time || '');
-    if (already) return res.json({ id: already.id, duplicate: true });
     const result = db.prepare('INSERT INTO jobs (application_id, company_name, position, interview_time, salary_min, salary_max, description) VALUES (?, ?, ?, ?, ?, ?, ?)').run(application_id, company_name, position, interview_time, salary_min || 0, salary_max || 0, description || '');
     db.prepare("UPDATE applications SET status = 'approved' WHERE id = ? AND status = 'pending'").run(application_id);
     res.json({ id: result.lastInsertRowid });
@@ -1033,20 +1031,10 @@ app.post('/api/admin/jobs/batch', authMiddleware, adminMiddleware, (req, res) =>
     if (!jobs || jobs.length === 0) return res.status(400).json({ error: 'لا توجد وظائف للإضافة' });
 
     const insertJob = db.prepare('INSERT INTO jobs (application_id, company_name, position, interview_time, salary_min, salary_max, description, company_email) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-    const existsJob = db.prepare("SELECT id FROM jobs WHERE application_id = ? AND company_name = ? AND position = ? AND IFNULL(interview_time,'') = ?");
     const jobIds = [];
-    let skipped = 0;
-    const newJobs = [];
     for (const j of jobs) {
-      const time = j.interview_time || '';
-      const already = existsJob.get(application_id, j.company_name, j.position, time);
-      if (already) { skipped++; jobIds.push(already.id); continue; }
-      const result = insertJob.run(application_id, j.company_name, j.position, time, j.salary_min || 0, j.salary_max || 0, j.description || '', j.company_email || '');
+      const result = insertJob.run(application_id, j.company_name, j.position, j.interview_time || '', j.salary_min || 0, j.salary_max || 0, j.description || '', j.company_email || '');
       jobIds.push(result.lastInsertRowid);
-      newJobs.push(j);
-    }
-    if (skipped && !newJobs.length) {
-      return res.json({ success: true, jobIds, count: 0, message: 'هذه الوظائف مضافة بالفعل' });
     }
 
     // Auto-approve if application is pending (admin is adding jobs)
@@ -1059,8 +1047,7 @@ app.post('/api/admin/jobs/batch', authMiddleware, adminMiddleware, (req, res) =>
     const fullUser = db.prepare('SELECT * FROM users WHERE id = ?').get(user_id);
 
     if (user) {
-      const notifyJobs = newJobs.length ? newJobs : [];
-      const jobsListHTML = notifyJobs.map(j => `
+      const jobsListHTML = jobs.map(j => `
         <div style="padding:12px;background:#f8f9fa;border-radius:8px;margin-bottom:8px;">
           <strong>${j.position}</strong> - ${j.company_name}<br>
           ${j.interview_time ? 'وقت المقابلة: ' + j.interview_time + '<br>' : ''}
@@ -1073,7 +1060,7 @@ app.post('/api/admin/jobs/batch', authMiddleware, adminMiddleware, (req, res) =>
         <div dir="rtl" style="font-family:'Tajawal',sans-serif;max-width:600px;margin:0 auto;">
           <h2 style="color:#d4a853;text-align:center;">تمت إضافة وظائف لك!</h2>
           <p>مرحباً ${user.name}،</p>
-          <p>تمت إضافة ${notifyJobs.length} وظيفة جديدة إلى حسابك. يمكنك مراجعتها من خلال لوحة التحكم الخاصة بك.</p>
+          <p>تمت إضافة ${jobs.length} وظيفة جديدة إلى حسابك. يمكنك مراجعتها من خلال لوحة التحكم الخاصة بك.</p>
           <h3 style="color:#333;">الوظائف المضافة:</h3>
           ${jobsListHTML}
           <div style="text-align:center;margin-top:30px;">
@@ -1082,18 +1069,16 @@ app.post('/api/admin/jobs/batch', authMiddleware, adminMiddleware, (req, res) =>
           <p style="color:#888;font-size:12px;margin-top:30px;text-align:center;">فريق وَظِيف</p>
         </div>
       `;
-      if (notifyJobs.length) {
-        sendEmail(user.email, 'وظائف جديدة لك في وَظِيف', userEmailHTML);
-        saveNotification(user_id, null, 'jobs_added', 'وظائف جديدة لك', `تمت إضافة ${notifyJobs.length} وظيفة جديدة. افتح لوحة التحكم لعرضها.`);
-      }
+      sendEmail(user.email, 'وظائف جديدة لك في وَظِيف', userEmailHTML);
+      saveNotification(user_id, null, 'jobs_added', 'وظائف جديدة لك', `تمت إضافة ${jobs.length} وظيفة جديدة. افتح لوحة التحكم لعرضها.`);
     }
 
-    if (user && user.agent_id && user.agent_email && newJobs.length) {
+    if (user && user.agent_id && user.agent_email) {
       const agentEmailHTML = `
         <div dir="rtl" style="font-family:'Tajawal',sans-serif;max-width:600px;margin:0 auto;">
           <h2 style="color:#d4a853;text-align:center;">تم توظيف شخص أحيله لك!</h2>
           <p>مرحباً ${user.agent_name}،</p>
-          <p>تمت إضافة ${newJobs.length} وظيفة للعضو <strong>${user.name}</strong> الذي سجل من خلال رابط الإحالة الخاص بك.</p>
+          <p>تمت إضافة ${jobs.length} وظيفة للعضو <strong>${user.name}</strong> الذي سجل من خلال رابط الإحالة الخاص بك.</p>
           <p>يمكنك متابعة التقدم من خلال لوحة تحكم المندوب.</p>
           <div style="text-align:center;margin-top:30px;">
             <a href="${BASE_URL}/agent" style="padding:14px 40px;background:linear-gradient(135deg,#b8860b,#d4a853);color:#0a0a0a;text-decoration:none;border-radius:14px;font-weight:700;display:inline-block;">لوحة تحكم المندوب</a>
@@ -1102,10 +1087,10 @@ app.post('/api/admin/jobs/batch', authMiddleware, adminMiddleware, (req, res) =>
         </div>
       `;
       sendEmail(user.agent_email, 'تم توظيف شخص من إحائك - وَظِيف', agentEmailHTML);
-      saveNotification(null, user.agent_id, 'referral_hired', 'تم توظيف شخص أحيله لك', `العضو "${user.name}" تمت إضافة ${newJobs.length} وظيفة له.`);
+      saveNotification(null, user.agent_id, 'referral_hired', 'تم توظيف شخص أحيله لك', `العضو "${user.name}" تمت إضافة ${jobs.length} وظيفة له.`);
     }
 
-    res.json({ success: true, jobIds, count: newJobs.length });
+    res.json({ success: true, jobIds, count: jobIds.length });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -1114,14 +1099,7 @@ app.post('/api/admin/jobs/batch', authMiddleware, adminMiddleware, (req, res) =>
 app.get('/api/admin/jobs/:applicationId', authMiddleware, adminMiddleware, (req, res) => {
   try {
     const jobs = db.prepare('SELECT * FROM jobs WHERE application_id = ?').all(req.params.applicationId);
-    const seen = new Set();
-    const uniq = jobs.filter(j => {
-      const k = `${j.company_name||''}|${j.position||''}|${j.interview_time||''}`;
-      if (seen.has(k)) return false;
-      seen.add(k);
-      return true;
-    });
-    res.json(uniq);
+    res.json(jobs);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -1157,25 +1135,15 @@ app.post('/api/agent/jobs/batch', authMiddleware, (req, res) => {
     if (!isOwner && getAgentRole(req) !== 'qualty') return res.status(403).json({ error: 'ليس لديك صلاحية إضافة وظائف لهذا المستخدم' });
 
     const insertJob = db.prepare('INSERT INTO jobs (application_id, company_name, position, interview_time, salary_min, salary_max, description, company_email) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-    const existsJob = db.prepare("SELECT id FROM jobs WHERE application_id = ? AND company_name = ? AND position = ? AND IFNULL(interview_time,'') = ?");
     const jobIds = [];
-    let skipped = 0;
-    const newJobs = [];
     for (const j of jobs) {
-      const time = j.interview_time || '';
-      const already = existsJob.get(application_id, j.company_name, j.position, time);
-      if (already) { skipped++; jobIds.push(already.id); continue; }
-      const result = insertJob.run(application_id, j.company_name, j.position, time, j.salary_min || 0, j.salary_max || 0, j.description || '', j.company_email || '');
+      const result = insertJob.run(application_id, j.company_name, j.position, j.interview_time || '', j.salary_min || 0, j.salary_max || 0, j.description || '', j.company_email || '');
       jobIds.push(result.lastInsertRowid);
-      newJobs.push(j);
-    }
-    if (skipped && !newJobs.length) {
-      return res.json({ success: true, jobIds, count: 0, message: 'هذه الوظائف مضافة بالفعل' });
     }
 
     const user = db.prepare('SELECT * FROM users WHERE id = ?').get(user_id);
-    if (user && newJobs.length) {
-      const jobsListHTML = newJobs.map(j => `
+    if (user) {
+      const jobsListHTML = jobs.map(j => `
         <div style="padding:12px;background:#f8f9fa;border-radius:8px;margin-bottom:8px;">
           <strong>${j.position}</strong> - ${j.company_name}<br>
           ${j.interview_time ? 'وقت المقابلة: ' + j.interview_time + '<br>' : ''}
@@ -1184,12 +1152,11 @@ app.post('/api/agent/jobs/batch', authMiddleware, (req, res) => {
         </div>
       `).join('');
 
-      if (newJobs.length) {
-        const userEmailHTML = `
+      const userEmailHTML = `
         <div dir="rtl" style="font-family:'Tajawal',sans-serif;max-width:600px;margin:0 auto;">
           <h2 style="color:#d4a853;text-align:center;">تمت إضافة وظائف لك!</h2>
           <p>مرحباً ${user.name}،</p>
-          <p>تمت إضافة ${newJobs.length} وظيفة جديدة إلى حسابك من المندوب. يمكنك مراجعتها من خلال لوحة التحكم الخاصة بك.</p>
+          <p>تمت إضافة ${jobs.length} وظيفة جديدة إلى حسابك من المندوب. يمكنك مراجعتها من خلال لوحة التحكم الخاصة بك.</p>
           <h3 style="color:#333;">الوظائف المضافة:</h3>
           ${jobsListHTML}
           <div style="text-align:center;margin-top:30px;">
@@ -1197,12 +1164,11 @@ app.post('/api/agent/jobs/batch', authMiddleware, (req, res) => {
           </div>
         </div>
       `;
-        sendEmail(user.email, 'تمت إضافة وظائف لك! - وَظِيف', userEmailHTML);
-        saveNotification(user_id, null, 'jobs', 'تمت إضافة وظائف جديدة', `تمت إضافة ${newJobs.length} وظيفة جديدة إلى حسابك من المندوب.`);
-      }
+      sendEmail(user.email, 'تمت إضافة وظائف لك! - وَظِيف', userEmailHTML);
+      saveNotification(user_id, null, 'jobs', 'تمت إضافة وظائف جديدة', `تمت إضافة ${jobs.length} وظيفة جديدة إلى حسابك من المندوب.`);
     }
 
-    res.json({ success: true, jobIds, count: newJobs.length });
+    res.json({ success: true, jobIds });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -1212,14 +1178,7 @@ app.get('/api/agent/jobs/:applicationId', authMiddleware, (req, res) => {
   try {
     if (!isAgentUser(req)) return res.status(403).json({ error: 'Forbidden' });
     const jobs = db.prepare('SELECT * FROM jobs WHERE application_id = ?').all(req.params.applicationId);
-    const seen = new Set();
-    const uniq = jobs.filter(j => {
-      const k = `${j.company_name||''}|${j.position||''}|${j.interview_time||''}`;
-      if (seen.has(k)) return false;
-      seen.add(k);
-      return true;
-    });
-    res.json(uniq);
+    res.json(jobs);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -1691,9 +1650,9 @@ app.get('/api/admin/company/:id/schedule', authMiddleware, adminOrQualtyMiddlewa
     const company = db.prepare('SELECT * FROM companies WHERE id = ?').get(companyId);
     if (!company) return res.status(404).json({ error: 'الشركة غير موجودة' });
     
-    // Get all jobs for this company with their interviews and candidates (deduped by position+time)
-    const rawJobs = db.prepare(`
-      SELECT j.*,
+    // Get all jobs for this company with their interviews and candidates
+    const jobs = db.prepare(`
+      SELECT j.*, 
         (SELECT COUNT(*) FROM selections s JOIN jobs j2 ON s.job_id = j2.id WHERE j2.id = j.id AND s.status != 'cancelled') as pending_candidates,
         (SELECT COUNT(*) FROM selections s JOIN jobs j2 ON s.job_id = j2.id WHERE j2.id = j.id AND s.status = 'cancelled') as cancelled_candidates,
         (SELECT COUNT(*) FROM selections s JOIN jobs j2 ON s.job_id = j2.id WHERE j2.id = j.id AND s.status = 'confirmed') as confirmed_candidates,
@@ -1703,13 +1662,6 @@ app.get('/api/admin/company/:id/schedule', authMiddleware, adminOrQualtyMiddlewa
       WHERE j.company_name = ?
       ORDER BY j.created_at DESC
     `).all(company.name);
-    const seenJobKeys = new Set();
-    const jobs = rawJobs.filter(j => {
-      const k = `${j.position||''}|${j.interview_time||''}`;
-      if (seenJobKeys.has(k)) return false;
-      seenJobKeys.add(k);
-      return true;
-    });
     
     // Get interview schedule grouped by day
     const schedule = db.prepare(`
@@ -1853,13 +1805,7 @@ app.get('/api/user/jobs', authMiddleware, (req, res) => {
     const jobs = db.prepare(`SELECT * FROM jobs WHERE application_id IN (${placeholders})`).all(...appIds);
     const cancelledJobs = db.prepare(`SELECT job_id FROM selections WHERE user_id = ? AND status = 'cancelled'`).all(req.user.id);
     const cancelledIds = new Set(cancelledJobs.map(c => c.job_id));
-    const seen = new Set();
-    const jobsWithStatus = jobs.filter(j => {
-      const k = `${j.company_name||''}|${j.position||''}|${j.interview_time||''}`;
-      if (seen.has(k)) return false;
-      seen.add(k);
-      return true;
-    }).map(j => ({ ...j, is_cancelled: cancelledIds.has(j.id) }));
+    const jobsWithStatus = jobs.map(j => ({ ...j, is_cancelled: cancelledIds.has(j.id) }));
     res.json(jobsWithStatus);
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -2744,20 +2690,13 @@ app.get('/api/qualty/company/:id/schedule', authMiddleware, (req, res) => {
     if (getAgentRole(req) !== 'qualty') return res.status(403).json({ error: 'Not qualty' });
     const company = db.prepare('SELECT * FROM companies WHERE id = ?').get(req.params.id);
     if (!company) return res.status(404).json({ error: 'الشركة غير موجودة' });
-    const rawJobs = db.prepare(`
-      SELECT j.*,
+    const jobs = db.prepare(`
+      SELECT j.*, 
         (SELECT COUNT(*) FROM selections s JOIN jobs j2 ON s.job_id = j2.id WHERE j2.id = j.id AND s.status != 'cancelled') as pending_candidates,
         (SELECT COUNT(*) FROM selections s JOIN jobs j2 ON s.job_id = j2.id WHERE j2.id = j.id AND s.status = 'cancelled') as cancelled_candidates,
         (SELECT COUNT(*) FROM selections s JOIN jobs j2 ON s.job_id = j2.id WHERE j2.id = j.id AND s.status = 'confirmed') as confirmed_candidates,
         (SELECT GROUP_CONCAT(u.name, ', ') FROM selections s JOIN jobs j2 ON s.job_id = j2.id JOIN users u ON s.user_id = u.id WHERE j2.id = j.id AND s.status != 'cancelled') as candidate_names
       FROM jobs j WHERE j.company_name = ? ORDER BY j.created_at DESC`).all(company.name);
-    const seenQualtyJobs = new Set();
-    const jobs = rawJobs.filter(j => {
-      const k = `${j.position||''}|${j.interview_time||''}`;
-      if (seenQualtyJobs.has(k)) return false;
-      seenQualtyJobs.add(k);
-      return true;
-    });
     const history = db.prepare(`
       SELECT s.*, u.name as user_name, j.position FROM selections s JOIN users u ON s.user_id = u.id JOIN jobs j ON s.job_id = j.id WHERE j.company_name = ? ORDER BY s.created_at DESC LIMIT 20`).all(company.name);
     res.json({ company, jobs, history, schedule: [] });

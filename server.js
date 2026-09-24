@@ -3131,6 +3131,11 @@ app.get('/api/admin/jobs-by-language/:language', authMiddleware, adminMiddleware
     const neededSql = level
       ? `IFNULL((SELECT SUM(cl2.needed_count) FROM company_languages cl2 WHERE cl2.company_id = c.id ${neededLevelClause}), 0)`
       : `IFNULL((SELECT SUM(cl2.needed_count) FROM company_languages cl2 WHERE cl2.company_id = c.id), 0)`;
+    // Placeholder order: SELECT-level params first (neededSql), then WHERE (lang, level)
+    const sqlParams = [];
+    if (level) sqlParams.push(...neededParams);
+    sqlParams.push(lang);
+    if (level) sqlParams.push(...neededParams);
     const companies = db.prepare(`
       SELECT c.id, c.name, c.deadline, c.available_slots, c.hired_count, c.pending_count,
         c.position, c.interview_time, c.salary_min, c.salary_max, c.description, c.company_email,
@@ -3142,7 +3147,7 @@ app.get('/api/admin/jobs-by-language/:language', authMiddleware, adminMiddleware
       JOIN company_languages cl ON c.id = cl.company_id
       WHERE cl.language = ?${levelClause}
       GROUP BY c.id
-    `).all(...params);
+    `).all(...sqlParams);
     if (!companies.length) {
       db.prepare('INSERT INTO admin_notifications (company_id, type, message, status) VALUES (0, ?, ?, ?)').run('missing_language', `لا توجد شركة توفر وظيفة باللغة: ${lang}${level ? ' - مستوى ' + level : ''}. برجاء التعاقد مع شركة توفر هذا التخصص.`, 'pending');
       return res.json({ jobs: [], companies: [], message: 'لا توجد شركة متاحة لهذه اللغة', notification_sent: true });

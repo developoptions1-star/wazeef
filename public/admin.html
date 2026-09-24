@@ -2014,12 +2014,35 @@
           }
           sel.disabled = false;
           sel.innerHTML = '<option value="">-- اكتب يدوي أو اختار شركة --</option>';
+          let hasNear = false;
           d.companies.forEach(c => {
-            sel.innerHTML += `<option value="${c.id}" data-name="${c.name}">${c.name}</option>`;
+            const needed = c.needed || 0;
+            const applied = c.applied || 0;
+            const filled = c.hired_count || 0;
+            let label = `${c.name} — مطلوب ${needed} | ممّل ${filled} | مقدّم ${applied}`;
+            let style = '';
+            if (c.near_deadline) {
+              hasNear = true;
+              label = `⚠️ ${label} | قرب المعاد (${c.days_left} يوم)`;
+              style = ' style="background:#78350f;color:#fbbf24;font-weight:700"';
+            } else if (c.expired) {
+              label = `⛔ ${label} | انتهى المعاد`;
+              style = ' style="background:#450a0a;color:#f87171"';
+            }
+            sel.innerHTML += `<option value="${c.id}" data-name="${c.name}" data-position="${c.position||''}" data-time="${c.interview_time||''}" data-min="${c.salary_min||0}" data-max="${c.salary_max||0}" data-desc="${c.description||''}" data-email="${c.company_email||''}" data-near="${c.near_deadline?1:0}" data-days="${c.days_left??''}"${style}>${label}</option>`;
           });
+          if (hasNear) {
+            sel.style.borderColor = '#eab308';
+            sel.style.boxShadow = '0 0 0 3px rgba(234,179,8,0.15)';
+          } else {
+            sel.style.borderColor = '';
+            sel.style.boxShadow = '';
+          }
           return;
         }
         sel.disabled = false;
+        sel.style.borderColor = '';
+        sel.style.boxShadow = '';
         const res = await fetch('/api/companies', { headers:{'Authorization':`Bearer ${token}`} });
         const companies = await res.json();
         sel.innerHTML = '<option value="">-- اكتب يدوي أو اختار شركة --</option>';
@@ -2037,12 +2060,15 @@
       const opt = sel.options[sel.selectedIndex];
       if (!sel.value) return;
       document.getElementById('job-company').value = opt.dataset.name || '';
-      document.getElementById('job-position').value = opt.dataset.position || '';
-      document.getElementById('job-time').value = opt.dataset.time || '';
-      document.getElementById('job-salary-min').value = opt.dataset.min || '';
-      document.getElementById('job-salary-max').value = opt.dataset.max || '';
-      document.getElementById('job-desc').value = opt.dataset.desc || '';
-      document.getElementById('job-company-email').value = opt.dataset.email || '';
+      if (opt.dataset.position) document.getElementById('job-position').value = opt.dataset.position;
+      if (opt.dataset.time) document.getElementById('job-time').value = opt.dataset.time;
+      if (opt.dataset.min && Number(opt.dataset.min) > 0) document.getElementById('job-salary-min').value = opt.dataset.min;
+      if (opt.dataset.max && Number(opt.dataset.max) > 0) document.getElementById('job-salary-max').value = opt.dataset.max;
+      if (opt.dataset.desc) document.getElementById('job-desc').value = opt.dataset.desc;
+      if (opt.dataset.email) document.getElementById('job-company-email').value = opt.dataset.email;
+      if (opt.dataset.near === '1') {
+        showToast('⚠️ تنبيه: هذه الشركة قرب المعاد (' + (opt.dataset.days||'?') + ' يوم)', 'error');
+      }
     }
 
     async function loadJobsInModal(appId) {

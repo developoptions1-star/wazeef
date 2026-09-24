@@ -501,8 +501,27 @@ try {
   db.prepare('INSERT INTO companies (name, position, company_email) VALUES (?,?,?)').run('TestCo', 'Dev', 'test@co.com');
   const coId = db.prepare('SELECT last_insert_rowid() as id').get().id;
   db.prepare('INSERT INTO company_users (company_id, email, password, name) VALUES (?,?,?,?)').run(coId, 'test@co.com', bcrypt.hashSync('Test@123', 10), 'TestCo');
+  db.prepare('INSERT INTO company_languages (company_id, language, level, needed_count, position, salary_min, salary_max, interview_time, deadline, notify_days, description) VALUES (?,?,?,?,?,?,?,?,?,?,?)')
+    .run(coId, 'الإنجليزية', 'B2', 3, 'مطور ويب', 5000, 15000, 'السبت 2 م', new Date(Date.now() + 3*86400000).toISOString().split('T')[0], 5, 'وظيفة مطور ويب - تيست');
   console.log('Test company seeded: test@co.com / Test@123');
 } catch(e) { console.log('Test company seed error:', e.message); }
+
+// Seed 3 test applicants (for testing admin assign-to-company flow)
+try {
+  const testHash = bcrypt.hashSync('Test@123', 10);
+  const testPeople = [
+    { name: 'أحمد محمد', email: 'ahmed@test.com', phone: '01001112233', city: 'القاهرة', age: 25, college: 'القاهرة', edu: 'بكالوريوس', mil: 'معفى', lang: 'الإنجليزية' },
+    { name: 'سارة علي', email: 'sara@test.com', phone: '01112223344', city: 'الإسكندرية', age: 23, college: 'الإسكندرية', edu: 'بكالوريوس', mil: '—', lang: 'الإنجليزية' },
+    { name: 'محمود حسن', email: 'mahmoud@test.com', phone: '01223334455', city: 'الجيزة', age: 27, college: 'الجيزة', edu: 'ماجستير', mil: 'مؤجل', lang: 'الإنجليزية' },
+  ];
+  for (const p of testPeople) {
+    db.prepare('INSERT INTO users (name,email,password,phone,role,nationality,city,language_applied,age,college,education_level,military_status,email_verified) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,1)')
+      .run(p.name, p.email, testHash, p.phone, 'user', 'مصري', p.city, p.lang, p.age, p.college, p.edu, p.mil);
+    const uid = db.prepare('SELECT last_insert_rowid() as id').get().id;
+    db.prepare('INSERT INTO applications (user_id, language, status) VALUES (?,?,?)').run(uid, p.lang, 'approved');
+    console.log('Test applicant seeded:', p.name);
+  }
+} catch(e) { console.log('Test applicant seed error:', e.message); }
 
 // Force save so CREATE TABLE statements persist to disk
 try { db._save && db._save(); } catch(e) {}
@@ -3084,11 +3103,41 @@ app.delete('/api/admin/company-languages/:id', authMiddleware, adminMiddleware, 
 app.get('/api/admin/jobs-by-language/:language', authMiddleware, adminMiddleware, (req, res) => {
   try {
     const lang = req.params.language;
-    const companies = db.prepare('SELECT DISTINCT c.id, c.name FROM companies c JOIN company_languages cl ON c.id = cl.company_id WHERE cl.language = ?').all(lang);
+    const companies = db.prepare(`
+      SELECT c.id, c.name, c.deadline, c.available_slots, c.hired_count, c.pending_count,
+        c.position, c.interview_time, c.salary_min, c.salary_max, c.description, c.company_email,
+        IFNULL((SELECT SUM(cl.needed_count) FROM company_languages cl WHERE cl.company_id = c.id), 0) as needed,
+        IFNULL((SELECT COUNT(*) FROM jobs j JOIN selections s ON s.job_id = j.id WHERE j.company_name = c.name AND s.status IN ('selected','confirmed')), 0) as applied,
+        IFNULL(c.deadline, '') as dl
+      FROM companies c
+      JOIN company_languages cl ON c.id = cl.company_id
+      WHERE cl.language = ?
+      GROUP BY c.id
+    `).all(lang);
     if (!companies.length) {
-      db.prepare('INSERT INTO admin_notifications (company_id, type, message, status) VALUES (0, ?, ?, ?)').run('missing_language', `لا توجد شركة توفر وظيفة باللغة: ${lang}. برجاء التعاoad مع شركة توفر هذا التخصص.`, 'pending');
-      return res.json({ jobs: [], message: 'لا توجد شركة متاحة لهذه اللغة', notification_sent: true });
+      db.prepare('INSERT INTO admin_notifications (company_id, type, message, status) VALUES (0, ?, ?, ?)').run('missing_language', `لا توجد شركة توفر وظيفة باللغة: ${lang}. برجاء التعاقد مع شركة توفر هذا التخصص.`, 'pending');
+      return res.json({ jobs: [], companies: [], message: 'لا توجد شركة متاحة لهذه اللغة', notification_sent: true });
     }
+    // Sort: deadline approaching first, then by days remaining
+    const now = new Date();
+    companies.forEach(c => {
+      if (c.deadline) {
+        const d = new Date(c.deadline + 'T00:00:00');
+        c.days_left = Math.ceil((d - now) / 86400000);
+        c.near_deadline = c.days_left <= (c.notify_days_before || 5) && c.days_left >= 0;
+        c.expired = c.days_left < 0;
+      } else {
+        c.days_left = null;
+        c.near_deadline = false;
+        c.expired = false;
+      }
+    });
+    companies.sort((a, b) => {
+      if (a.near_deadline && !b.near_deadline) return -1;
+      if (!a.near_deadline && b.near_deadline) return 1;
+      if (a.near_deadline && b.near_deadline) return (a.days_left||0) - (b.days_left||0);
+      return a.name.localeCompare(b.name);
+    });
     const companyNames = companies.map(c => c.name);
     const placeholders = companyNames.map(() => '?').join(',');
     const jobs = db.prepare(`SELECT j.*, c.id as company_id FROM jobs j JOIN companies c ON j.company_name = c.name WHERE c.name IN (${placeholders})`).all(...companyNames);

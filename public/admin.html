@@ -1516,7 +1516,19 @@
       <h2>إضافة وظائف</h2>
       <input type="hidden" id="modal-app-id">
       <input type="hidden" id="modal-user-id">
-      <div id="job-lang-hint" style="display:none;padding:8px 14px;background:rgba(212,168,83,0.08);border:1px solid rgba(212,168,83,0.15);border-radius:10px;margin-bottom:12px;font-size:13px;color:#f0d78c;">🌍 لغة المتقدم: <strong id="job-lang-name">-</strong> — الشركات المعروضة مفلترة بنفس اللغة</div>
+      <div id="job-lang-hint" style="display:none;padding:8px 14px;background:rgba(212,168,83,0.08);border:1px solid rgba(212,168,83,0.15);border-radius:10px;margin-bottom:12px;font-size:13px;color:#f0d78c;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">🌍 لغة المتقدم: <strong id="job-lang-name">-</strong>
+        <span style="color:#94a3b8;">— مستوى اللغة:</span>
+        <select id="job-level-select" onchange="onLevelChange()" style="padding:6px 12px;background:rgba(0,0,0,0.3);border:1px solid rgba(212,168,83,0.2);border-radius:8px;color:#e2e8f0;font-family:'Tajawal',sans-serif;font-size:13px;outline:none;color-scheme:dark;">
+          <option value="">كل المستويات</option>
+          <option value="A1">A1</option>
+          <option value="A2">A2</option>
+          <option value="B1">B1</option>
+          <option value="B2">B2</option>
+          <option value="C1">C1</option>
+          <option value="C2">C2</option>
+        </select>
+        <span id="job-level-hint" style="color:#94a3b8;font-size:12px;"></span>
+      </div>
       <div class="form-group"><label>اختار من شركة جاهزة (اختياري)</label>
         <select id="job-company-select" autocomplete="off" onchange="fillCompanyData()" style="width:100%;padding:12px 16px;background:rgba(212,168,83,0.04);border:1.5px solid rgba(212,168,83,0.12);border-radius:12px;color:#e2e8f0;font-family:'Tajawal',sans-serif;font-size:14px;outline:none;">
           <option value="">-- اكتب يدوي أو اختار شركة --</option>
@@ -2003,11 +2015,16 @@
       loadJobsInModal(appId);
       loadCompanyDropdown(currentJobLang);
     }
+    function onLevelChange() {
+      loadCompanyDropdown(currentJobLang);
+    }
     function closeModal() {
       document.getElementById('job-modal').classList.remove('show');
       pendingJobs = [];
       ['job-company','job-position','job-time','job-salary-min','job-salary-max','job-desc','job-company-email'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = ''; });
       document.getElementById('job-company-select').value = '';
+      const lvl = document.getElementById('job-level-select'); if (lvl) lvl.value = '';
+      const lh = document.getElementById('job-level-hint'); if (lh) lh.textContent = '';
     }
 
     async function loadCompanyDropdown(lang) {
@@ -2023,15 +2040,19 @@
           assignedCompanyNames = existingJobs.map(j => j.company_name);
         } catch(e) {}
         if (lang) {
+          const level = document.getElementById('job-level-select')?.value || '';
           const encoded = encodeURIComponent(lang);
-          const r = await fetch(`/api/admin/jobs-by-language/${encoded}`, { headers:{'Authorization':`Bearer ${token}`} });
+          const levelQ = level ? `?level=${encodeURIComponent(level)}` : '';
+          const r = await fetch(`/api/admin/jobs-by-language/${encoded}${levelQ}`, { headers:{'Authorization':`Bearer ${token}`} });
           const d = await r.json();
           const available = (d.companies || []).filter(c => !assignedCompanyNames.includes(c.name));
+          const levelHint = document.getElementById('job-level-hint');
+          if (levelHint) levelHint.textContent = level ? `(${available.length} شركة مطابقة للمستوى ${level})` : `(${available.length} شركة)`;
           if (d.notification_sent || !available.length) {
-            sel.innerHTML = '<option value="">⚠️ لا توجد شركة متاحة (كل الشركات أُرسلت لهذا المتقدم)</option>';
+            sel.innerHTML = '<option value="">⚠️ لا توجد شركة متاحة</option>';
             sel.disabled = true;
             if (!d.companies || !d.companies.length) {
-              showResultModal('⚠️', 'اللغة دي مش متاح ليها أي شركه موجوده حاليا.<br>برجاء التعاقد مع شركه توفر هذا الوظيفه');
+              showResultModal('⚠️', `لا توجد شركة توفر اللغة ${getLangName(lang)}${level ? ' - مستوى ' + level : ''} حاليا.<br>برجاء التعاقد مع شركة توفر هذا التخصص`);
             }
             return;
           }
@@ -2042,7 +2063,8 @@
             const needed = c.needed || 0;
             const applied = c.applied || 0;
             const filled = c.hired_count || 0;
-            let label = `${c.name} — مطلوب ${needed} | ممّل ${filled} | مقدّم ${applied}`;
+            const levels = c.levels ? ' [' + c.levels + ']' : '';
+            let label = `${c.name}${levels} — مطلوب ${needed} | ممّل ${filled} | مقدّم ${applied}`;
             let style = '';
             if (c.near_deadline) {
               hasNear = true;
@@ -2091,7 +2113,7 @@
         const lang = currentJobLang;
         const r = await fetch(`/api/admin/company-languages/${companyId}`, { headers:{'Authorization':`Bearer ${token}`} });
         const langs = await r.json();
-        const match = (Array.isArray(langs) ? langs : []).find(l => l.language === lang) || (Array.isArray(langs) ? langs[0] : null);
+        const match = (Array.isArray(langs) ? langs : []).find(l => l.language === lang && l.level === (document.getElementById('job-level-select')?.value || l.level)) || (Array.isArray(langs) ? langs : []).find(l => l.language === lang) || (Array.isArray(langs) ? langs[0] : null);
         if (match) {
           if (match.position) document.getElementById('job-position').value = match.position;
           if (match.interview_time) document.getElementById('job-time').value = match.interview_time;

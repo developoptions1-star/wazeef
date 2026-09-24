@@ -3087,23 +3087,28 @@ app.delete('/api/admin/company-languages/:id', authMiddleware, adminMiddleware, 
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// Admin: get jobs filtered by language for assignment
+// Admin: get jobs filtered by language (and optional level) for assignment
 app.get('/api/admin/jobs-by-language/:language', authMiddleware, adminMiddleware, (req, res) => {
   try {
     const lang = req.params.language;
+    const level = req.query.level || '';
+    let levelClause = '';
+    const params = [lang];
+    if (level) { levelClause = ' AND cl.level = ?'; params.push(level); }
     const companies = db.prepare(`
       SELECT c.id, c.name, c.deadline, c.available_slots, c.hired_count, c.pending_count,
         c.position, c.interview_time, c.salary_min, c.salary_max, c.description, c.company_email,
-        IFNULL((SELECT SUM(cl.needed_count) FROM company_languages cl WHERE cl.company_id = c.id), 0) as needed,
+        IFNULL((SELECT SUM(cl2.needed_count) FROM company_languages cl2 WHERE cl2.company_id = c.id ${level ? 'AND cl2.level = ?' : ''}), 0) as needed,
         IFNULL((SELECT COUNT(*) FROM jobs j JOIN selections s ON s.job_id = j.id WHERE j.company_name = c.name AND s.status IN ('selected','confirmed')), 0) as applied,
-        IFNULL(c.deadline, '') as dl
+        IFNULL(c.deadline, '') as dl,
+        GROUP_CONCAT(DISTINCT cl.level) as levels
       FROM companies c
       JOIN company_languages cl ON c.id = cl.company_id
-      WHERE cl.language = ?
+      WHERE cl.language = ?${levelClause}
       GROUP BY c.id
-    `).all(lang);
+    `).all(...(level ? [level, lang, level] : [lang]));
     if (!companies.length) {
-      db.prepare('INSERT INTO admin_notifications (company_id, type, message, status) VALUES (0, ?, ?, ?)').run('missing_language', `لا توجد شركة توفر وظيفة باللغة: ${lang}. برجاء التعاقد مع شركة توفر هذا التخصص.`, 'pending');
+      db.prepare('INSERT INTO admin_notifications (company_id, type, message, status) VALUES (0, ?, ?, ?)').run('missing_language', `لا توجد شركة توفر وظيفة باللغة: ${lang}${level ? ' - مستوى ' + level : ''}. برجاء التعاقد مع شركة توفر هذا التخصص.`, 'pending');
       return res.json({ jobs: [], companies: [], message: 'لا توجد شركة متاحة لهذه اللغة', notification_sent: true });
     }
     // Sort: deadline approaching first, then by days remaining

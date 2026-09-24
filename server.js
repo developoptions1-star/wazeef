@@ -336,140 +336,6 @@ db.exec(`
   );
 `);
 
-// Email transporter
-const SMTP_USER = process.env.SMTP_USER || 'mohamedfaron297@gmail.com';
-const SMTP_PASS = process.env.SMTP_PASS || 'ushf stxg rmgp xhig';
-const emailTransporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: SMTP_USER,
-    pass: SMTP_PASS
-  }
-});
-
-async function sendEmail(to, subject, html, attachments) {
-  const files = (attachments || []).map(a => ({ filename: a.filename, content: a.content }));
-  // 1) Brevo HTTP API (port 443) when key is set - works on hosts that block SMTP
-  if (process.env.BREVO_API_KEY) {
-    try {
-      const payload = {
-        sender: { name: 'وَظِيف', email: SMTP_USER },
-        to: [{ email: to }],
-        subject,
-        htmlContent: html
-      };
-      if (files.length) payload.attachment = files.map(a => ({ content: a.content, name: a.filename }));
-      const r = await fetch('https://api.brevo.com/v3/smtp/email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'api-key': process.env.BREVO_API_KEY },
-        body: JSON.stringify(payload)
-      });
-      if (!r.ok) throw new Error('Brevo HTTP ' + r.status + ': ' + (await r.text()).slice(0, 200));
-      console.log('Email sent to:', to);
-      return;
-    } catch (e) {
-      console.log('Brevo failed, trying SMTP:', e.message.split('\n')[0]);
-    }
-  }
-  // 2) Gmail SMTP: try 587 (STARTTLS) then 465 - whichever is open
-  const attempts = [
-    { host: 'smtp.gmail.com', port: 587, secure: false },
-    { host: 'smtp.gmail.com', port: 465, secure: true }
-  ];
-  for (const cfg of attempts) {
-    try {
-      const t = nodemailer.createTransport({
-        ...cfg,
-        auth: { user: SMTP_USER, pass: SMTP_PASS },
-        connectionTimeout: 8000,
-        socketTimeout: 10000
-      });
-      const msg = { from: `"وَظِيف" <${SMTP_USER}>`, to, subject, html };
-      if (files.length) msg.attachments = files.map(a => ({ filename: a.filename, content: Buffer.from(a.content, 'base64') }));
-      await t.sendMail(msg);
-      console.log('Email sent to:', to);
-      return;
-    } catch (e) {
-      console.log(`SMTP ${cfg.port} failed:`, (e.message || '').split('\n')[0]);
-    }
-  }
-  console.log('Email send error: all methods failed for', to);
-}
-
-// Daily database backup emailed to the owner (survives redeploys/restarts)
-async function backupDatabase(manual) {
-  try {
-    const tmp = path.join(dataDir, 'backup-tmp.db');
-    const data = db.db.export();
-    fs.writeFileSync(tmp, Buffer.from(data));
-    const size = fs.statSync(tmp).size;
-    if (size > 20 * 1024 * 1024) {
-      try { fs.unlinkSync(tmp); } catch (e) {}
-      console.log('Backup skipped: DB too large (' + size + ')');
-      return { ok: false, error: 'too large' };
-    }
-    const b64 = fs.readFileSync(tmp).toString('base64');
-    fs.unlinkSync(tmp);
-    const when = new Date().toISOString().slice(0, 19).replace('T', ' ');
-    await sendEmail(SMTP_USER, 'نسخة احتياطية - وَظِيف ' + when,
-      `<div dir="rtl" style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:30px;"><h2>نسخة احتياطية ${manual ? 'يدوية' : 'تلقائية'}</h2><p>التاريخ: ${when}</p><p>الحجم: ${(size / 1024).toFixed(1)} KB</p><p>احتفظ بهذا الملف - يمكن استرجاعه من لوحة الأدمن.</p></div>`,
-      [{ filename: `wazeef-backup-${Date.now()}.db`, content: b64 }]);
-    console.log('Backup emailed, size:', size);
-    return { ok: true, size };
-  } catch (e) {
-    console.log('Backup failed:', e.message);
-    return { ok: false, error: e.message };
-  }
-}
-// Auto backup disabled on startup to prevent SMTP errors on Velixir
-// setInterval(() => { if (db) backupDatabase(false); }, 24 * 60 * 60 * 1000);
-
-function saveNotification(userId, agentId, type, title, message) {
-  try {
-    db.prepare('INSERT INTO notifications (user_id, agent_id, type, title, message) VALUES (?, ?, ?, ?, ?)').run(userId || null, agentId || null, type, title, message);
-  } catch (e) {
-    console.log('Notification save error:', e.message);
-  }
-}
-
-// Sends applicant data to the company email AFTER admin confirms the selection.
-// Called only from the confirm endpoint, once per selection (company_emailed flag).
-function sendApplicantToCompany(compEmail, u, job) {
-  const jobHTML = `
-    <div style="padding:12px;background:rgba(212,168,83,0.06);border:1px solid rgba(212,168,83,0.1);border-radius:8px;margin-bottom:8px;">
-      <strong style="color:#d4a853;">${job.position || ''}</strong><br>
-      ${job.interview_time ? 'وقت المقابلة: ' + job.interview_time + '<br>' : ''}
-      ${job.salary_min || job.salary_max ? `المرتب: ${job.salary_min && job.salary_max ? job.salary_min + ' - ' + job.salary_max + ' ج' : job.salary_min ? 'من ' + job.salary_min + ' ج' : 'حتى ' + job.salary_max + ' ج'}<br>` : ''}
-      ${job.description ? 'التفاصيل: ' + job.description : ''}
-    </div>`;
-  const html = `
-    <div dir="rtl" style="font-family:'Tajawal',sans-serif;max-width:600px;margin:0 auto;">
-      <h2 style="color:#d4a853;text-align:center;">بيانات متقدم لوظيفة</h2>
-      <p>مرحباً،</p>
-      <p>تم تعيين متقدم لوظيفة في شركتكم عبر منصة <strong style="color:#d4a853;">وَظِيف</strong>. فيما بيانات المتقدم والوظيفة:</p>
-      <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:20px;margin:20px 0;">
-        <h3 style="color:#d4a853;margin-bottom:12px;">بيانات المتقدم:</h3>
-        <table style="width:100%;color:#ccc;font-size:14px;border-collapse:collapse;">
-          <tr><td style="padding:6px 0;color:#94a3b8;">الاسم</td><td style="padding:6px 0;font-weight:700;color:#f0d78c;">${u.name || ''}</td></tr>
-          <tr><td style="padding:6px 0;color:#94a3b8;">البريد</td><td style="padding:6px 0;">${u.email || ''}</td></tr>
-          ${u.phone ? `<tr><td style="padding:6px 0;color:#94a3b8;">الهاتف</td><td style="padding:6px 0;" dir="ltr">${u.phone}</td></tr>` : ''}
-          ${u.nationality ? `<tr><td style="padding:6px 0;color:#94a3b8;">الجنسية</td><td style="padding:6px 0;">${u.nationality}</td></tr>` : ''}
-          ${u.city ? `<tr><td style="padding:6px 0;color:#94a3b8;">المدينة</td><td style="padding:6px 0;">${u.city}</td></tr>` : ''}
-          ${u.age ? `<tr><td style="padding:6px 0;color:#94a3b8;">العمر</td><td style="padding:6px 0;">${u.age}</td></tr>` : ''}
-          ${u.education_level ? `<tr><td style="padding:6px 0;color:#94a3b8;">المؤهل</td><td style="padding:6px 0;">${u.education_level}</td></tr>` : ''}
-          ${u.college ? `<tr><td style="padding:6px 0;color:#94a3b8;">الكلية</td><td style="padding:6px 0;">${u.college}</td></tr>` : ''}
-          ${u.national_id ? `<tr><td style="padding:6px 0;color:#94a3b8;">الرقم القومي</td><td style="padding:6px 0;" dir="ltr">${u.national_id}</td></tr>` : ''}
-          ${u.military_status ? `<tr><td style="padding:6px 0;color:#94a3b8;">الحالة العسكرية</td><td style="padding:6px 0;">${u.military_status}</td></tr>` : ''}
-          ${u.call_center_experience ? `<tr><td style="padding:6px 0;color:#94a3b8;">خبرة سنترال</td><td style="padding:6px 0;">${u.call_center_experience}</td></tr>` : ''}
-        </table>
-      </div>
-      <h3 style="color:#d4a853;margin-bottom:12px;">الوظيفة:</h3>
-      ${jobHTML}
-      <p style="color:#888;font-size:12px;margin-top:30px;text-align:center;">هذه بيانات تم إرسالها عبر منصة وَظِيف للتوظيف الذكي</p>
-    </div>`;
-  sendEmail(compEmail, 'بيانات متقدم لوظيفة - وَظِيف', html);
-}
-
 // AUTO-RESET: wipe all data on startup, keep only admins
 db.exec('DELETE FROM notifications');
 db.exec('DELETE FROM admin_notifications');
@@ -527,6 +393,126 @@ try {
 try { db._save && db._save(); } catch(e) {}
 
 } // end initDatabase
+
+// Email transporter (global scope - used by routes)
+const SMTP_USER = process.env.SMTP_USER || 'mohamedfaron297@gmail.com';
+const SMTP_PASS = process.env.SMTP_PASS || 'ushf stxg rmgp xhig';
+
+async function sendEmail(to, subject, html, attachments) {
+  const files = (attachments || []).map(a => ({ filename: a.filename, content: a.content }));
+  if (process.env.BREVO_API_KEY) {
+    try {
+      const payload = {
+        sender: { name: 'وَظِيف', email: SMTP_USER },
+        to: [{ email: to }],
+        subject,
+        htmlContent: html
+      };
+      if (files.length) payload.attachment = files.map(a => ({ content: a.content, name: a.filename }));
+      const r = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'api-key': process.env.BREVO_API_KEY },
+        body: JSON.stringify(payload)
+      });
+      if (!r.ok) throw new Error('Brevo HTTP ' + r.status + ': ' + (await r.text()).slice(0, 200));
+      console.log('Email sent to:', to);
+      return;
+    } catch (e) {
+      console.log('Brevo failed, trying SMTP:', e.message.split('\n')[0]);
+    }
+  }
+  const attempts = [
+    { host: 'smtp.gmail.com', port: 587, secure: false },
+    { host: 'smtp.gmail.com', port: 465, secure: true }
+  ];
+  for (const cfg of attempts) {
+    try {
+      const t = nodemailer.createTransport({
+        ...cfg,
+        auth: { user: SMTP_USER, pass: SMTP_PASS },
+        connectionTimeout: 8000,
+        socketTimeout: 10000
+      });
+      const msg = { from: `"وَظِيف" <${SMTP_USER}>`, to, subject, html };
+      if (files.length) msg.attachments = files.map(a => ({ filename: a.filename, content: Buffer.from(a.content, 'base64') }));
+      await t.sendMail(msg);
+      console.log('Email sent to:', to);
+      return;
+    } catch (e) {
+      console.log(`SMTP ${cfg.port} failed:`, (e.message || '').split('\n')[0]);
+    }
+  }
+  console.log('Email send error: all methods failed for', to);
+}
+
+async function backupDatabase(manual) {
+  try {
+    const tmp = path.join(dataDir, 'backup-tmp.db');
+    const data = db.db.export();
+    fs.writeFileSync(tmp, Buffer.from(data));
+    const size = fs.statSync(tmp).size;
+    if (size > 20 * 1024 * 1024) {
+      try { fs.unlinkSync(tmp); } catch (e) {}
+      console.log('Backup skipped: DB too large (' + size + ')');
+      return { ok: false, error: 'too large' };
+    }
+    const b64 = fs.readFileSync(tmp).toString('base64');
+    fs.unlinkSync(tmp);
+    const when = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    await sendEmail(SMTP_USER, 'نسخة احتياطية - وَظِيف ' + when,
+      `<div dir="rtl" style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:30px;"><h2>نسخة احتياطية ${manual ? 'يدوية' : 'تلقائية'}</h2><p>التاريخ: ${when}</p><p>الحجم: ${(size / 1024).toFixed(1)} KB</p><p>احتفظ بهذا الملف - يمكن استرجاعه من لوحة الأدمن.</p></div>`,
+      [{ filename: `wazeef-backup-${Date.now()}.db`, content: b64 }]);
+    console.log('Backup emailed, size:', size);
+    return { ok: true, size };
+  } catch (e) {
+    console.log('Backup failed:', e.message);
+    return { ok: false, error: e.message };
+  }
+}
+
+function saveNotification(userId, agentId, type, title, message) {
+  try {
+    db.prepare('INSERT INTO notifications (user_id, agent_id, type, title, message) VALUES (?, ?, ?, ?, ?)').run(userId || null, agentId || null, type, title, message);
+  } catch (e) {
+    console.log('Notification save error:', e.message);
+  }
+}
+
+function sendApplicantToCompany(compEmail, u, job) {
+  const jobHTML = `
+    <div style="padding:12px;background:rgba(212,168,83,0.06);border:1px solid rgba(212,168,83,0.1);border-radius:8px;margin-bottom:8px;">
+      <strong style="color:#d4a853;">${job.position || ''}</strong><br>
+      ${job.interview_time ? 'وقت المقابلة: ' + job.interview_time + '<br>' : ''}
+      ${job.salary_min || job.salary_max ? `المرتب: ${job.salary_min && job.salary_max ? job.salary_min + ' - ' + job.salary_max + ' ج' : job.salary_min ? 'من ' + job.salary_min + ' ج' : 'حتى ' + job.salary_max + ' ج'}<br>` : ''}
+      ${job.description ? 'التفاصيل: ' + job.description : ''}
+    </div>`;
+  const html = `
+    <div dir="rtl" style="font-family:'Tajawal',sans-serif;max-width:600px;margin:0 auto;">
+      <h2 style="color:#d4a853;text-align:center;">بيانات متقدم لوظيفة</h2>
+      <p>مرحباً،</p>
+      <p>تم تعيين متقدم لوظيفة في شركتكم عبر منصة <strong style="color:#d4a853;">وَظِيف</strong>. فيما بيانات المتقدم والوظيفة:</p>
+      <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:20px;margin:20px 0;">
+        <h3 style="color:#d4a853;margin-bottom:12px;">بيانات المتقدم:</h3>
+        <table style="width:100%;color:#ccc;font-size:14px;border-collapse:collapse;">
+          <tr><td style="padding:6px 0;color:#94a3b8;">الاسم</td><td style="padding:6px 0;font-weight:700;color:#f0d78c;">${u.name || ''}</td></tr>
+          <tr><td style="padding:6px 0;color:#94a3b8;">البريد</td><td style="padding:6px 0;">${u.email || ''}</td></tr>
+          ${u.phone ? `<tr><td style="padding:6px 0;color:#94a3b8;">الهاتف</td><td style="padding:6px 0;" dir="ltr">${u.phone}</td></tr>` : ''}
+          ${u.nationality ? `<tr><td style="padding:6px 0;color:#94a3b8;">الجنسية</td><td style="padding:6px 0;">${u.nationality}</td></tr>` : ''}
+          ${u.city ? `<tr><td style="padding:6px 0;color:#94a3b8;">المدينة</td><td style="padding:6px 0;">${u.city}</td></tr>` : ''}
+          ${u.age ? `<tr><td style="padding:6px 0;color:#94a3b8;">العمر</td><td style="padding:6px 0;">${u.age}</td></tr>` : ''}
+          ${u.education_level ? `<tr><td style="padding:6px 0;color:#94a3b8;">المؤهل</td><td style="padding:6px 0;">${u.education_level}</td></tr>` : ''}
+          ${u.college ? `<tr><td style="padding:6px 0;color:#94a3b8;">الكلية</td><td style="padding:6px 0;">${u.college}</td></tr>` : ''}
+          ${u.national_id ? `<tr><td style="padding:6px 0;color:#94a3b8;">الرقم القومي</td><td style="padding:6px 0;" dir="ltr">${u.national_id}</td></tr>` : ''}
+          ${u.military_status ? `<tr><td style="padding:6px 0;color:#94a3b8;">الحالة العسكرية</td><td style="padding:6px 0;">${u.military_status}</td></tr>` : ''}
+          ${u.call_center_experience ? `<tr><td style="padding:6px 0;color:#94a3b8;">خبرة سنترال</td><td style="padding:6px 0;">${u.call_center_experience}</td></tr>` : ''}
+        </table>
+      </div>
+      <h3 style="color:#d4a853;margin-bottom:12px;">الوظيفة:</h3>
+      ${jobHTML}
+      <p style="color:#888;font-size:12px;margin-top:30px;text-align:center;">هذه بيانات تم إرسالها عبر منصة وَظِيف للتوظيف الذكي</p>
+    </div>`;
+  sendEmail(compEmail, 'بيانات متقدم لوظيفة - وَظِيف', html);
+}
 
 // Auth middleware
 function authMiddleware(req, res, next) {
@@ -1031,16 +1017,11 @@ app.post('/api/admin/jobs/batch', authMiddleware, adminMiddleware, (req, res) =>
     if (!jobs || jobs.length === 0) return res.status(400).json({ error: 'لا توجد وظائف للإضافة' });
 
     const insertJob = db.prepare('INSERT INTO jobs (application_id, company_name, position, interview_time, salary_min, salary_max, description, company_email) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-    const insertMany = db.transaction((jobsList) => {
-      const ids = [];
-      for (const j of jobsList) {
-        const result = insertJob.run(application_id, j.company_name, j.position, j.interview_time || '', j.salary_min || 0, j.salary_max || 0, j.description || '', j.company_email || '');
-        ids.push(result.lastInsertRowid);
-      }
-      return ids;
-    });
-
-    const jobIds = insertMany(jobs);
+    const jobIds = [];
+    for (const j of jobs) {
+      const result = insertJob.run(application_id, j.company_name, j.position, j.interview_time || '', j.salary_min || 0, j.salary_max || 0, j.description || '', j.company_email || '');
+      jobIds.push(result.lastInsertRowid);
+    }
 
     // Auto-approve if application is pending (admin is adding jobs)
     db.prepare("UPDATE applications SET status = 'approved' WHERE id = ? AND status = 'pending'").run(application_id);
@@ -1140,16 +1121,11 @@ app.post('/api/agent/jobs/batch', authMiddleware, (req, res) => {
     if (!isOwner && getAgentRole(req) !== 'qualty') return res.status(403).json({ error: 'ليس لديك صلاحية إضافة وظائف لهذا المستخدم' });
 
     const insertJob = db.prepare('INSERT INTO jobs (application_id, company_name, position, interview_time, salary_min, salary_max, description, company_email) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-    const insertMany = db.transaction((jobsList) => {
-      const ids = [];
-      for (const j of jobsList) {
-        const result = insertJob.run(application_id, j.company_name, j.position, j.interview_time || '', j.salary_min || 0, j.salary_max || 0, j.description || '', j.company_email || '');
-        ids.push(result.lastInsertRowid);
-      }
-      return ids;
-    });
-
-    const jobIds = insertMany(jobs);
+    const jobIds = [];
+    for (const j of jobs) {
+      const result = insertJob.run(application_id, j.company_name, j.position, j.interview_time || '', j.salary_min || 0, j.salary_max || 0, j.description || '', j.company_email || '');
+      jobIds.push(result.lastInsertRowid);
+    }
 
     const user = db.prepare('SELECT * FROM users WHERE id = ?').get(user_id);
     if (user) {

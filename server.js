@@ -2902,6 +2902,9 @@ app.get('/api/company/profile', companyAuthMiddleware, (req, res) => {
     const company = db.prepare('SELECT * FROM companies WHERE id = ?').get(req.user.company_id);
     if (!company) return res.status(404).json({ error: 'Company not found' });
     const languages = db.prepare('SELECT * FROM company_languages WHERE company_id = ?').all(req.user.company_id);
+    languages.forEach(l => {
+      l.sent_count = db.prepare(`SELECT COUNT(*) as c FROM selections s JOIN jobs j ON s.job_id = j.id WHERE j.company_name = ? AND j.position = ?`).get(company.name, l.position || '').c;
+    });
     res.json({ company, languages });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });

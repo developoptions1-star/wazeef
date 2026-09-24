@@ -166,6 +166,22 @@
     .app-avatar::after{content:'';position:absolute;inset:-3px;border-radius:14px;border:2px solid transparent;transition:border-color .3s}
     .app-card:hover .app-avatar { background: linear-gradient(135deg, rgba(212,168,83,0.18), rgba(212,168,83,0.08)); }
     .app-card:hover .app-avatar::after{border-color:rgba(212,168,83,.15)}
+    .app-level-badge{
+      position:absolute;top:-7px;right:-10px;z-index:3;
+      padding:2px 7px;border-radius:8px;font-size:10px;font-weight:800;
+      background:linear-gradient(135deg,#059669,#10b981);color:#fff;
+      border:1.5px solid #0a0a0a;cursor:pointer;white-space:nowrap;
+      transition:transform .15s, box-shadow .15s;line-height:1.4;
+      box-shadow:0 2px 6px rgba(0,0,0,0.4);
+    }
+    .app-level-badge.empty{background:linear-gradient(135deg,#475569,#64748b);}
+    .app-level-badge:hover{transform:scale(1.12);box-shadow:0 3px 10px rgba(16,185,129,0.45)}
+    .level-edit-opt{display:block;width:100%;text-align:center;padding:9px 12px;margin-bottom:7px;border-radius:10px;border:1px solid rgba(212,168,83,0.15);background:rgba(212,168,83,0.05);color:#e2e8f0;font-family:'Tajawal',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:.15s}
+    .level-edit-opt:hover{background:rgba(212,168,83,0.14);border-color:rgba(212,168,83,0.4)}
+    .level-edit-opt.active{background:rgba(16,185,129,0.15);border-color:#10b981;color:#6ee7b7}
+    .level-range-row{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:6px}
+    .level-range-row select{padding:8px 12px;background:#1a1a1a;border:1.5px solid rgba(212,168,83,0.2);border-radius:10px;color:#e2e8f0;font-family:'Tajawal',sans-serif;font-size:14px;font-weight:700;outline:none;color-scheme:dark}
+    .level-range-row select option{background:#1a1a1a;color:#e2e8f0}
     .app-identity .app-name { font-weight: 700; font-size: 15px; color: #f0d78c; line-height: 1.3; }
     .app-identity .app-email { color: #94a3b8; font-size: 12px; direction: ltr; text-align: left; }
     .app-identity .app-copy-hint { font-size: 10px; color: #64748b; margin-top: 2px; }
@@ -1702,6 +1718,28 @@
     </div>
   </div>
 
+  <div class="modal-overlay" id="level-modal" onclick="if(event.target===this)closeLevelModal()">
+    <div class="modal" style="width:380px;">
+      <h2 style="font-size:18px;">مستوى اللغة</h2>
+      <p id="level-modal-name" style="color:#94a3b8;font-size:13px;margin:-6px 0 14px;"></p>
+      <input type="hidden" id="level-user-id">
+      <div class="level-edit-opts" id="level-single-opts"></div>
+      <div style="display:flex;align-items:center;gap:8px;margin:14px 0 8px;color:#94a3b8;font-size:13px;font-weight:700;">
+        <span style="flex:1;height:1px;background:rgba(212,168,83,0.12)"></span> أو نطاق <span style="flex:1;height:1px;background:rgba(212,168,83,0.12)"></span>
+      </div>
+      <div class="level-range-row">
+        <select id="level-from"></select>
+        <span style="color:#94a3b8;">إلى</span>
+        <select id="level-to"></select>
+        <button class="btn-submit" onclick="saveLevelRange()" style="padding:8px 14px;font-size:13px;">حفظ</button>
+      </div>
+      <div class="btn-row" style="margin-top:16px;">
+        <button class="btn-cancel" onclick="closeLevelModal()">إلغاء</button>
+        <button class="btn-cancel" onclick="saveLevel('')" style="border-color:rgba(244,63,94,0.25);color:#fda4af;">مسح المستوى</button>
+      </div>
+    </div>
+  </div>
+
   <div class="modal-overlay" id="reject-modal">
     <div class="modal" style="width:440px;">
       <h2 style="color:#fb7185;">رفض الطلب</h2>
@@ -1839,10 +1877,12 @@
       list.innerHTML = filtered.map(a => {
         const initials = (a.user_name || '??').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
         const statusText = a.status==='pending'?'قيد المراجعة':a.status==='approved'?'تمت الموافقة':'مرفوض';
+        const lvl = a.language_level || '';
+        const lvlBadge = `<span class="app-level-badge${lvl?'':' empty'}" title="اضغط لتعديل مستوى اللغة" onclick="event.stopPropagation();openLevelModal(${a.user_id},'${(a.user_name||'').replace(/'/g,"\\'")}','${lvl}')">${lvl || '—'}</span>`;
         return `
           <div class="app-card">
             <div class="app-identity" onclick="copyAppData(${a.id}, this)" title="اضغط لنسخ بيانات المستخدم">
-              <div class="app-avatar">${initials}</div>
+              <div class="app-avatar">${initials}${lvlBadge}</div>
               <div>
                 <div class="app-name">${a.user_name}</div>
                 <div class="app-email">${a.user_email}</div>
@@ -1899,7 +1939,14 @@
     }
 
     async function approveApp(id) {
-      await fetch(`/api/admin/applications/${id}/approve`, { method:'PUT', headers:{'Authorization':`Bearer ${token}`} });
+      try {
+        const r = await fetch(`/api/admin/applications/${id}/approve`, { method:'PUT', headers:{'Authorization':`Bearer ${token}`} });
+        const d = await r.json();
+        if (d.success) {
+          const lvl = d.language_level || 'غير محدد';
+          showResultModal('✅', `تمت الموافقة على <b>${d.user_name || ''}</b><br>📊 المستوى: <b style="color:#6ee7b7">${lvl}</b>`);
+        }
+      } catch(e) {}
       loadApplications(); loadStats();
     }
     async function rejectApp(id) {
@@ -1921,8 +1968,49 @@
     async function popupApprove() {
       const id = document.getElementById('popup-app-id').value;
       closeActionPopup();
-      await fetch(`/api/admin/applications/${id}/approve`, { method:'PUT', headers:{'Authorization':`Bearer ${token}`} });
+      try {
+        const r = await fetch(`/api/admin/applications/${id}/approve`, { method:'PUT', headers:{'Authorization':`Bearer ${token}`} });
+        const d = await r.json();
+        if (d.success) {
+          const lvl = d.language_level || 'غير محدد';
+          const langName = getLangName(d.language) || d.language || '';
+          showResultModal('✅', `تمت الموافقة على <b>${d.user_name || ''}</b><br>🌍 اللغة: <b>${langName}</b><br>📊 المستوى: <b style="color:#6ee7b7">${lvl}</b>`);
+        }
+      } catch(e) {}
       loadApplications(); loadStats();
+    }
+
+    const LEVELS = ['A1','A2','B1','B2','C1','C2'];
+    function openLevelModal(userId, userName, current) {
+      document.getElementById('level-user-id').value = userId;
+      document.getElementById('level-modal-name').textContent = userName || '';
+      const cur = (current || '').split(/\s*[-–]\s*/);
+      document.getElementById('level-single-opts').innerHTML = LEVELS.map(l =>
+        `<button class="level-edit-opt${current===l?' active':''}" onclick="saveLevel('${l}')">${l}</button>`
+      ).join('');
+      const opts = LEVELS.map(l=>`<option value="${l}">${l}</option>`).join('');
+      document.getElementById('level-from').innerHTML = opts;
+      document.getElementById('level-to').innerHTML = opts;
+      document.getElementById('level-from').value = cur[0] || 'A1';
+      document.getElementById('level-to').value = cur[1] || cur[0] || 'B1';
+      document.getElementById('level-modal').classList.add('show');
+    }
+    function closeLevelModal() { document.getElementById('level-modal').classList.remove('show'); }
+    async function saveLevel(level) {
+      const userId = document.getElementById('level-user-id').value;
+      try {
+        await fetch(`/api/admin/users/${userId}/level`, { method:'PUT', headers:{'Authorization':`Bearer ${token}`,'Content-Type':'application/json'}, body:JSON.stringify({level}) });
+        closeLevelModal();
+        loadApplications();
+        showResultModal('📊', `تم حفظ المستوى: <b style="color:#6ee7b7">${level || '—'}</b>`);
+      } catch(e) { showResultModal('⚠️', 'فشل حفظ المستوى'); }
+    }
+    async function saveLevelRange() {
+      const from = document.getElementById('level-from').value;
+      const to = document.getElementById('level-to').value;
+      const order = {A1:1,A2:2,B1:3,B2:4,C1:5,C2:6};
+      if (order[from] > order[to]) { showResultModal('⚠️', 'المستوى الأول لازم يكون أقل من التاني'); return; }
+      await saveLevel(from === to ? from : `${from}-${to}`);
     }
     function openRejectModal() {
       const id = document.getElementById('popup-app-id').value;

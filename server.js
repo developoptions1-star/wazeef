@@ -247,6 +247,7 @@ try { db.exec('ALTER TABLE users ADD COLUMN education_level TEXT'); } catch(e) {
 try { db.exec('ALTER TABLE users ADD COLUMN military_status TEXT'); } catch(e) {}
 try { db.exec('ALTER TABLE users ADD COLUMN call_center_experience TEXT'); } catch(e) {}
 try { db.exec('ALTER TABLE users ADD COLUMN gender TEXT'); } catch(e) {}
+try { db.exec("ALTER TABLE users ADD COLUMN language_level TEXT DEFAULT ''"); } catch(e) {}
 // Migration: add email verification columns
   try { db.exec('ALTER TABLE users ADD COLUMN verification_code TEXT'); } catch(e) {}
   try { db.exec('ALTER TABLE users ADD COLUMN email_verified INTEGER DEFAULT 0'); } catch(e) {}
@@ -376,13 +377,13 @@ try {
 try {
   const testHash = bcrypt.hashSync('Test@123', 10);
   const testPeople = [
-    { name: 'أحمد محمد', email: 'ahmed@test.com', phone: '01001112233', city: 'القاهرة', age: 25, college: 'القاهرة', edu: 'بكالوريوس', mil: 'معفى', lang: 'الإنجليزية' },
-    { name: 'سارة علي', email: 'sara@test.com', phone: '01112223344', city: 'الإسكندرية', age: 23, college: 'الإسكندرية', edu: 'بكالوريوس', mil: '—', lang: 'الإنجليزية' },
-    { name: 'محمود حسن', email: 'mahmoud@test.com', phone: '01223334455', city: 'الجيزة', age: 27, college: 'الجيزة', edu: 'ماجستير', mil: 'مؤجل', lang: 'الإنجليزية' },
+    { name: 'أحمد محمد', email: 'ahmed@test.com', phone: '01001112233', city: 'القاهرة', age: 25, college: 'القاهرة', edu: 'بكالوريوس', mil: 'معفى', lang: 'الإنجليزية', level: 'B2' },
+    { name: 'سارة علي', email: 'sara@test.com', phone: '01112223344', city: 'الإسكندرية', age: 23, college: 'الإسكندرية', edu: 'بكالوريوس', mil: '—', lang: 'الإنجليزية', level: 'A1-B1' },
+    { name: 'محمود حسن', email: 'mahmoud@test.com', phone: '01223334455', city: 'الجيزة', age: 27, college: 'الجيزة', edu: 'ماجستير', mil: 'مؤجل', lang: 'الإنجليزية', level: 'C1' },
   ];
   for (const p of testPeople) {
-    db.prepare('INSERT INTO users (name,email,password,phone,role,nationality,city,language_applied,age,college,education_level,military_status,email_verified) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,1)')
-      .run(p.name, p.email, testHash, p.phone, 'user', 'مصري', p.city, p.lang, p.age, p.college, p.edu, p.mil);
+    db.prepare('INSERT INTO users (name,email,password,phone,role,nationality,city,language_applied,language_level,age,college,education_level,military_status,email_verified) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,1)')
+      .run(p.name, p.email, testHash, p.phone, 'user', 'مصري', p.city, p.lang, p.level, p.age, p.college, p.edu, p.mil);
     const uid = db.prepare('SELECT last_insert_rowid() as id').get().id;
     db.prepare('INSERT INTO applications (user_id, language, status) VALUES (?,?,?)').run(uid, p.lang, 'approved');
     console.log('Test applicant seeded:', p.name);
@@ -798,7 +799,7 @@ app.get('/api/admin/applications', authMiddleware, adminOrQualtyMiddleware, (req
     const { agent_id } = req.query;
     let query = `
       SELECT a.*, u.name as user_name, u.email as user_email, u.phone as user_phone,
-        u.referred_by, u.nationality, u.city, u.language_applied as user_language, u.age, u.national_id, u.college, u.education_level, u.military_status, u.call_center_experience,
+        u.referred_by, u.nationality, u.city, u.language_applied as user_language, u.language_level, u.age, u.national_id, u.college, u.education_level, u.military_status, u.call_center_experience,
         ag.name as agent_name, ag.email as agent_email, ag.phone as agent_phone, ag.referral_code as agent_code,
         (SELECT COUNT(*) FROM jobs WHERE application_id = a.id) as jobs_count,
         CASE WHEN NOT EXISTS (SELECT 1 FROM selections WHERE user_id = a.user_id AND status IN ('selected','confirmed')) THEN 1 ELSE 0 END as has_no_active_selection,
@@ -832,7 +833,7 @@ app.put('/api/admin/applications/:id/approve', authMiddleware, adminOrQualtyMidd
       try { db.prepare("UPDATE applications SET reviewed_by=?, reviewed_at=datetime('now') WHERE id=?").run(qId, req.params.id); } catch(e){}
     }
     const app = db.prepare(`
-      SELECT a.*, u.name as user_name, u.email as user_email
+      SELECT a.*, u.name as user_name, u.email as user_email, u.language_level, u.language_applied
       FROM applications a JOIN users u ON a.user_id = u.id WHERE a.id = ?
     `).get(req.params.id);
     // Recording served its purpose (evaluation) - delete it to save disk, keep all data/stats
@@ -859,10 +860,23 @@ app.put('/api/admin/applications/:id/approve', authMiddleware, adminOrQualtyMidd
       sendEmail(app.user_email, 'تمت الموافقة على طلبك - وَظِيف', html);
     }
     saveNotification(app.user_id, null, 'approval', 'تمت الموافقة على طلبك', 'مبروك! تمت الموافقة على طلبك. تابع حسابك لمعرفة الوظائف المتاحة.');
-    res.json({ success: true });
+    res.json({ success: true, user_name: app.user_name, language_level: app.language_level || '', language: app.language_applied || app.language || '' });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
+});
+
+// Admin: set applicant language level (single e.g. B2, or range e.g. A1-B1)
+app.put('/api/admin/users/:id/level', authMiddleware, adminOrQualtyMiddleware, (req, res) => {
+  try {
+    const level = (req.body && req.body.level != null) ? String(req.body.level).trim() : '';
+    const valid = ['', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+    if (level && !valid.includes(level) && !/^(A1|A2|B1|B2|C1|C2)\s*[-–to]+\s*(A1|A2|B1|B2|C1|C2)$/i.test(level)) {
+      return res.status(400).json({ error: 'المستوى غير صالح' });
+    }
+    db.prepare('UPDATE users SET language_level = ? WHERE id = ?').run(level, req.params.id);
+    res.json({ success: true, level });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.put('/api/admin/applications/:id/reject', authMiddleware, adminOrQualtyMiddleware, (req, res) => {

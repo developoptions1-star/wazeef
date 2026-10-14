@@ -25,6 +25,7 @@ class SqlJsWrapper {
     console.log('WASM path:', wasmPath || 'NOT FOUND - using default');
     const opts = wasmPath ? { locateFile: () => wasmPath } : undefined;
     const SQL = await initSqlJs(opts);
+    this._SQL = SQL;
     if (fs.existsSync(this.dbPath)) {
       const buf = fs.readFileSync(this.dbPath);
       this.db = new SQL.Database(buf);
@@ -32,20 +33,71 @@ class SqlJsWrapper {
       this.db = new SQL.Database();
     }
     this._save();
+    this._installCrashHandlers();
     return this;
   }
 
+  // Write to a temp file first, then atomically rename over app.db so a crash
+  // mid-write can never truncate/corrupt the database file.
   _save() {
+    if (this._saving) return;
+    this._saving = true;
     try {
       const data = this.db.export();
-      fs.writeFileSync(this.dbPath, Buffer.from(data));
-    } catch (e) { console.error('DB save error:', e.message); }
+      const tmp = this.dbPath + '.saving';
+      fs.writeFileSync(tmp, Buffer.from(data));
+      try {
+        fs.renameSync(tmp, this.dbPath);
+      } catch (e) {
+        // Windows: rename over an existing file can fail; fall back to copy
+        fs.copyFileSync(tmp, this.dbPath);
+        try { fs.unlinkSync(tmp); } catch (e2) {}
+      }
+      this._dirty = false;
+      this._lastSaveError = null;
+    } catch (e) {
+      this._lastSaveError = e.message;
+      console.error('DB save error:', e.message);
+      this._dirty = true;
+      clearTimeout(this._saveTimer);
+      this._saveTimer = setTimeout(() => { this._saving = false; this._save(); }, 1000);
+    } finally {
+      this._saving = false;
+    }
+  }
+
+  // Synchronous flush used on shutdown / fatal errors.
+  flushNow() {
+    clearTimeout(this._saveTimer);
+    this._save();
+  }
+
+  _installCrashHandlers() {
+    const flush = () => { try { this.flushNow(); } catch (e) {} };
+    process.once('exit', flush);
+    for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP', 'SIGUSR2']) {
+      process.once(sig, () => {
+        flush();
+        try { process.exit(0); } catch (e) {}
+      });
+    }
   }
 
   _markDirty() {
     this._dirty = true;
     clearTimeout(this._saveTimer);
     this._saveTimer = setTimeout(() => this._save(), 300);
+  }
+
+  // Re-read the database file from disk (used after restoring an auto-backup)
+  reload() {
+    clearTimeout(this._saveTimer);
+    if (!this._SQL || !fs.existsSync(this.dbPath)) return;
+    const buf = fs.readFileSync(this.dbPath);
+    const fresh = new this._SQL.Database(buf);
+    try { this.db.close(); } catch (e) {}
+    this.db = fresh;
+    this._dirty = false;
   }
 
   exec(sql) {
@@ -100,7 +152,8 @@ class SqlJsStatement {
       } catch (e) {}
       return { changes, lastInsertRowid };
     } catch (e) {
-      if (e.message.includes('duplicate') || e.message.includes('already exists')) return { changes: 0, lastInsertRowid: null };
+      const msg = (e && e.message) || String(e);
+      if (msg.includes('duplicate') || msg.includes('already exists')) return { changes: 0, lastInsertRowid: null };
       throw e;
     }
   }

@@ -2,18 +2,21 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="robots" content="noindex, nofollow">
   <title>وَظِيف - تسجيل الدخول</title>
-  <link rel="icon" type="image/webp" href="/uploads/wazef.webp">
+  <link rel="icon" type="image/png" href="/uploads/wazef.png">
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#d4a853">
+  <meta name="theme-color" content="transparent">
+  <meta name="theme-color" content="transparent" media="(prefers-color-scheme: dark)">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="وَظِيف">
   <link rel="apple-touch-icon" href="/uploads/icon-192.webp">
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
   <style>
+    html{background:#0a0a0a;color-scheme:dark}
+    body{padding-top:calc(20px + env(safe-area-inset-top));padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}
     *{margin:0;padding:0;box-sizing:border-box}
     ::-webkit-scrollbar{width:5px}
     ::-webkit-scrollbar-track{background:transparent}
@@ -43,12 +46,17 @@
     .tab.active{background:rgba(212,168,83,0.1);color:#f0d78c}
 
     .error{background:rgba(220,50,50,0.08);border:1px solid rgba(220,50,50,0.15);color:#e57373;padding:10px;border-radius:10px;text-align:center;font-size:12px;margin-bottom:12px;display:none;font-weight:600}
+    /* popup toast */
+    .reg-popup{position:fixed;top:24px;left:50%;transform:translateX(-50%) translateY(-20px);background:#141414;border:1px solid rgba(212,168,83,0.35);color:#f0d78c;padding:14px 22px;border-radius:14px;font-family:'Tajawal',sans-serif;font-size:14px;font-weight:700;box-shadow:0 20px 60px rgba(0,0,0,0.6),0 0 0 1px rgba(212,168,83,0.08);opacity:0;pointer-events:none;transition:all .35s cubic-bezier(.22,1,.36,1);z-index:9999;text-align:center;max-width:88vw}
+    .reg-popup.show{opacity:1;transform:translateX(-50%) translateY(0)}
     .ref-badge{display:none;background:rgba(212,168,83,0.06);border:1px solid rgba(212,168,83,0.1);border-radius:10px;padding:10px 14px;margin-bottom:14px;text-align:center}
     .ref-badge span{color:#d4a853;font-size:12px;font-weight:600}
 
     .reg-step{display:none}
-    .reg-step.active{display:block;animation:fadeUp .4s ease}
-    @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+    .reg-step.active{display:block;animation:stepIn .45s cubic-bezier(.22,1,.36,1)}
+    @keyframes stepIn{from{opacity:0;transform:translateY(16px) scale(.99)}to{opacity:1;transform:none}}
+    .reg-step.leaving{display:block;animation:stepOut .2s ease forwards}
+    @keyframes stepOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(-10px) scale(.99)}}
     .step-dots{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:14px}
     .step-dots .dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#94a3b8;background:rgba(212,168,83,0.04);border:1.5px solid rgba(212,168,83,0.08)}
     .step-dots .dot.active{color:#0a0a0a;background:linear-gradient(135deg,#b8860b,#d4a853);border-color:transparent}
@@ -63,16 +71,36 @@
     .form-section.active{display:block}
 
     .form-group{margin-bottom:10px}
-    .form-group label{display:block;color:#94a3b8;margin-bottom:4px;font-size:11px;font-weight:600}
+    .form-group label{display:block;color:#94a3b8;margin-bottom:4px;font-size:11px;font-weight:600;transition:color .3s}
     .form-group input,.sel{width:100%;height:40px;padding:0 14px;background:rgba(212,168,83,0.03);border:1px solid rgba(212,168,83,0.06);border-radius:10px;color:#f5f0e8;font-family:'Tajawal',sans-serif;font-size:13px;transition:all .3s}
     .form-group input:focus,.sel:focus{outline:none;border-color:rgba(212,168,83,0.4);box-shadow:0 0 0 3px rgba(212,168,83,0.06)}
     .form-group input::placeholder{color:#333}
+    /* filled vs empty */
+    .form-group input.filled,.form-group select.filled{background:rgba(102,187,106,0.05);border-color:rgba(102,187,106,0.22);color:#c8e6c9}
+    .form-group input.filled::placeholder{color:transparent}
+    .form-group select.filled{color:#c8e6c9}
+    .form-group input.empty,.form-group select.empty{background:rgba(255,255,255,0.02);border-color:rgba(255,255,255,0.07);color:#6b7280}
+    .form-group input.empty::placeholder{color:#3a3a3a}
+    .form-group select.empty{color:#6b7280}
+    /* error state — red border + shake */
+    .form-group input.err,.form-group select.err{background:rgba(220,50,50,0.07)!important;border-color:rgba(220,50,50,0.55)!important;color:#f5c6c6!important;animation:errShake .35s ease}
+    .form-group input.err::placeholder{color:#7a3a3a}
+    .form-group select.err{color:#f5c6c6}
+    @keyframes errShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
+    /* next button disabled state */
+    .btn-primary.btn-disabled,.btn-primary.btn-disabled:hover{background:rgba(212,168,83,0.08);color:#5a5a5a;box-shadow:none;transform:none;cursor:not-allowed}
+    .form-group input.age-frozen{background:rgba(255,255,255,0.03);border:1px dashed rgba(212,168,83,0.14);color:#6f7887;opacity:.7;cursor:not-allowed;-webkit-text-fill-color:#6f7887;letter-spacing:2px}
+    .form-group input.age-frozen:focus{outline:none;border-color:rgba(212,168,83,0.14);box-shadow:none}
+    .form-group input.age-frozen::selection{background:transparent}
     .pass-wrap{position:relative}
     .pass-wrap input{padding-left:40px}
     .eye-btn{position:absolute;left:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;justify-content:center}
     .eye-btn:hover svg{stroke:#d4a853}
     .sel{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='%23555' viewBox='0 0 16 16'%3E%3Cpath d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:left 12px center;padding-left:30px;cursor:pointer}
     .sel option{background:#111;color:#f5f0e8}
+    select,select option{color-scheme:dark}
+    select option{background-color:#0f1117;color:#e2e8f0}
+    select option:hover,select:focus option:hover{background-color:rgba(212,168,83,0.16);color:#f0d78c}
 
     .form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 
@@ -85,6 +113,12 @@
     .switch-text{text-align:center;margin-top:12px;font-size:12px;color:#94a3b8}
     .switch-text a{color:#d4a853;font-weight:600;cursor:pointer;text-decoration:none}
     .switch-text a:hover{color:#f0d78c}
+
+    .partner-entry{margin-top:16px;padding-top:14px;border-top:1px dashed rgba(212,168,83,0.18)}
+    .partner-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:44px;border-radius:12px;background:rgba(212,168,83,0.06);border:1px solid rgba(212,168,83,0.3);color:#f0d78c;font-family:'Tajawal',sans-serif;font-size:13.5px;font-weight:700;cursor:pointer;transition:all .3s}
+    .partner-btn:hover{background:rgba(212,168,83,0.14);transform:translateY(-2px);box-shadow:0 8px 24px rgba(212,168,83,0.2)}
+    .partner-btn svg{width:17px;height:17px;stroke:#d4a853;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+    .partner-hint{text-align:center;font-size:11px;color:#64748b;margin-top:7px;line-height:1.7}
 
     .verify-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);backdrop-filter:blur(20px);z-index:100;align-items:center;justify-content:center}
     .verify-overlay.show{display:flex}
@@ -145,7 +179,7 @@
   <canvas id="bg-canvas"></canvas>
   <div class="card">
     <div class="card-left">
-      <img src="/uploads/wazef.webp" alt="وَظِيف" class="logo-img">
+      <img src="/uploads/wazef.png" alt="وَظِيف" class="logo-img">
       <p class="sub">منصة التوظيف الذكي</p>
       <div class="features">
         <div class="feature">
@@ -169,6 +203,7 @@
         <div class="tab" onclick="switchTab('register')">حساب جديد</div>
       </div>
       <div id="error-msg" class="error"></div>
+      <div id="reg-popup" class="reg-popup"></div>
       <div id="ref-badge" class="ref-badge"><span>تم التسجيل عبر رابط إحالة المندوب</span></div>
       <div id="login-form" class="form-section active">
         <div class="form-group"><label>البريد الإلكتروني</label><input type="email" id="login-email" placeholder="أدخل بريدك الإلكتروني" autocomplete="off"></div>
@@ -181,53 +216,60 @@
         <div class="step-dots" id="step-dots"><span class="dot active">1</span><span class="line"></span><span class="dot">2</span><span class="line"></span><span class="dot">3</span></div>
         <div class="reg-step active" id="step-1">
         <div class="section-label">المعلومات الشخصية</div>
-        <div class="form-group"><label>الاسم الكامل <span style="color:#e57373">*</span></label><input type="text" id="reg-name" placeholder="أحمد ياسر حماد" autocomplete="off" required pattern="[A-Za-z\u0600-\u06FF\s]{3,}" title="الاسم يجب أن يحتوي على حروف فقط (3 أحرف على الأقل)"></div>
+        <div class="form-group"><label>الاسم الكامل <span style="color:#e57373">*</span></label><input type="text" id="reg-name" placeholder="Ahmed Yasser Hamad" autocomplete="off" required pattern="[A-Za-z\s]{3,}" title="الاسم لازم يكون بالإنجليزي (3 أحرف على الأقل)"></div>
         <div class="form-row">
           <div class="form-group"><label>البريد الإلكتروني <span style="color:#e57373">*</span></label><input type="email" id="reg-email" placeholder="example@gmail.com" autocomplete="off" required></div>
           <div class="form-group"><label>رقم الهاتف <span style="color:#e57373">*</span></label><input type="text" id="reg-phone" placeholder="01xxxxxxxxx" autocomplete="off" required pattern="[0-9]{11}" title="رقم الهاتف يجب أن يكون 11 رقم"></div>
         </div>
         <div class="form-row">
           <div class="form-group"><label>كلمة المرور <span style="color:#e57373">*</span></label><div class="pass-wrap"><input type="password" id="reg-password" placeholder="••••••••" autocomplete="new-password" required minlength="6" title="كلمة المرور يجب أن تكون 6 أحرف على الأقل"><button type="button" class="eye-btn" onclick="togglePass('reg-password',this)"><svg viewBox="0 0 24 24" class="eye-open" style="width:18px;height:18px;stroke:#94a3b8;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><svg viewBox="0 0 24 24" class="eye-closed" style="width:18px;height:18px;stroke:#94a3b8;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;display:none;"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></button></div></div>
-          <div class="form-group"><label>العمر <span style="color:#e57373">*</span></label><input type="text" id="reg-age" placeholder="25" autocomplete="off" required pattern="[0-9]{2}" maxlength="2" title="العمر يجب أن يكون رقمين فقط"></div>
         </div>
-        <div class="form-group"><label>النوع <span style="color:#e57373">*</span></label><select id="reg-gender" class="sel" required onchange="toggleMilitary()"><option value="">اختر</option><option value="male">ولد</option><option value="female">بنت</option></select></div>
+        <div class="form-group"><label>النوع <span style="color:#e57373">*</span></label><select id="reg-gender" class="sel" required onchange="toggleMilitary()"><option value="">Select</option><option value="male">Male</option><option value="female">Female</option></select></div>
         <button class="btn btn-primary" onclick="nextStep()">التالي</button>
         </div>
         <div class="reg-step" id="step-2">
         <div class="section-label">الموقع والتعليم</div>
         <div class="form-row">
-          <div class="form-group"><label>الجنسية <span style="color:#e57373">*</span></label><select id="reg-nationality" class="sel" required><option value="">اختر</option><option>مصري</option><option>سعودي</option><option>إماراتي</option><option>كويتي</option><option>قطري</option><option>بحريني</option><option>عماني</option><option>أردني</option><option>لبناني</option><option>فلسطيني</option><option>سوري</option><option>عراقي</option><option>يمني</option><option>ليبي</option><option>تونسي</option><option>جزائري</option><option>مغربي</option><option>موريتاني</option><option>سوداني</option><option>صومالي</option><option>جيبوتي</option><option>من جزر القمر</option><option>أفغاني</option><option>ألباني</option><option>أمريكي</option><option>أندوري</option><option>أنغولي</option><option>أنتيغوي</option><option>أرجنتيني</option><option>أرميني</option><option>أسترالي</option><option>نمساوي</option><option>أذربيجاني</option><option>باهامي</option><option>بنغلاديشي</option><option>باربادوسي</option><option>بيلاروسي</option><option>بلجيكي</option><option>بليزي</option><option>بنيني</option><option>بوتاني</option><option>بوليفي</option><option>بوسني</option><option>بوتسواني</option><option>برازيلي</option><option>بريطاني</option><option>بروناي</option><option>بلغاري</option><option>بوركينابي</option><option>بوروندي</option><option>كمبودي</option><option>كاميروني</option><option>كندي</option><option>من الرأس الأخضر</option><option>من أفريقيا الوسطى</option><option>تشادي</option><option>تشيلي</option><option>صيني</option><option>كولومبي</option><option>كونغولي</option><option>كوستاريكي</option><option>كرواتي</option><option>كوبي</option><option>قبرصي</option><option>تشيكي</option><option>دنماركي</option><option>دومينيكاني</option><option>إكوادوري</option><option>سلفادوري</option><option>إريتري</option><option>إستوني</option><option>إثيوبي</option><option>فيجي</option><option>فنلندي</option><option>فرنسي</option><option>غابوني</option><option>غامبي</option><option>جورجي</option><option>ألماني</option><option>غاني</option><option>يوناني</option><option>غرينادي</option><option>غواتيمالي</option><option>غيني</option><option>غياني</option><option>هايتي</option><option>هندوراسي</option><option>مجري</option><option>آيسلندي</option><option>هندي</option><option>إندونيسي</option><option>إيراني</option><option>أيرلندي</option><option>إيطالي</option><option>إيفواري</option><option>جامايكي</option><option>ياباني</option><option>كازاخستاني</option><option>كيني</option><option>كوري جنوبي</option><option>كوري شمالي</option><option>كوسوفي</option><option>قيرغيزستاني</option><option>لاوسي</option><option>لاتفي</option><option>ليسوتي</option><option>ليبيري</option><option>ليختنشتايني</option><option>ليتواني</option><option>لوكسمبورغي</option><option>مدغشقري</option><option>مالاوي</option><option>ماليزي</option><option>مالديفي</option><option>مالي</option><option>مالطي</option><option>موريشيوسي</option><option>مكسيكي</option><option>مولدوفي</option><option>موناكي</option><option>منغولي</option><option>مونتينيغري</option><option>موزمبيقي</option><option>ميانماري</option><option>ناميبي</option><option>نيبالي</option><option>هولندي</option><option>نيوزيلندي</option><option>نيكاراغوي</option><option>نيجيري</option><option>مقدوني شمالي</option><option>نرويجي</option><option>باكستاني</option><option>بنمي</option><option>باراغواياني</option><option>بيروفي</option><option>فلبيني</option><option>بولندي</option><option>برتغالي</option><option>روماني</option><option>روسي</option><option>رواندي</option><option>ساموي</option><option>سان ماريني</option><option>سنغالي</option><option>صربي</option><option>سيشيلي</option><option>سيراليوني</option><option>سنغافوري</option><option>سلوفاكي</option><option>سلوفيني</option><option>جنوب أفريقي</option><option>جنوب سوداني</option><option>إسباني</option><option>سريلانكي</option><option>سورينامي</option><option>سويدي</option><option>سويسري</option><option>تايواني</option><option>طاجيكستاني</option><option>تنزاني</option><option>تايلندي</option><option>توغولي</option><option>تونغاني</option><option>ترينيدادي</option><option>تركي</option><option>تركمانستاني</option><option>أوغندي</option><option>أوكراني</option><option>أوروغواياني</option><option>أوزبكستاني</option><option>فنزويلي</option><option>فيتنامي</option><option>زامبي</option><option>زيمبابوي</option><option>أخرى</option></select></div>
-          <div class="form-group"><label>المحافظة <span style="color:#e57373">*</span></label><select id="reg-governorate" class="sel" required onchange="updateAreas()"><option value="">اختر</option><option>القاهرة</option><option>الجيزة</option><option>الإسكندرية</option><option>الدقهلية</option><option>الشرقية</option><option>الغربية</option><option>المنوفية</option><option>القليوبية</option><option>البحيرة</option><option>كفر الشيخ</option><option>دمياط</option><option>بورسعيد</option><option>الإسماعيلية</option><option>السويس</option><option>الفيوم</option><option>بني سويف</option><option>المنيا</option><option>أسيوط</option><option>سوهاج</option><option>قنا</option><option>الأقصر</option><option>أسوان</option><option>البحر الأحمر</option><option>مطروح</option><option>شمال سيناء</option><option>جنوب سيناء</option><option>الوادي الجديد</option></select></div>
-          <div class="form-group"><label>المنطقة <span style="color:#e57373">*</span></label><select id="reg-city" class="sel" required><option value="">اختر المحافظة أولاً</option></select></div>
+          <div class="form-group"><label>الجنسية <span style="color:#e57373">*</span></label><select id="reg-nationality" class="sel" required><option value="">Select</option><option value="egypt">Egypt</option><option value="saudi">Saudi</option><option value="emirati">Emirati</option><option value="kuwaiti">Kuwaiti</option><option value="qatari">Qatari</option><option value="bahraini">Bahraini</option><option value="omani">Omani</option><option value="jordanian">Jordanian</option><option value="lebanese">Lebanese</option><option value="palestinian">Palestinian</option><option value="syrian">Syrian</option><option value="iraqi">Iraqi</option><option value="yemeni">Yemeni</option><option value="libyan">Libyan</option><option value="tunisian">Tunisian</option><option value="algerian">Algerian</option><option value="moroccan">Moroccan</option><option value="mauritanian">Mauritanian</option><option value="sudanese">Sudanese</option><option value="somali">Somali</option><option value="djiboutian">Djiboutian</option><option value="comorian">Comorian</option><option value="afghan">Afghan</option><option value="albanian">Albanian</option><option value="american">American</option><option value="andorran">Andorran</option><option value="angolan">Angolan</option><option value="antiguan">Antiguan</option><option value="argentine">Argentine</option><option value="armenian">Armenian</option><option value="australian">Australian</option><option value="austrian">Austrian</option><option value="azerbaijani">Azerbaijani</option><option value="bahamian">Bahamian</option><option value="bangladeshi">Bangladeshi</option><option value="barbadian">Barbadian</option><option value="belarusian">Belarusian</option><option value="belgian">Belgian</option><option value="belizean">Belizean</option><option value="beninese">Beninese</option><option value="bhutanese">Bhutanese</option><option value="bolivian">Bolivian</option><option value="bosnian">Bosnian</option><option value="botswanan">Botswanan</option><option value="brazilian">Brazilian</option><option value="british">British</option><option value="bruneian">Bruneian</option><option value="bulgarian">Bulgarian</option><option value="burkinab">Burkinabé</option><option value="burundian">Burundian</option><option value="cambodian">Cambodian</option><option value="cameroonian">Cameroonian</option><option value="canadian">Canadian</option><option value="cape_verdean">Cape Verdean</option><option value="central_african">Central African</option><option value="chadian">Chadian</option><option value="chilean">Chilean</option><option value="chinese">Chinese</option><option value="colombian">Colombian</option><option value="congolese">Congolese</option><option value="costa_rican">Costa Rican</option><option value="croatian">Croatian</option><option value="cuban">Cuban</option><option value="cypriot">Cypriot</option><option value="czech">Czech</option><option value="danish">Danish</option><option value="dominican">Dominican</option><option value="ecuadorian">Ecuadorian</option><option value="salvadoran">Salvadoran</option><option value="eritrean">Eritrean</option><option value="estonian">Estonian</option><option value="ethiopian">Ethiopian</option><option value="fijian">Fijian</option><option value="finnish">Finnish</option><option value="french">French</option><option value="gabonese">Gabonese</option><option value="gambian">Gambian</option><option value="georgian">Georgian</option><option value="german">German</option><option value="ghanaian">Ghanaian</option><option value="greek">Greek</option><option value="grenadian">Grenadian</option><option value="guatemalan">Guatemalan</option><option value="guinean">Guinean</option><option value="guyanese">Guyanese</option><option value="haitian">Haitian</option><option value="honduran">Honduran</option><option value="hungarian">Hungarian</option><option value="icelandic">Icelandic</option><option value="indian">Indian</option><option value="indonesian">Indonesian</option><option value="iranian">Iranian</option><option value="irish">Irish</option><option value="italian">Italian</option><option value="ivorian">Ivorian</option><option value="jamaican">Jamaican</option><option value="japanese">Japanese</option><option value="kazakh">Kazakh</option><option value="kenyan">Kenyan</option><option value="south_korean">South Korean</option><option value="north_korean">North Korean</option><option value="kosovar">Kosovar</option><option value="kyrgyz">Kyrgyz</option><option value="laotian">Laotian</option><option value="latvian">Latvian</option><option value="basotho">Basotho</option><option value="liberian">Liberian</option><option value="liechtensteiner">Liechtensteiner</option><option value="lithuanian">Lithuanian</option><option value="luxembourger">Luxembourger</option><option value="malagasy">Malagasy</option><option value="malawian">Malawian</option><option value="malaysian">Malaysian</option><option value="maldivian">Maldivian</option><option value="malian">Malian</option><option value="maltese">Maltese</option><option value="mauritian">Mauritian</option><option value="mexican">Mexican</option><option value="moldovan">Moldovan</option><option value="monegasque">Monegasque</option><option value="mongolian">Mongolian</option><option value="montenegrin">Montenegrin</option><option value="mozambican">Mozambican</option><option value="burmese">Burmese</option><option value="namibian">Namibian</option><option value="nepalese">Nepalese</option><option value="dutch">Dutch</option><option value="new_zealander">New Zealander</option><option value="nicaraguan">Nicaraguan</option><option value="nigerian">Nigerian</option><option value="north_macedonian">North Macedonian</option><option value="norwegian">Norwegian</option><option value="pakistani">Pakistani</option><option value="panamanian">Panamanian</option><option value="paraguayan">Paraguayan</option><option value="peruvian">Peruvian</option><option value="filipino">Filipino</option><option value="polish">Polish</option><option value="portuguese">Portuguese</option><option value="romanian">Romanian</option><option value="russian">Russian</option><option value="rwandan">Rwandan</option><option value="samoan">Samoan</option><option value="san_marinese">San Marinese</option><option value="senegalese">Senegalese</option><option value="serbian">Serbian</option><option value="seychellois">Seychellois</option><option value="sierra_leonean">Sierra Leonean</option><option value="singaporean">Singaporean</option><option value="slovak">Slovak</option><option value="slovenian">Slovenian</option><option value="south_african">South African</option><option value="south_sudanese">South Sudanese</option><option value="spanish">Spanish</option><option value="sri_lankan">Sri Lankan</option><option value="surinamese">Surinamese</option><option value="swedish">Swedish</option><option value="swiss">Swiss</option><option value="taiwanese">Taiwanese</option><option value="tajik">Tajik</option><option value="tanzanian">Tanzanian</option><option value="thai">Thai</option><option value="togolese">Togolese</option><option value="tongan">Tongan</option><option value="trinidadian">Trinidadian</option><option value="turkish">Turkish</option><option value="turkmen">Turkmen</option><option value="ugandan">Ugandan</option><option value="ukrainian">Ukrainian</option><option value="uruguayan">Uruguayan</option><option value="uzbek">Uzbek</option><option value="venezuelan">Venezuelan</option><option value="vietnamese">Vietnamese</option><option value="zambian">Zambian</option><option value="zimbabwean">Zimbabwean</option><option value="other">Other</option></select></div>
+          <div class="form-group"><label>المحافظة <span style="color:#e57373">*</span></label><select id="reg-governorate" class="sel" required onchange="updateAreas()"><option value="">Select</option><option value="Cairo">Cairo</option><option value="Giza">Giza</option><option value="Alexandria">Alexandria</option><option value="Dakahlia">Dakahlia</option><option value="Sharqia">Sharqia</option><option value="Gharbia">Gharbia</option><option value="Monufia">Monufia</option><option value="Qalyubia">Qalyubia</option><option value="Beheira">Beheira</option><option value="Kafr El Sheikh">Kafr El Sheikh</option><option value="Damietta">Damietta</option><option value="Port Said">Port Said</option><option value="Ismailia">Ismailia</option><option value="Suez">Suez</option><option value="Faiyum">Faiyum</option><option value="Beni Suef">Beni Suef</option><option value="Minya">Minya</option><option value="Asyut">Asyut</option><option value="Sohag">Sohag</option><option value="Qena">Qena</option><option value="Luxor">Luxor</option><option value="Aswan">Aswan</option><option value="Red Sea">Red Sea</option><option value="Matrouh">Matrouh</option><option value="North Sinai">North Sinai</option><option value="South Sinai">South Sinai</option><option value="New Valley">New Valley</option></select></div>
+          <div class="form-group"><label>المنطقة <span style="color:#e57373">*</span></label><select id="reg-city" class="sel" required><option value="">Select governorate first</option></select></div>
         </div>
         <div class="form-row">
-          <div class="form-group"><label>الكلية <span style="color:#e57373">*</span></label><input type="text" id="reg-college" placeholder="العلاج الطبيعي" autocomplete="off" required pattern="[A-Za-z\u0600-\u06FF\s]{3,}" title="الكلية يجب أن تحتوي على حروف فقط"></div>
-          <div class="form-group"><label>المرحلة <span style="color:#e57373">*</span></label><select id="reg-education-level" class="sel" required><option value="">اختر</option><option value="graduate">خريج</option><option value="undergraduate">طالب</option></select></div>
+          <div class="form-group"><label>الكلية <span style="color:#e57373">*</span></label><input type="text" id="reg-college" placeholder="Physical Therapy" autocomplete="off" required pattern="[A-Za-z\s]{3,}" title="الكلية لازم تكتب بالإنجليزي"></div>
+          <div class="form-group"><label>المرحلة <span style="color:#e57373">*</span></label><select id="reg-education-level" class="sel" required><option value="">Select</option><option value="graduate">Graduate</option><option value="undergraduate">Undergraduate</option></select></div>
         </div>
         <div class="step-nav"><button class="btn-ghost" onclick="prevStep()">السابق</button><button class="btn btn-primary" onclick="nextStep()">التالي</button></div>
         </div>
         <div class="reg-step" id="step-3">
         <div class="section-label">التقديم</div>
         <div class="form-row">
-          <div class="form-group"><label>اللغة المطلوبة <span style="color:#e57373">*</span></label><select id="reg-language-applied" class="sel" required><option value="">اختر اللغة</option><option value="ar">العربية</option><option value="en">English</option><option value="de">Deutsch</option><option value="ja">日本語</option><option value="pt">Português</option><option value="fr">Français</option><option value="es">Español</option><option value="tr">Türkçe</option><option value="ko">한국어</option><option value="zh">中文</option><option value="ru">Русский</option><option value="it">Italiano</option><option value="hi">हिन्दी</option><option value="nl">Nederlands</option><option value="sv">Svenska</option></select></div>
+          <div class="form-group"><label>اللغة المطلوبة <span style="color:#e57373">*</span></label><select id="reg-language-applied" class="sel" required><option value="">Select language</option><option value="ar">Arabic</option><option value="en">English</option><option value="de">German</option><option value="ja">Japanese</option><option value="pt">Portuguese</option><option value="fr">French</option><option value="es">Spanish</option><option value="tr">Turkish</option><option value="ko">Korean</option><option value="zh">Chinese</option><option value="ru">Russian</option><option value="it">Italian</option><option value="hi">Hindi</option><option value="nl">Dutch</option><option value="sv">Swedish</option></select></div>
+          <div class="form-group"><label>خبرة سنتر اتصالات <span style="color:#e57373">*</span></label><select id="reg-call-center" class="sel" required><option value="">Select</option><option value="yes">Yes</option><option value="no">No</option></select></div>
         </div>
         <div class="form-row" id="military-row">
-          <div class="form-group"><label>الوضع العسكري <span style="color:#e57373">*</span></label><select id="reg-military-status" class="sel" required><option value="">اختر</option><option value="exempt">معفي</option><option value="sole_provider">معفي (sole provider)</option><option value="postponed">مؤجل</option><option value="served">مجند</option></select></div>
+          <div class="form-group"><label>الوضع العسكري <span style="color:#e57373">*</span></label><select id="reg-military-status" class="sel" required><option value="">Select</option><option value="exempt">Exempt</option><option value="sole_provider">Exempt (sole provider)</option><option value="postponed">Postponed</option><option value="served">Served</option></select></div>
         </div>
         <div class="form-row">
-          <div class="form-group"><label>الرقم القومي <span style="color:#e57373">*</span></label><input type="text" id="reg-national-id" placeholder="14 رقم" autocomplete="off" required pattern="[0-9]{14}" maxlength="14" title="الرقم القومي يجب أن يكون 14 رقم"></div>
-          <div class="form-group"><label>خبرة سنتر اتصالات <span style="color:#e57373">*</span></label><select id="reg-call-center" class="sel" required><option value="">اختر</option><option value="yes">نعم</option><option value="no">لا</option></select></div>
+          <div class="form-group"><label id="reg-national-id-label">الرقم القومي <span style="color:#e57373">*</span></label><input type="text" id="reg-national-id" placeholder="14 digits" autocomplete="off" required pattern="[0-9]{14}" maxlength="14" title="الرقم القومي يجب أن يكون 14 رقم"></div>
+          <div class="form-group"><label>العمر <span style="color:#e57373">*</span></label><input type="text" id="reg-age" class="age-frozen" placeholder="———" autocomplete="off" readonly required title="العمر محسوب من الرقم القومي"><div id="age-hint" style="font-size:11px;color:#94a3b8;margin-top:4px;"></div></div>
         </div>
         <div class="step-nav"><button class="btn-ghost" onclick="prevStep()">السابق</button><button class="btn btn-primary" onclick="register()">إنشاء حساب</button></div>
         </div>
         <div class="switch-text">عندك حساب؟ <a onclick="switchTab('login')">سجّل دخولك</a></div>
+      </div>
+      <div class="partner-entry">
+        <button type="button" class="partner-btn" onclick="window.location.href='/company'">
+          <svg viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 9h1"/><path d="M9 13h1"/><path d="M9 17h1"/><path d="M14 9h1"/><path d="M14 13h1"/><path d="M14 17h1"/></svg>
+          دخول الشركات وأصحاب الشراكات
+        </button>
+        <div class="partner-hint">عندك حساب شركة؟ ادخل من هنا لصفحة تسجيل الدخول الخاصة بالشركات</div>
       </div>
     </div>
   </div>
 
   <div class="verify-overlay" id="verify-overlay">
     <div class="verify-card">
-      <img src="/uploads/wazef.webp" alt="وَظِيف" style="width:120px;height:auto;margin:0 auto 16px;border-radius:8px;display:block;">
+      <img src="/uploads/wazef.png" alt="وَظِيف" style="width:120px;height:auto;margin:0 auto 16px;border-radius:8px;display:block;">
       <h2>تحقق من بريدك الإلكتروني</h2>
       <p>أرسلنا كود تحقق مكون من 6 أرقام إلى<br><span class="verify-email" id="verify-email-display"></span></p>
       <div id="verify-error" class="verify-error"></div>
@@ -311,85 +353,237 @@
       document.getElementById('error-msg').style.display='none';
     }
     let regStep=1;
-    function showStep(n){regStep=n;[1,2,3].forEach(i=>{document.getElementById('step-'+i).classList.toggle('active',i===n)});const dots=document.querySelectorAll('#step-dots .dot');dots.forEach((d,i)=>{d.classList.toggle('active',i+1===n);d.classList.toggle('done',i+1<n)});document.getElementById('error-msg').style.display='none'}
+    function showStep(n){
+      const prev=regStep;
+      regStep=n;
+      [1,2,3].forEach(i=>{
+        const el=document.getElementById('step-'+i);
+        el.classList.remove('active','leaving');
+        if(i===n)el.classList.add('active');
+        else if(i===prev)el.classList.add('leaving');
+      });
+      setTimeout(()=>{[1,2,3].forEach(i=>document.getElementById('step-'+i).classList.remove('leaving'))},220);
+      const dots=document.querySelectorAll('#step-dots .dot');
+      dots.forEach((d,i)=>{d.classList.toggle('active',i+1===n);d.classList.toggle('done',i+1<n)});
+      document.getElementById('error-msg').style.display='none';
+      refreshStepUI(n,true);
+    }
     function prevStep(){if(regStep>1)showStep(regStep-1)}
+    /* ---- filled/empty styling + disabled next button + auto-focus ---- */
+    const STEP_FIELDS={1:['reg-name','reg-email','reg-phone','reg-password','reg-gender'],2:['reg-nationality','reg-governorate','reg-city','reg-college','reg-education-level'],3:['reg-language-applied','reg-call-center','reg-military-status','reg-national-id','reg-age']};
+    function fieldFilled(id){const el=document.getElementById(id);if(!el)return false;const v=(el.value||'').trim();if(el.id==='reg-age')return !!v;if(el.id==='reg-military-status'){const g=val('reg-gender');if(g==='female')return true;}return !!v}
+    function markField(el){if(!el||!el.id)return;const v=(el.value||'').trim();el.classList.toggle('filled',!!v);el.classList.toggle('empty',!v)}
+    function refreshStepUI(n,focus){
+      const ids=STEP_FIELDS[n]||[];
+      let all=true;
+      ids.forEach(id=>{const el=document.getElementById(id);if(!el)return;markField(el);if(!fieldFilled(id))all=false});
+      // next button (step1/2) — disable until all filled
+      const stepEl=document.getElementById('step-'+n);
+      const btn=stepEl?stepEl.querySelector('.step-nav .btn-primary, .btn-primary'):null;
+      if(btn&&btn.textContent.indexOf('التالي')>=0){
+        btn.classList.toggle('btn-disabled',!all);
+        btn.disabled=!all;
+      }
+      // auto-focus first empty field ONLY on step load / next / prev — not on every keystroke
+      if(focus!==true||all)return;
+      const firstEmpty=ids.find(id=>!fieldFilled(id));
+      if(firstEmpty){const el=document.getElementById(firstEmpty);if(el&&el.offsetParent!==null){try{el.focus({preventScroll:true})}catch(e){el.focus()}}}
+    }
+    function bindRegFields(){
+      Object.values(STEP_FIELDS).flat().forEach(id=>{
+        const el=document.getElementById(id);
+        if(!el||el.dataset.regBound)return;
+        el.dataset.regBound='1';
+        el.addEventListener('input',function(){
+          el.classList.remove('err');
+          // الاسم/الكلية: ممنوع أي حرف عربي — يترفض ويظهر بوب-أب
+          if(el.id==='reg-name'||el.id==='reg-college'){
+            var v=el.value||'';
+            if(/[\u0600-\u06FF]/.test(v)){
+              el.value=v.replace(/[\u0600-\u06FF]/g,'');
+              regPopup('رجاءً اكتب المعلومات بالإنجليزي — '+(el.id==='reg-name'?'الاسم':'الكلية')+' بالعربي غير مسموح');
+            }
+          }
+          markField(el);refreshStepUI(regStep);
+        });
+        el.addEventListener('change',()=>{markField(el);refreshStepUI(regStep)});
+        el.addEventListener('blur',()=>{markField(el);refreshStepUI(regStep)});
+      });
+      refreshStepUI(regStep,true);
+    }
+    document.addEventListener('DOMContentLoaded',bindRegFields);
+    if(document.readyState==='complete'||document.readyState==='interactive')setTimeout(bindRegFields,0);
     function nextStep(){
-      const name=val('reg-name'),email=val('reg-email'),phone=val('reg-phone'),password=val('reg-password'),age=val('reg-age'),gender=val('reg-gender');
+      clearErr();
+      const name=val('reg-name'),email=val('reg-email'),phone=val('reg-phone'),password=val('reg-password'),gender=val('reg-gender');
       if(regStep===1){
-        if(!name)return showError('من فضلك أدخل الاسم الكامل');
-        if(hasNumber(name))return showError('الاسم يجب أن يحتوي على حروف فقط، بدون أرقام');
-        if(name.length<3)return showError('الاسم يجب أن يكون 3 أحرف على الأقل');
-        if(!email)return showError('من فضلك أدخل البريد الإلكتروني');
-        if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return showError('البريد الإلكتروني غير صحيح');
-        if(!phone)return showError('من فضلك أدخل رقم الهاتف');
-        if(!/^[0-9]{11}$/.test(phone))return showError('رقم الهاتف يجب أن يكون 11 رقم بدون حروف');
-        if(!password)return showError('من فضلك أدخل كلمة المرور');
-        if(password.length<6)return showError('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
-        if(!age)return showError('من فضلك أدخل العمر');
-        if(!/^[0-9]{2}$/.test(age))return showError('العمر يجب أن يكون رقمين فقط');
-        if(parseInt(age)<16||parseInt(age)>80)return showError('العمر يجب أن يكون بين 16 و 80');
-        if(!gender)return showError('من فضلك اختر النوع');
+        const errs=[],ids=[];
+        if(!name){errs.push('الاسم الكامل مطلوب');ids.push('reg-name')}
+        else if(/[\u0600-\u06FF]/.test(name)){errs.push('الاسم لازم يكتب بالإنجليزي');ids.push('reg-name');regPopup('رجاءً اكتب المعلومات بالإنجليزي — الاسم بالعربي غير مسموح')}
+        else if(hasNumber(name)){errs.push('الاسم حروف فقط بدون أرقام');ids.push('reg-name')}
+        else if(name.length<3){errs.push('الاسم 3 أحرف على الأقل');ids.push('reg-name')}
+        if(!email){errs.push('البريد الإلكتروني مطلوب');ids.push('reg-email')}
+        else if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){errs.push('البريد الإلكتروني غير صحيح');ids.push('reg-email')}
+        if(!phone){errs.push('رقم الهاتف مطلوب');ids.push('reg-phone')}
+        else if(!/^[0-9]{11}$/.test(phone)){errs.push('رقم الهاتف 11 رقم بدون حروف');ids.push('reg-phone')}
+        if(!password){errs.push('كلمة المرور مطلوبة');ids.push('reg-password')}
+        else if(password.length<6){errs.push('كلمة المرور 6 أحرف على الأقل');ids.push('reg-password')}
+        if(!gender){errs.push('اختر النوع');ids.push('reg-gender')}
+        if(errs.length){ids.forEach(markErr);return showError('راجع الحقول التالية: '+errs.join(' — '))}
         showStep(2);return;
       }
       if(regStep===2){
         const nationality=val('reg-nationality'),gov=val('reg-governorate'),area=val('reg-city'),college=val('reg-college'),education_level=val('reg-education-level');
-        if(!nationality)return showError('من فضلك اختر الجنسية');
-        if(!gov||!area)return showError('من فضلك اختر المحافظة والمنطقة');
-        if(!college)return showError('من فضلك أدخل الكلية');
-        if(hasNumber(college))return showError('الكلية يجب أن تحتوي على حروف فقط');
-        if(!education_level)return showError('من فضلك اختر المرحلة الدراسية');
+        const errs=[],ids=[];
+        if(!nationality){errs.push('اختر الجنسية');ids.push('reg-nationality')}
+        if(!gov){errs.push('اختر المحافظة');ids.push('reg-governorate')}
+        if(!area){errs.push('اختر المنطقة');ids.push('reg-city')}
+        if(!college){errs.push('الكلية مطلوبة');ids.push('reg-college')}
+        else if(hasNumber(college)){errs.push('الكلية حروف فقط بدون أرقام');ids.push('reg-college')}
+        else if(/[\u0600-\u06FF]/.test(college)){errs.push('الكلية لازم تكتب بالإنجليزي');ids.push('reg-college');regPopup('رجاءً اكتب المعلومات بالإنجليزي — الكلية بالعربي غير مسموحة')}
+        if(!education_level){errs.push('اختر المرحلة الدراسية');ids.push('reg-education-level')}
+        if(errs.length){ids.forEach(markErr);return showError('راجع الحقول التالية: '+errs.join(' — '))}
         showStep(3);return;
       }
     }
     function showError(m){const e=document.getElementById('error-msg');e.textContent=m;e.style.display='block';e.scrollIntoView({behavior:'smooth',block:'center'})}
+    function clearErr(){document.querySelectorAll('.form-group input.err,.form-group select.err').forEach(function(el){el.classList.remove('err')})}
+    function markErr(id){const el=document.getElementById(id);if(!el)return;el.classList.remove('err');void el.offsetWidth;el.classList.add('err');try{el.focus({preventScroll:true})}catch(e){el.focus()}}
+    var _regPopT=null;
+    function regPopup(m){var p=document.getElementById('reg-popup');if(!p)return;p.textContent=m;p.classList.add('show');if(_regPopT)clearTimeout(_regPopT);_regPopT=setTimeout(function(){p.classList.remove('show')},2600)}
     function val(id){return document.getElementById(id).value.trim()}
     function hasNumber(s){return /\d/.test(s)}
     function hasLetter(s){return /[A-Za-z\u0600-\u06FF]/.test(s)}
     function togglePass(id,btn){const inp=document.getElementById(id);const open=inp.type==='password';inp.type=open?'text':'password';btn.querySelector('.eye-open').style.display=open?'none':'';btn.querySelector('.eye-closed').style.display=open?'':'none'}
-    async function login(){const email=val('login-email'),password=val('login-password');if(!email||!password)return showError('من فضلك أكمل كل الحقول');try{let res=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});let data=await res.json();if(data.error){res=await fetch('/api/agent/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});data=await res.json();if(data.error)return showError(data.error);localStorage.setItem('token',data.token);localStorage.setItem('user',JSON.stringify(data.agent));window.location.href='/agent';return}localStorage.setItem('token',data.token);localStorage.setItem('user',JSON.stringify(data.user));window.location.href=data.user.role==='admin'?'/admin':'/dashboard'}catch(e){showError('حدث خطأ في الاتصال')}}
+    function homeFor(r){return r==='admin'?'/admin':(r==='company'?'/company':(['agent','qualty','team_leader','super_qualty'].indexOf(r)>=0?'/agent':'/dashboard'))}
+    async function login(){const email=val('login-email'),password=val('login-password');if(!email||!password)return showError('من فضلك أكمل كل الحقول');try{let res=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});let data=await res.json();if(data.error){if(data.code==='RATE_LIMITED'||data.error.indexOf('محاولات كثيرة')>=0)return showError(data.error);if(data.code==='EMAIL_NOT_VERIFIED'){openVerifyFromLogin(email);return}if(data.error==='Invalid credentials'){res=await fetch('/api/agent/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});data=await res.json();if(data.error)return showError(data.error==='بيانات الدخول غير صحيحة'?'بيانات الدخول غير صحيحة':data.error);localStorage.setItem('token',data.token);localStorage.setItem('user',JSON.stringify(data.agent));window.location.href='/agent';return}return showError(data.error)}localStorage.setItem('token',data.token);localStorage.setItem('user',JSON.stringify(data.user));window.location.href=homeFor(data.user&&(data.user.agent_role||data.user.role))}catch(e){showError('حدث خطأ في الاتصال')}}
     function toggleMilitary(){const g=val('reg-gender');document.getElementById('military-row').style.display=g==='female'?'none':''}
-    const AREAS={'القاهرة':['مدينة نصر','مصر الجديدة','المعادي','وسط البلد','حلوان','التجمع الخامس','التجمع الأول','الشروق','العبور','المرج','عين شمس','المطرية','شبرا','الزمالك','السلام','النزهة','بدر','أخرى'],'الجيزة':['المهندسين','الدقي','العجوزة','فيصل','الهرم','6 أكتوبر','الشيخ زايد','حدائق الأهرام','إمبابة','الوراق','أوسيم','كرداسة','البدرشين','الحوامدية','أخرى'],'الإسكندرية':['سموحة','سيدي بشر','ميامي','العصافرة','المنتزه','محرم بك','العجمي','الدخيلة','العامرية','برج العرب','الرمل','المنشية','أخرى'],'الدقهلية':['المنصورة','طلخا','ميت غمر','دكرنس','أخرى'],'الشرقية':['الزقازيق','العاشر من رمضان','بلبيس','فاقوس','أخرى'],'الغربية':['طنطا','المحلة الكبرى','زفتى','أخرى'],'المنوفية':['شبين الكوم','منوف','السادات','أخرى'],'القليوبية':['بنها','شبرا الخيمة','قليوب','الخانكة','أخرى'],'البحيرة':['دمنهور','كفر الدوار','رشيد','أخرى'],'كفر الشيخ':['كفر الشيخ','دسوق','فوة','أخرى'],'دمياط':['دمياط','رأس البر','دمياط الجديدة','أخرى'],'بورسعيد':['بورسعيد','بورفؤاد','أخرى'],'الإسماعيلية':['الإسماعيلية','فايد','القنطرة','أخرى'],'السويس':['السويس','الأربعين','فيصل السويس','أخرى'],'الفيوم':['الفيوم','سنورس','إطسا','أخرى'],'بني سويف':['بني سويف','الواسطى','ناصر','أخرى'],'المنيا':['المنيا','ملوي','مغاغة','أخرى'],'أسيوط':['أسيوط','ديروط','منفلوط','أخرى'],'سوهاج':['سوهاج','طهطا','جرجا','أخرى'],'قنا':['قنا','نجع حمادي','قوص','أخرى'],'الأقصر':['الأقصر','إسنا','أرمنت','أخرى'],'أسوان':['أسوان','دراو','كوم أمبو','إدفو','أخرى'],'البحر الأحمر':['الغردقة','سفاجا','مرسى علم','أخرى'],'مطروح':['مرسى مطروح','الحمام','العلمين','أخرى'],'شمال سيناء':['العريش','رفح','الشيخ زويد','أخرى'],'جنوب سيناء':['شرم الشيخ','دهب','الطور','أخرى'],'الوادي الجديد':['الخارجة','الداخلة','الفرافرة','أخرى']};
-    function updateAreas(){const g=val('reg-governorate');document.getElementById('reg-city').innerHTML='<option value="">اختر المنطقة</option>'+((AREAS[g]||[]).map(a=>`<option>${a}</option>`).join(''))}
+    function ageFromNid(nid){
+      const s=String(nid||'').trim();
+      if(!/^[0-9]{14}$/.test(s))return null;
+      const century=s[0]==='3'?2000:s[0]==='2'?1900:s[0]==='1'?1800:0;
+      if(!century)return null;
+      const yy=parseInt(s.slice(1,3),10),mm=parseInt(s.slice(3,5),10),dd=parseInt(s.slice(5,7),10);
+      if(!(mm>=1&&mm<=12&&dd>=1&&dd<=31))return null;
+      const year=century+yy;
+      const d=new Date(Date.UTC(year,mm-1,dd));
+      if(d.getUTCFullYear()!==year||d.getUTCMonth()!==mm-1||d.getUTCDate()!==dd)return null;
+      const now=new Date();
+      let a=now.getUTCFullYear()-year;
+      const m=now.getUTCMonth()-(mm-1);
+      if(m<0||(m===0&&now.getUTCDate()<dd))a--;
+      return a;
+    }
+    function isPassportMode(){const n=val('reg-nationality');return !!n&&n!=='egypt'}
+    function toggleIdMode(){
+      const inp=document.getElementById('reg-national-id');
+      const lbl=document.getElementById('reg-national-id-label');
+      const ageInp=document.getElementById('reg-age');
+      const hint=document.getElementById('age-hint');
+      if(!inp||!lbl)return;
+      const p=isPassportMode();
+      if(p){
+        lbl.innerHTML='رقم الإقامة <span style="color:#94a3b8">(اختياري)</span>';
+        inp.placeholder='Residence number (optional)';
+        inp.removeAttribute('pattern');
+        inp.maxLength=20;
+        inp.title='أدخل رقم الإقامة إن وجد';
+        if(ageInp){ageInp.readOnly=false;ageInp.classList.remove('age-frozen');ageInp.title='أدخل العمر يدويًا'}
+        if(hint){hint.textContent='العمر يُدخل يدويًا لأن رقم الإقامة لا يحتوي على تاريخ الميلاد';hint.style.color='#94a3b8'}
+      }else{
+        lbl.innerHTML='الرقم القومي <span style="color:#e57373">*</span>';
+        inp.placeholder='14 digits';
+        inp.setAttribute('pattern','[0-9]{14}');
+        inp.maxLength=14;
+        inp.title='الرقم القومي يجب أن يكون 14 رقم';
+      }
+      syncAgeFromNid();
+    }
+    function syncAgeFromNid(){
+      const inp=document.getElementById('reg-age');
+      const nidEl=document.getElementById('reg-national-id');
+      const hint=document.getElementById('age-hint');
+      if(!inp||!nidEl)return;
+      if(isPassportMode()){
+        inp.readOnly=false;inp.classList.remove('age-frozen');inp.title='أدخل العمر يدويًا';
+        if(hint){hint.textContent='العمر يُدخل يدويًا لأن رقم الإقامة لا يحتوي على تاريخ الميلاد';hint.style.color='#94a3b8'}
+        return;
+      }
+      inp.readOnly=true;inp.classList.add('age-frozen');
+      const nid=nidEl.value.trim();
+      const a=ageFromNid(nid);
+      const setHint=(txt,color)=>{if(hint){hint.textContent=txt||'';hint.style.color=color||'#94a3b8'}};
+      if(a!==null){
+        inp.value=String(a);inp.title='العمر محسوب من الرقم القومي';
+        if(a<18)setHint('الرقم القومي بيدي عمر '+a+' سنة — العمل من سن 18 سنة','#e57373');
+        else if(a>80)setHint('العمر المحسوب '+a+' سنة خارج المدى المسموح (18 - 80)','#e57373');
+        else setHint('العمر محسوب من الرقم القومي ('+a+' سنة)');
+        return;
+      }
+      inp.value='';inp.title='العمر محسوب من الرقم القومي';
+      if(nid.length===14)setHint('تاريخ الرقم القومي غير صحيح — صحح الرقم القومي وسنحسب العمر منه','#e57373');
+      else if(nid.length>0)setHint('الرقم القومي لازم يكون 14 رقم','#e57373');
+      else setHint('');
+    }
+    const AREAS={'Cairo':['Nasr City','Heliopolis','Maadi','Downtown','Helwan','5th Settlement','1st Settlement','Shorouk','Obour','Marg','Ein Shams','Mataria','Shubra','Zamalek','Salah Salem','Nahda','Badr','Other'],'Giza':['Mohandessin','Dokki','Agouza','Faisal','Haram','6th of October','Sheikh Zayed','Pyramids Gardens','Imbaba','Warraq','Osaim','Kerdasa','Badr Ashien','Hadayek El Ahram','Other'],'Alexandria':['Smouha','Sidi Bishr','Miami','El Asafra','Montaza','Moharam Bek','El Agamy','El Dekheila','Amreya','Borg El Arab','El Raml','El Manshia','Other'],'Dakahlia':['Mansoura','Talkha','Meet Ghamr','Dakahlia','Other'],'Sharqia':['Zagazig','10th of Ramadan','Belbeis','Fakous','Other'],'Gharbia':['Tanta','El Mahalla El Kubra','Zefta','Other'],'Monufia':['Shibin El Kom','Menouf','Sadat City','Other'],'Qalyubia':['Banha','Shubra El Kheima','Qalyub','Khanka','Other'],'Beheira':['Damanhour','Kafr El Dawla','Rashid','Other'],'Kafr El Sheikh':['Kafr El Sheikh','Desouk','Fuwa','Other'],'Damietta':['Damietta','Ras El Bar','Damietta New','Other'],'Port Said':['Port Said','Borfulous','Other'],'Ismailia':['Ismailia','Fayed','Qantara','Other'],'Suez':['Suez','Arbaeen','Faisal Suez','Other'],'Faiyum':['Faiyum','Sinnuris','Itsa','Other'],'Beni Suef':['Beni Suef','Wasta','Nasser','Other'],'Minya':['Minya','Malawi','Magaaga','Other'],'Asyut':['Asyut','Dirut','Manfalut','Other'],'Sohag':['Sohag','Thta','Geraga','Other'],'Qena':['Qena','Nag Hammadi','Quos','Other'],'Luxor':['Luxor','Esna','Armant','Other'],'Aswan':['Aswan','Daraw','Kom Ombo','Edfu','Other'],'Red Sea':['Hurghada','Safaga','Marsa Alam','Other'],'Matrouh':['Marsa Matrouh','El Hammam','Alamein','Other'],'North Sinai':['El Arish','Rafah','Sheikh Zuweid','Other'],'South Sinai':['Sharm El Sheikh','Dahab','El Tor','Other'],'New Valley':['Kharga','Dakhla','Farafra','Other']};
+    function updateAreas(){const g=val('reg-governorate');document.getElementById('reg-city').innerHTML='<option value="">Select area</option>'+((AREAS[g]||[]).map(a=>`<option>${a}</option>`).join(''))}
     async function register(){
+      clearErr();
       const name=val('reg-name'),email=val('reg-email'),phone=val('reg-phone'),password=val('reg-password'),nationality=val('reg-nationality'),gov=val('reg-governorate'),area=val('reg-city'),city=gov&&area?gov+' - '+area:'',language_applied=val('reg-language-applied'),age=val('reg-age'),national_id=val('reg-national-id'),college=val('reg-college'),education_level=val('reg-education-level'),gender=val('reg-gender');let military_status=val('reg-military-status');if(gender==='female')military_status='na';const call_center_experience=val('reg-call-center');
-      // Step 3 validation
-      if(!language_applied)return showError('من فضلك اختر اللغة المطلوبة');
-      if(!gender)return showError('من فضلك اختر النوع');
-      if(gender==='male'&&!military_status)return showError('من فضلك اختر الوضع العسكري');
-      if(!national_id)return showError('من فضلك أدخل الرقم القومي');
-      if(!/^[0-9]+$/.test(national_id))return showError('الرقم القومي يجب أن يحتوي على أرقام فقط');
-      if(national_id.length!==14)return showError('الرقم القومي يجب أن يكون 14 رقم بالضبط (أدخلت '+national_id.length+')');
-      if(!call_center_experience)return showError('من فضلك اختر خبرة سنتر الاتصالات');
-      // Step 1 validation
-      if(!name)return showError('من فضلك أدخل الاسم الكامل');
-      if(hasNumber(name))return showError('الاسم يجب أن يحتوي على حروف فقط، بدون أرقام');
-      if(name.length<3)return showError('الاسم يجب أن يكون 3 أحرف على الأقل');
-      if(!email)return showError('من فضلك أدخل البريد الإلكتروني');
-      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return showError('البريد الإلكتروني غير صحيح');
-      if(!phone)return showError('من فضلك أدخل رقم الهاتف');
-      if(!/^[0-9]{11}$/.test(phone))return showError('رقم الهاتف يجب أن يكون 11 رقم بدون حروف');
-      if(!password)return showError('من فضلك أدخل كلمة المرور');
-      if(password.length<6)return showError('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
-      if(!age)return showError('من فضلك أدخل العمر');
-      if(!/^[0-9]{2}$/.test(age))return showError('العمر يجب أن يكون رقمين فقط');
-      if(parseInt(age)<16||parseInt(age)>80)return showError('العمر يجب أن يكون بين 16 و 80');
-      // Step 2 validation
-      if(!nationality)return showError('من فضلك اختر الجنسية');
-      if(hasNumber(nationality))return showError('الجنسية يجب أن تحتوي على حروف فقط');
-      if(!city)return showError('من فضلك اختر المحافظة والمنطقة');
-      if(!college)return showError('من فضلك أدخل الكلية');
-      if(hasNumber(college))return showError('الكلية يجب أن تحتوي على حروف فقط');
-      if(!education_level)return showError('من فضلك اختر المرحلة الدراسية');
+      const errs=[],ids=[];
+      function push(m,id){errs.push(m);ids.push(id)}
+      if(/[\u0600-\u06FF]/.test(name)){push('الاسم لازم يكتب بالإنجليزي','reg-name');regPopup('رجاءً اكتب المعلومات بالإنجليزي — الاسم بالعربي غير مسموح')}
+      if(/[\u0600-\u06FF]/.test(college)){push('الكلية لازم تكتب بالإنجليزي','reg-college');regPopup('رجاءً اكتب المعلومات بالإنجليزي — الكلية بالعربي غير مسموحة')}
+      // Step 1
+      if(!name)push('الاسم الكامل مطلوب','reg-name');
+      else if(hasNumber(name))push('الاسم حروف فقط بدون أرقام','reg-name');
+      else if(name.length<3)push('الاسم 3 أحرف على الأقل','reg-name');
+      if(!email)push('البريد الإلكتروني مطلوب','reg-email');
+      else if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))push('البريد الإلكتروني غير صحيح','reg-email');
+      if(!phone)push('رقم الهاتف مطلوب','reg-phone');
+      else if(!/^[0-9]{11}$/.test(phone))push('رقم الهاتف 11 رقم بدون حروف','reg-phone');
+      if(!password)push('كلمة المرور مطلوبة','reg-password');
+      else if(password.length<6)push('كلمة المرور 6 أحرف على الأقل','reg-password');
+      // Step 2
+      if(!nationality)push('اختر الجنسية','reg-nationality');
+      else if(hasNumber(nationality))push('الجنسية حروف فقط','reg-nationality');
+      if(!gov)push('اختر المحافظة','reg-governorate');
+      if(!area)push('اختر المنطقة','reg-city');
+      if(!college)push('الكلية مطلوبة','reg-college');
+      else if(hasNumber(college))push('الكلية حروف فقط بدون أرقام','reg-college');
+      if(!education_level)push('اختر المرحلة الدراسية','reg-education-level');
+      // Step 3
+      if(!language_applied)push('اختر اللغة المطلوبة','reg-language-applied');
+      if(!gender)push('اختر النوع','reg-gender');
+      else if(gender==='male'&&!military_status)push('اختر الوضع العسكري','reg-military-status');
+      if(isPassportMode()){
+        if(national_id&&!/^[A-Za-z0-9]{5,20}$/.test(national_id))push('رقم الإقامة لازم يكون من 5 لـ 20 حرف','reg-national-id');
+        if(!age)push('أدخل العمر','reg-age');
+        else if(!/^[0-9]{1,3}$/.test(age))push('العمر غير صحيح','reg-age');
+        else if(parseInt(age)<18)push('العمل من سن 18 سنة','reg-age');
+        else if(parseInt(age)>80)push('العمر بين 18 و 80','reg-age');
+      }else{
+        if(!national_id)push('الرقم القومي مطلوب','reg-national-id');
+        else if(!/^[0-9]+$/.test(national_id))push('الرقم القومي أرقام فقط','reg-national-id');
+        else if(national_id.length!==14)push('الرقم القومي 14 رقم بالضبط','reg-national-id');
+        if(!age)push('أدخل الرقم القومي لحساب العمر','reg-national-id');
+        else if(!/^[0-9]{1,3}$/.test(age))push('العمر غير صحيح','reg-age');
+        else if(parseInt(age)<18)push('العمل من سن 18 سنة','reg-age');
+        else if(parseInt(age)>80)push('العمر بين 18 و 80','reg-age');
+      }
+      if(!call_center_experience)push('اختر خبرة سنتر الاتصالات','reg-call-center');
+      if(errs.length){ids.forEach(markErr);return showError('راجع الحقول التالية: '+errs.join(' — '))}
       const ref=new URLSearchParams(window.location.search).get('ref')||'';
       try{const res=await fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,phone,password,nationality,city,language_applied,age:parseInt(age),national_id,college,education_level,gender,military_status,call_center_experience,ref})});const data=await res.json();if(data.error)return showError(data.error);if(data.needVerification){document.getElementById('verify-email-display').textContent=email;document.getElementById('verify-overlay').classList.add('show');setTimeout(()=>document.getElementById('code-1').focus(),300);return}localStorage.setItem('token',data.token);localStorage.setItem('user',JSON.stringify(data.user));window.location.href='/dashboard'}catch(e){showError('حدث خطأ في الاتصال')}
     }
     if(new URLSearchParams(window.location.search).get('ref')){document.getElementById('ref-badge').style.display='block';switchTab('register')}
-    const token=localStorage.getItem('token'),user=JSON.parse(localStorage.getItem('user')||'null');if(token&&user)window.location.href=user.role==='admin'?'/admin':'/dashboard';
+    const token=localStorage.getItem('token'),user=JSON.parse(localStorage.getItem('user')||'null');if(token&&user)window.location.href=homeFor(user.agent_role||user.role);
     document.getElementById('reg-name').addEventListener('input',function(){this.value=this.value.replace(/[0-9]/g,'')});
-    document.getElementById('reg-college').addEventListener('input',function(){this.value=this.value.replace(/[0-9]/g,'')});
     document.getElementById('reg-phone').addEventListener('input',function(){this.value=this.value.replace(/[^0-9]/g,'')});
-    document.getElementById('reg-age').addEventListener('input',function(){this.value=this.value.replace(/[^0-9]/g,'').slice(0,2)});
-    document.getElementById('reg-national-id').addEventListener('input',function(){this.value=this.value.replace(/[^0-9]/g,'').slice(0,14)});
+    document.getElementById('reg-age').addEventListener('input',function(){if(!this.readOnly)this.value=this.value.replace(/[^0-9]/g,'').slice(0,3)});
+    document.getElementById('reg-national-id').addEventListener('input',function(){if(isPassportMode()){this.value=this.value.replace(/[^A-Za-z0-9]/g,'').toUpperCase().slice(0,20)}else{this.value=this.value.replace(/[^0-9]/g,'').slice(0,14)}syncAgeFromNid()});    document.getElementById('reg-nationality').addEventListener('change',toggleIdMode);
+    toggleIdMode();
+    syncAgeFromNid();
 
     let verifyEmail='';
     function onCodeInput(el,idx){el.value=el.value.replace(/[^0-9]/g,'');if(el.value&&idx<5)document.getElementById('code-'+(idx+2)).focus();checkCodeComplete()}
@@ -402,11 +596,18 @@
     async function verifyCode(){
       const code=getCode();if(code.length!==6)return;
       clearVerifyErrors();
-      try{const res=await fetch('/api/verify-code',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:document.getElementById('verify-email-display').textContent,code})});const data=await res.json();if(data.error)return showVerifyError(data.error);showVerifySuccess('تم التحقق بنجاح! جارِ تسجيل الدخول...');setTimeout(()=>{localStorage.setItem('token',data.token);localStorage.setItem('user',JSON.stringify(data.user));window.location.href='/dashboard'},1200)}catch(e){showVerifyError('حدث خطأ في الاتصال')}
+      try{const res=await fetch('/api/verify-code',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:document.getElementById('verify-email-display').textContent,code})});const data=await res.json();if(data.error)return showVerifyError(data.error);showVerifySuccess('تم التحقق بنجاح! جارِ تسجيل الدخول...');setTimeout(()=>{localStorage.setItem('token',data.token);localStorage.setItem('user',JSON.stringify(data.user));window.location.href=homeFor(data.user&&data.user.role)},1200)}catch(e){showVerifyError('حدث خطأ في الاتصال')}
     }
     async function resendCode(){
       clearVerifyErrors();
       try{const res=await fetch('/api/resend-code',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:document.getElementById('verify-email-display').textContent})});const data=await res.json();if(data.error)return showVerifyError(data.error);showVerifySuccess('تم إعادة إرسال الكود')}catch(e){showVerifyError('حدث خطأ في الاتصال')}
+    }
+    async function openVerifyFromLogin(email){
+      document.getElementById('verify-email-display').textContent=email;
+      document.getElementById('verify-overlay').classList.add('show');
+      setTimeout(()=>document.getElementById('code-1').focus(),300);
+      showVerifyError('حسابك لسه مش متفعّل — أدخل كود التحقق أو اضغط "إعادة إرسال الكود"');
+      try{const res=await fetch('/api/resend-code',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});const data=await res.json();if(!data.error)showVerifySuccess('تم إرسال كود جديد إلى بريدك');}catch(e){}
     }
     function closeVerify(){document.getElementById('verify-overlay').classList.remove('show');for(let i=1;i<=6;i++)document.getElementById('code-'+i).value='';clearVerifyErrors();document.getElementById('verify-btn').disabled=true}
 
@@ -518,7 +719,7 @@ if('serviceWorker' in navigator){
       const sw = reg.installing;
       sw.addEventListener('statechange', () => {
         if(sw.state === 'installed' && navigator.serviceWorker.controller){
-          if(confirm('نسخة جديدة متاحة! هل تريد التحديث؟')){sw.postMessage({type:'SKIP_WAITING'})}
+          WZConfirm('نسخة جديدة متاحة! هل تريد التحديث؟', { ok: 'تحديث الآن' }).then(function(ok){ if(ok) sw.postMessage({type:'SKIP_WAITING'}) });
         }
       });
     });

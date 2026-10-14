@@ -1,0 +1,11 @@
+node_modules
+tmp
+*.db
+*.db.bak
+*.db.backup-*
+*.zip
+.git
+server.out.log
+server.err.log
+.env
+backups

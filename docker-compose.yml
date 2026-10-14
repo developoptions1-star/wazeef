@@ -1,0 +1,19 @@
+services:
+  wazeef:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      # Named volume: persists app.db + uploads across redeploys
+      - wazeef-data:/app/data
+    restart: unless-stopped
+    environment:
+      - DATA_DIR=/app/data
+      # Cloud DB (Supabase): set these in a .env file next to docker-compose.yml.
+      # Leave empty (or omit .env) to fall back to the local sqlite file.
+      - DB_DRIVER=${DB_DRIVER:-}
+      - DATABASE_URL=${DATABASE_URL:-}
+      - JWT_SECRET=${JWT_SECRET:-}
+
+volumes:
+  wazeef-data:

@@ -6,4 +6,4 @@ Disallow: /admin
 Disallow: /agent
 Disallow: /api/
 
-Sitemap: https://wazef.com/sitemap.xml
+Sitemap: https://wazeef.velixir.run/sitemap.xml

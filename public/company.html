@@ -2,18 +2,21 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="robots" content="noindex, nofollow">
   <title>وَظِيف - بوابة الشركة</title>
-  <link rel="icon" type="image/webp" href="/uploads/wazef.webp">
+  <link rel="icon" type="image/png" href="/uploads/wazef.png">
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#d4a853">
+  <meta name="theme-color" content="transparent">
+  <meta name="theme-color" content="transparent" media="(prefers-color-scheme: dark)">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="وَظِيف">
   <link rel="apple-touch-icon" href="/uploads/icon-192.webp">
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
   <style>
+    html{background:#0a0a0a;color-scheme:dark}
+    body{padding-top:env(safe-area-inset-top);padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}
     *{margin:0;padding:0;box-sizing:border-box}
     ::-webkit-scrollbar{width:5px}
     ::-webkit-scrollbar-track{background:transparent}
@@ -38,6 +41,9 @@
     .form-group label{display:block;color:#94a3b8;margin-bottom:5px;font-size:12px;font-weight:600}
     .form-group input,.sel{width:100%;height:42px;padding:0 14px;background:rgba(212,168,83,0.03);border:1px solid rgba(212,168,83,0.06);border-radius:12px;color:#f5f0e8;font-family:'Tajawal',sans-serif;font-size:13px;transition:all .3s}
     .form-group input:focus,.sel:focus{outline:none;border-color:rgba(212,168,83,0.4);box-shadow:0 0 0 3px rgba(212,168,83,0.06)}
+    select,select option{color-scheme:dark}
+    select option{background-color:#0f1117;color:#e2e8f0}
+    select option:hover,select:focus option:hover{background-color:rgba(212,168,83,0.16);color:#f0d78c}
     .form-group input::placeholder{color:#333}
     .pass-wrap{position:relative}
     .pass-wrap input{padding-left:40px}
@@ -76,6 +82,8 @@
     .tab-btn{flex:1;padding:11px;text-align:center;color:#94a3b8;cursor:pointer;border-radius:10px;transition:all .3s;font-size:14px;font-weight:600;font-family:'Tajawal',sans-serif;border:none;background:none}
     .tab-btn.active{background:rgba(212,168,83,0.1);color:#f0d78c}
     .tab-btn:hover:not(.active){color:#b0a898}
+    .tab-count{display:inline-block;min-width:22px;padding:1px 7px;margin-inline-start:6px;background:rgba(212,168,83,0.18);color:#f0d78c;border-radius:20px;font-size:11px;font-weight:700;line-height:1.6;vertical-align:middle}
+    .tab-btn.active .tab-count{background:rgba(212,168,83,0.3);color:#0a0a0a}
 
     .tab-panel{display:none}
     .tab-panel.active{display:block;animation:fadeUp .4s ease}
@@ -104,6 +112,22 @@
     .toast.success{background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.2);color:#4ade80;backdrop-filter:blur(20px)}
     .toast.error{background:rgba(220,50,50,0.12);border:1px solid rgba(220,50,50,0.2);color:#e57373;backdrop-filter:blur(20px)}
 
+    /* Confirm modal */
+    .confirm-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(6px);z-index:10000;align-items:center;justify-content:center;padding:20px}
+    .confirm-backdrop.show{display:flex}
+    .confirm-modal{background:linear-gradient(145deg,rgba(18,18,18,0.98),rgba(12,12,12,0.99));border:1px solid rgba(212,168,83,0.18);border-radius:20px;box-shadow:0 25px 80px rgba(0,0,0,0.7);max-width:360px;width:100%;padding:28px 24px;text-align:center;animation:confirmIn .25s cubic-bezier(0.16,1,0.3,1)}
+    @keyframes confirmIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
+    .confirm-icon{width:52px;height:52px;margin:0 auto 14px;border-radius:16px;background:rgba(212,168,83,0.1);border:1px solid rgba(212,168,83,0.2);display:flex;align-items:center;justify-content:center}
+    .confirm-icon svg{width:26px;height:26px;stroke:#d4a853;fill:none;stroke-width:2;stroke-linecap:round}
+    .confirm-title{font-size:15px;font-weight:800;color:#f0d78c;margin-bottom:8px}
+    .confirm-msg{font-size:13px;color:#94a3b8;line-height:1.7;margin-bottom:20px}
+    .confirm-actions{display:flex;gap:10px}
+    .confirm-btn{flex:1;padding:11px 14px;border-radius:12px;font-family:'Tajawal',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s}
+    .confirm-yes{background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.3);color:#4ade80}
+    .confirm-yes:hover{background:rgba(34,197,94,0.2)}
+    .confirm-no{background:rgba(212,168,83,0.06);border:1px solid rgba(212,168,83,0.15);color:#94a3b8}
+    .confirm-no:hover{background:rgba(212,168,83,0.12)}
+
     /* Languages */
     .lang-section{padding:28px 32px}
     .lang-search-wrap{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
@@ -117,7 +141,13 @@
       .lang-search-wrap input,.lang-search-wrap select{min-width:0;width:100%}
     }
     .lang-item-sent{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;background:rgba(34,197,94,0.1);color:#4ade80;border:1px solid rgba(34,197,94,0.2);white-space:nowrap}
-    .lang-list{margin-bottom:24px;display:flex;flex-direction:column;gap:10px}
+    .lang-list{margin-bottom:12px;display:flex;flex-direction:column;gap:10px;max-height:480px;overflow-y:auto;padding-left:4px}
+    .lang-list::-webkit-scrollbar{width:6px}
+    .lang-list::-webkit-scrollbar-track{background:rgba(0,0,0,0.2);border-radius:10px}
+    .lang-list::-webkit-scrollbar-thumb{background:rgba(212,168,83,0.3);border-radius:10px}
+    .lang-list::-webkit-scrollbar-thumb:hover{background:rgba(212,168,83,0.5)}
+    .lang-toggle-btn{display:block;width:100%;margin-bottom:24px;padding:12px;background:rgba(212,168,83,0.06);border:1.5px dashed rgba(212,168,83,0.25);border-radius:14px;color:#d4a853;font-family:'Tajawal',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .25s}
+    .lang-toggle-btn:hover{background:rgba(212,168,83,0.12);border-color:rgba(212,168,83,0.45)}
     .lang-item{padding:16px 18px;padding-left:80px;background:linear-gradient(145deg,rgba(212,168,83,0.05),rgba(212,168,83,0.02));border:1px solid rgba(212,168,83,0.1);border-radius:16px;transition:all .3s;position:relative;overflow:hidden}
     .lang-item::before{content:'';position:absolute;top:0;right:0;width:4px;height:100%;background:linear-gradient(180deg,#d4a853,#b8860b);border-radius:0 4px 4px 0}
     .lang-item:hover{background:linear-gradient(145deg,rgba(212,168,83,0.08),rgba(212,168,83,0.04));border-color:rgba(212,168,83,0.18);transform:translateX(-3px)}
@@ -128,6 +158,10 @@
     .lang-item-meta{display:flex;flex-wrap:wrap;gap:8px}
     .lang-item-meta span{font-size:11px;color:#94a3b8;background:rgba(0,0,0,0.25);padding:4px 10px;border-radius:8px;display:flex;align-items:center;gap:4px;white-space:nowrap}
     .lang-item-desc{font-size:12px;color:#64748b;margin-top:8px;line-height:1.5}
+    .job-opt-badge{font-size:10.5px;font-weight:800;padding:3px 10px;border-radius:999px;white-space:nowrap}
+    .job-opt-badge.home{background:rgba(56,189,248,.12);color:#38bdf8;border:1px solid rgba(56,189,248,.25)}
+    .job-opt-badge.hybrid{background:rgba(251,191,36,.12);color:#fbbf24;border:1px solid rgba(251,191,36,.25)}
+    .job-opt-badge.part{background:rgba(168,85,247,.12);color:#c084fc;border:1px solid rgba(168,85,247,.25)}
     .lang-item-actions{position:absolute;top:14px;left:14px;display:flex;gap:6px;z-index:2}
     .lang-item-del{width:30px;height:30px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.15);border-radius:8px;color:#ef4444;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;transition:all .3s;opacity:0.6}
     .lang-item-edit{width:30px;height:30px;background:rgba(212,168,83,0.08);border:1px solid rgba(212,168,83,0.15);border-radius:8px;color:#d4a853;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;transition:all .3s;opacity:0.6}
@@ -163,6 +197,37 @@
     .cand-table tbody td{padding:12px 14px;font-size:13px;color:#e2e8f0;white-space:nowrap}
     .cand-table tbody td.name-cell{color:#f0d78c;font-weight:700}
     .cand-table tbody td.phone-cell{direction:ltr;text-align:left;font-family:monospace;font-size:12px;color:#94a3b8}
+
+    .cand-act-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:10px;font-size:11px;font-weight:700;background:linear-gradient(135deg,rgba(212,168,83,0.18),rgba(212,168,83,0.06));border:1px solid rgba(212,168,83,0.2);color:#d4a853;cursor:pointer;font-family:'Tajawal',sans-serif;white-space:nowrap;transition:all .25s ease}
+    .cand-act-btn:hover{background:linear-gradient(135deg,rgba(212,168,83,0.28),rgba(212,168,83,0.12));transform:translateY(-1px);box-shadow:0 4px 16px rgba(212,168,83,0.2)}
+    .cand-act-btn svg{width:13px;height:13px;stroke:#d4a853;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+
+    .cand-actions-popup{display:none;position:fixed;z-index:9999;top:50% !important;left:50% !important;right:auto !important;bottom:auto !important;transform:translate(-50%,-50%);background:linear-gradient(145deg,rgba(18,18,18,0.98),rgba(12,12,12,0.99));backdrop-filter:blur(40px);border:1px solid rgba(212,168,83,0.15);border-radius:18px;box-shadow:0 25px 80px rgba(0,0,0,0.7),0 0 0 1px rgba(212,168,83,0.05);min-width:280px;max-width:360px;padding:8px 0;animation:candPopupIn .25s cubic-bezier(0.16,1,0.3,1)}
+    .cand-actions-popup.show{display:block}
+    .cand-actions-backdrop{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);z-index:9998;backdrop-filter:blur(4px)}
+    .cand-actions-backdrop.show{display:block}
+    @keyframes candPopupIn{from{opacity:0;transform:translate(-50%,-50%) scale(0.9)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+    .cand-actions-popup .popup-header{padding:12px 16px 10px;border-bottom:1px solid rgba(212,168,83,0.08);display:flex;align-items:center;gap:8px}
+    .cand-actions-popup .popup-header svg{width:15px;height:15px;stroke:#d4a853;fill:none;stroke-width:2}
+    .cand-actions-popup .popup-header span{font-size:12px;font-weight:700;color:#d4a853}
+    .cand-actions-popup .popup-info{padding:10px 16px;display:flex;flex-direction:column;gap:4px;border-bottom:1px solid rgba(212,168,83,0.06)}
+    .cand-actions-popup .popup-info-row{display:flex;align-items:center;gap:6px;font-size:11px;color:#94a3b8}
+    .cand-actions-popup .popup-info-row svg{width:12px;height:12px;stroke:#64748b;fill:none;stroke-width:2;flex-shrink:0}
+    .cand-actions-popup .popup-info-row strong{color:#e2e8f0;font-weight:600}
+    .cand-actions-popup .popup-item{display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;transition:all .2s ease}
+    .cand-actions-popup .popup-item:hover{background:rgba(212,168,83,0.06)}
+    .cand-actions-popup .popup-item .popup-item-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .cand-actions-popup .popup-item .popup-item-icon svg{width:16px;height:16px;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+    .cand-actions-popup .popup-item .popup-item-icon.green{background:rgba(34,197,94,0.1)}
+    .cand-actions-popup .popup-item .popup-item-icon.green svg{stroke:#22c55e}
+    .cand-actions-popup .popup-item .popup-item-icon.red{background:rgba(220,50,50,0.1)}
+    .cand-actions-popup .popup-item .popup-item-icon.red svg{stroke:#e57373}
+    .cand-actions-popup .popup-item .popup-item-icon.gold{background:rgba(212,168,83,0.1)}
+    .cand-actions-popup .popup-item .popup-item-icon.gold svg{stroke:#d4a853}
+    .cand-actions-popup .popup-item .popup-item-text{display:flex;flex-direction:column;gap:1px}
+    .cand-actions-popup .popup-item .popup-item-text span{font-size:12px;font-weight:600;color:#e2e8f0}
+    .cand-actions-popup .popup-item .popup-item-text small{font-size:10px;color:#64748b}
+    .cand-actions-popup .popup-divider{height:1px;margin:4px 12px;background:rgba(212,168,83,0.06)}
 
     .empty-state{text-align:center;padding:50px 20px;color:#94a3b8}
     .empty-state .empty-icon{width:64px;height:64px;border-radius:16px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;background:rgba(212,168,83,0.05);border:1px dashed rgba(212,168,83,0.15)}
@@ -204,6 +269,24 @@
       .cand-table tbody td:last-child{border-bottom:none}
       .cand-table tbody td::before{content:attr(data-label);font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
       .cand-table tbody td.phone-cell{text-align:right;direction:rtl}
+
+      /* ===== MOBILE: job cards (.lang-item) ===== */
+      .lang-list{max-height:none !important;overflow:visible !important;padding-left:0 !important;padding-right:0 !important}
+      .lang-toggle-btn{padding:13px 14px !important;font-size:13px !important;border-radius:13px !important;min-height:46px}
+      .lang-item{padding:12px !important;padding-left:12px !important;border-radius:14px !important;display:flex !important;flex-direction:column !important;transform:none !important}
+      .lang-item::before{width:3px !important}
+      .lang-item:hover{transform:none !important;background:linear-gradient(145deg,rgba(212,168,83,0.05),rgba(212,168,83,0.02)) !important;border-color:rgba(212,168,83,0.1) !important}
+      .lang-item-actions{position:static !important;top:auto !important;left:auto !important;z-index:auto !important;order:9;display:flex !important;gap:8px !important;margin-top:12px !important;padding-top:10px !important;border-top:1px solid rgba(212,168,83,.10)}
+      .lang-item-del,.lang-item-edit{position:static !important;opacity:1 !important;flex:1 1 0 !important;width:auto !important;height:44px !important;font-size:16px !important;border-radius:11px !important}
+      .lang-item:hover .lang-item-del,.lang-item:hover .lang-item-edit{opacity:1 !important}
+      .lang-item-head{display:grid !important;grid-template-columns:repeat(3,minmax(0,1fr)) !important;gap:6px !important;margin-bottom:10px !important;align-items:stretch !important}
+      .lang-item-name{grid-column:1/-1 !important;flex:none !important;font-size:15px !important;font-weight:800 !important;color:#f0d78c !important;white-space:normal !important;min-width:0 !important;text-align:right !important;padding-bottom:1px !important}
+      .lang-item-level,.lang-item-count,.lang-item-sent{display:flex !important;align-items:center !important;justify-content:center !important;gap:4px !important;min-width:0 !important;overflow:hidden !important;text-overflow:ellipsis !important;white-space:nowrap !important;font-size:11px !important;font-weight:700 !important;padding:9px 4px !important;border-radius:10px !important}
+      .lang-item-meta{display:grid !important;grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:6px !important}
+      .lang-item-meta span{white-space:normal !important;font-size:11px !important;padding:7px 9px !important;border-radius:9px !important;line-height:1.5 !important;align-items:flex-start !important;background:rgba(212,168,83,.05) !important;border:1px solid rgba(212,168,83,.08);min-width:0;word-break:break-word}
+      .lang-item-meta span:last-child{grid-column:1/-1 !important}
+      .lang-item-desc{font-size:12px !important;margin-top:10px !important;line-height:1.7 !important;word-break:break-word}
+      .cand-actions-popup{min-width:0 !important;width:calc(100vw - 24px) !important;max-width:calc(100vw - 24px) !important}
     }
     @media(max-width:380px){
       .navbar{padding:10px 12px}
@@ -211,8 +294,79 @@
       .navbar h1{font-size:16px}
       .container{padding:0 10px;margin:10px auto}
       .profile-section,.lang-section,.cand-section{padding:16px 14px}
+      .lang-item-head{grid-template-columns:repeat(2,minmax(0,1fr)) !important}
+      .lang-item-sent{grid-column:1/-1 !important}
+      .lang-item-meta{grid-template-columns:1fr !important}
+      .lang-item-name{font-size:14px !important}
     }
-  </style>
+/* ===== LABOR (عمال الشركة) ===== */
+.lab-thumbs{display:flex;gap:5px;align-items:center}
+.lab-thumbs img,.lab-thumbs .noimg{width:30px;height:30px;border-radius:6px;object-fit:cover;border:1px solid rgba(212,168,83,.25);cursor:pointer;background:#111;display:block}
+.lab-thumbs .noimg{border-style:dashed;display:flex;align-items:center;justify-content:center;color:#475569;font-size:10px;cursor:default}
+.lab-grp-h td.lab-grp-cell{cursor:pointer;background:rgba(212,168,83,.07);border-top:1px solid rgba(212,168,83,.16);padding:11px 14px !important;font-weight:700;color:#f0d78c;user-select:none;white-space:normal}
+.lab-grp-h:hover td.lab-grp-cell{background:rgba(212,168,83,.12)}
+.lab-grp-arrow{display:inline-block;width:14px;color:#d4a853;font-size:11px}
+.lab-grp-name{font-size:13px;color:#f0d78c}
+.lab-grp-meta{font-size:11px;color:#94a3b8;margin-inline-start:8px;font-weight:600}
+.lab-pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;white-space:nowrap}
+.lab-pill.working{background:rgba(34,197,94,.10);color:#34d399;border:1px solid rgba(34,197,94,.22)}
+.lab-pill.new{background:rgba(251,191,36,.10);color:#fbbf24;border:1px solid rgba(251,191,36,.22)}
+  .lab-pill.pending{background:rgba(56,189,248,.10);color:#38bdf8;border:1px solid rgba(56,189,248,.22)}
+
+    .modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);z-index:100;align-items:center;justify-content:center;padding:16px}
+  .modal-overlay.show{display:flex}
+  .lwv-card{background:#111;border:1px solid rgba(212,168,83,0.1);border-radius:22px;padding:24px;width:min(94vw,820px);max-height:92vh;overflow-y:auto;box-shadow:0 40px 100px rgba(0,0,0,0.6);animation:lwvIn .3s cubic-bezier(0.16,1,0.3,1)}
+  @keyframes lwvIn{from{opacity:0;transform:scale(.96) translateY(14px)}to{opacity:1;transform:none}}
+  .lwv-title{font-size:20px;font-weight:800;background:linear-gradient(135deg,#f0d78c,#d4a853);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px}
+  .lwv-sub{font-size:12px;color:#64748b;margin-bottom:16px}
+  .lwv-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  .lwv-item{background:rgba(212,168,83,.04);border:1px solid rgba(212,168,83,.09);border-radius:12px;padding:10px 12px;min-width:0}
+  .lwv-k{font-size:11px;color:#64748b;font-weight:700;margin-bottom:3px}
+  .lwv-v{font-size:14px;color:#e2e8f0;font-weight:600;word-break:break-word;direction:rtl}
+  .lwv-sec{font-size:13px;font-weight:800;color:#d4a853;margin:18px 0 8px}
+  .lwv-photos{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .lwv-photo{background:rgba(212,168,83,.04);border:1px solid rgba(212,168,83,.12);border-radius:14px;padding:8px;text-align:center}
+  .lwv-photo img{width:100%;height:200px;object-fit:contain;border-radius:8px;background:#0b0b0b;cursor:zoom-in;display:block}
+  .lwv-photo .lwv-cap{font-size:12px;color:#94a3b8;margin-top:6px;font-weight:700}
+  .lwv-noimg{height:200px;display:flex;align-items:center;justify-content:center;color:#475569;font-size:13px;border-radius:8px;background:rgba(255,255,255,.02)}
+  @media(max-width:640px){.lwv-grid{grid-template-columns:1fr}.lwv-photos{grid-template-columns:1fr}.lwv-photo img{height:170px}}
+  .lwv-close{margin-top:18px;width:100%;padding:12px;background:linear-gradient(135deg,#b8860b,#d4a853);color:#0a0a0a;border:none;border-radius:12px;font-weight:800;font-family:Tajawal,sans-serif;cursor:pointer;font-size:14px}
+  .lwv-close:hover{filter:brightness(1.08)}
+  .lab-btn{padding:6px 13px;font-size:12px;background:rgba(212,168,83,.1);border:1px solid rgba(212,168,83,.25);color:#f0d78c;border-radius:9px;cursor:pointer;font-family:Tajawal,sans-serif;font-weight:700;white-space:nowrap}
+  .lab-btn:hover{background:rgba(212,168,83,.2)}
+  #lab-view-img{max-width:min(94vw,900px);max-height:80vh;border-radius:14px;border:1px solid rgba(212,168,83,.25);background:#111;object-fit:contain}
+  .lwv-viewer{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.88);z-index:120;align-items:center;justify-content:center;flex-direction:column;gap:14px;padding:16px}
+  .lwv-viewer.show{display:flex}
+
+  /* ===== MOBILE: labor table -> cards (same design as the admin labor lists) ===== */
+  @media(max-width:768px){
+    #lab-table thead{display:none}
+    #lab-table,#lab-table tbody{display:block;width:100%}
+    #lab-table tbody tr{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:8px;margin:0 0 10px;background:rgba(212,168,83,.02);border:1px solid rgba(212,168,83,.08);border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,.2);overflow:hidden}
+    #lab-table tbody tr.lab-grp-h{display:block;padding:0;margin:0 0 10px;background:transparent;border:none;box-shadow:none;overflow:visible}
+    #lab-table tbody td{display:block;min-width:0;padding:8px 10px;background:rgba(212,168,83,.02);border:1px solid rgba(212,168,83,.06);border-radius:8px;white-space:normal;overflow-wrap:anywhere}
+    #lab-table tbody td:first-child{grid-column:1/-1}
+    #lab-table tbody td::before{content:attr(data-label);display:block;font-size:9px;color:#64748b;font-weight:700;margin-bottom:3px;text-transform:uppercase;letter-spacing:.3px}
+    #lab-table tbody td.lab-grp-cell{grid-column:1/-1;display:flex;align-items:center;gap:8px;padding:11px 14px!important;background:rgba(212,168,83,.07);border:1px solid rgba(212,168,83,.16);border-radius:12px;color:#f0d78c}
+    #lab-table tbody td.lab-grp-cell::before{content:none}
+    #lab-table tbody td .lab-thumbs{justify-content:flex-start;flex-wrap:wrap}
+    #lab-table tbody td .lab-btn{min-height:34px}
+    #lab-table tbody td:last-child .lab-btn,#lab-table tbody td:last-child .lab-pill{width:100%;text-align:center;display:block}
+  }
+
+  /* ===== المدفوعات (شركة العمالة) ===== */
+  .pay-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:16px}
+  .pay-card{background:rgba(212,168,83,.04);border:1px solid rgba(212,168,83,.14);border-radius:14px;padding:14px 16px;min-width:0}
+  .pay-card .num{font-size:22px;font-weight:800;color:#f0d78c;line-height:1.3}
+  .pay-card .num.green{color:#34d399}
+  .pay-card .num.blue{color:#38bdf8}
+  .pay-card .num.amber{color:#fbbf24}
+  .pay-card .label{font-size:12px;color:#94a3b8;font-weight:700;margin-top:5px}
+  .pay-card .sub{font-size:10.5px;color:#64748b;margin-top:6px}
+  .pay-amt{color:#38bdf8;font-weight:700}
+  .pay-amt.two{color:#fbbf24}
+  #pay-table thead th{white-space:nowrap}
+</style>
 </head>
 <body>
 <script>if(window.self!==window.top)try{window.top.location=window.self.location}catch(e){document.documentElement.innerHTML='<head><title>وَظِيف</title></head><body style="margin:0;background:#0a0a0a;display:flex;align-items:center;justify-content:center;height:100vh;font-family:Tajawal,sans-serif;color:#f0d78c;text-align:center;"><div><h1>وَظِيف</h1><p>افتح الموقع في نافذة جديدة</p><a href="/" style="color:#d4a853;">فتح الموقع</a></div></body>'}</script>
@@ -221,13 +375,26 @@
   <!-- TOAST -->
   <div class="toast" id="toast"></div>
 
+  <!-- CONFIRM MODAL -->
+  <div class="confirm-backdrop" id="confirm-backdrop">
+    <div class="confirm-modal">
+      <div class="confirm-icon" id="confirm-icon">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      </div>
+      <div class="confirm-title" id="confirm-title">تأكيد</div>
+      <div class="confirm-msg" id="confirm-msg"></div>
+      <div class="confirm-actions">
+        <button class="confirm-btn confirm-yes" id="confirm-yes">نعم، متابعة</button>
+        <button class="confirm-btn confirm-no" id="confirm-no">إلغاء</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ===== LOGIN SCREEN ===== -->
   <div class="login-screen" id="login-screen">
     <div class="login-card">
       <div class="login-logo">
-        <img src="/uploads/wazef.webp" alt="وَظِيف">
-        <h1>وَظِيف</h1>
-        <p>بوابة إدارة الشركة</p>
+        <img src="/uploads/wazef.png" alt="وَظِيف">
       </div>
       <div class="login-error" id="login-error"></div>
       <div class="form-group">
@@ -253,7 +420,7 @@
   <div class="dashboard-screen" id="dashboard-screen">
     <nav class="navbar">
       <div class="brand">
-        <img src="/uploads/wazef.webp" alt="وَظِيف" class="brand-logo">
+        <img src="/uploads/wazef.png" alt="وَظِيف" class="brand-logo">
         <h1 id="company-title"></h1>
       </div>
       <div class="user-info">
@@ -265,8 +432,11 @@
     <div class="container">
       <div class="tabs">
         <button class="tab-btn active" onclick="switchDashTab('profile',this)">الملف الشخصي</button>
-        <button class="tab-btn" onclick="switchDashTab('languages',this)">اللغات</button>
-        <button class="tab-btn" onclick="switchDashTab('candidates',this)">المتقدمين</button>
+        <button class="tab-btn" id="lang-tab-btn" onclick="switchDashTab('languages',this)">اللغات</button>
+        <button class="tab-btn" id="cand-tab-btn" onclick="switchDashTab('candidates',this)">المتقدمين <span id="cand-count-badge" class="tab-count">0</span></button>
+        <button class="tab-btn" id="lab-tab-btn" style="display:none" onclick="switchDashTab('labor',this)">العمال <span id="lab-tab-badge" class="tab-count">0</span></button>
+        <button class="tab-btn" id="pay-tab-btn" style="display:none" onclick="switchDashTab('payments',this)">المدفوعات</button>
+        <button class="tab-btn" id="agents-tab-btn" onclick="switchDashTab('agents',this)">المندوبين</button>
       </div>
 
       <!-- Tab 1: Profile -->
@@ -277,6 +447,7 @@
             <div class="profile-grid">
               <div class="form-group"><label>اسم الشركة</label><input type="text" id="p-name" placeholder="اسم الشركة" autocomplete="off"></div>
               <div class="form-group"><label>البريد الإلكتروني للشركة</label><input type="email" id="p-company_email" placeholder="hr@company.com" autocomplete="off" dir="ltr" style="text-align:left"></div>
+              <div class="form-group full-width"><label>من تقبل من المتقدمين؟</label><select id="p-education" class="sel" style="width:100%;"><option value="both">خريجين و طلاب</option><option value="graduates">خريجين فقط</option><option value="students">طلاب فقط</option></select><div style="font-size:11px;color:#64748b;margin-top:6px;line-height:1.7;">لو اخترت «خريجين فقط» لن تظهر طلاب الجامعة في قائمة المتقدمين لديك، ولن تظهر شركتك للطلاب عند اختيارهم للوظائف.</div></div>
             </div>
             <button class="btn-save" onclick="saveProfile()">حفظ التعديلات</button>
 
@@ -298,7 +469,7 @@
       <div class="tab-panel" id="tab-languages">
         <div class="glass">
           <div class="lang-section">
-            <div class="section-label">اللغات المطلوبة</div>
+            <div class="section-label" id="lang-list-title">اللغات المطلوبة</div>
             <div class="lang-search-wrap">
               <input type="text" id="lang-search" placeholder="🔍 بحث باللغة أو الوظيفة..." oninput="filterLangs()" autocomplete="off">
               <select id="lang-lang-filter" onchange="onLangFilterChange()"><option value="">كل اللغات</option></select>
@@ -310,11 +481,12 @@
                 <p>لم تتم إضافة أي لغات بعد</p>
               </div>
             </div>
+            <button class="lang-toggle-btn" id="lang-toggle-btn" onclick="toggleLangList()" style="display:none"></button>
 
-            <div class="section-label" style="margin-top:24px">➕ إضافة لغة جديدة</div>
+            <div class="section-label" style="margin-top:24px" id="lang-add-title">➕ إضافة لغة جديدة</div>
             <div class="lang-add">
               <div class="lang-add-row">
-                <div style="flex:2;">
+                <div style="flex:2;" id="lang-lang-field">
                   <span class="lang-add-label">اللغة</span>
                   <select id="lang-select" style="width:100%;">
                     <option value="">اختر اللغة</option>
@@ -328,7 +500,7 @@
                     <option value="الروسية">الروسية</option>
                   </select>
                 </div>
-                <div style="flex:1;">
+                <div style="flex:1;" id="lang-level-field">
                   <span class="lang-add-label">المستوى</span>
                   <select id="lang-level" style="width:100%;">
                     <option value="">A1-C2</option>
@@ -349,7 +521,7 @@
               <div class="lang-sep"></div>
 
               <div class="lang-add-row">
-                <div style="flex:2;">
+                <div style="flex:2;" id="lang-pos-field">
                   <span class="lang-add-label">اسم الوظيفة</span>
                   <input type="text" id="lang-position" placeholder="مثال: مطور ويب" autocomplete="off" style="width:100%;">
                 </div>
@@ -378,6 +550,26 @@
                 <div style="flex:1;">
                   <span class="lang-add-label">🔔 تنبيه قبل كام يوم</span>
                   <input type="number" id="lang-notify-days" min="1" max="30" value="5" placeholder="5" style="width:100%;">
+                </div>
+              </div>
+
+              <div class="lang-add-row">
+                <div style="flex:1;">
+                  <span class="lang-add-label">📍 مكان العمل</span>
+                  <select id="lang-work-location" style="width:100%;">
+                    <option value="">اختياري</option>
+                    <option value="office">🏢 في مكان العمل</option>
+                    <option value="home">🏠 من البيت</option>
+                    <option value="hybrid">🔄 هجين (بيت + عمل)</option>
+                  </select>
+                </div>
+                <div style="flex:1;">
+                  <span class="lang-add-label">⏱️ نوع التوظيف</span>
+                  <select id="lang-employment-type" style="width:100%;">
+                    <option value="">اختياري</option>
+                    <option value="full_time">🕐 فل تايم</option>
+                    <option value="part_time">⏰ بارت تايم</option>
+                  </select>
                 </div>
               </div>
 
@@ -416,6 +608,7 @@
                     <th>اللغة</th>
                     <th>الوظيفة</th>
                     <th>المقابلة</th>
+                    <th>القرار</th>
                   </tr>
                 </thead>
                 <tbody id="cand-body"></tbody>
@@ -428,9 +621,162 @@
           </div>
         </div>
       </div>
+      <div class="tab-panel" id="tab-labor">
+        <div class="glass">
+          <div class="cand-section">
+            <div class="section-label">عمال الشركة</div>
+            <div class="cand-filters">
+              <input type="text" id="lab-search" placeholder="🔍 بحث بالاسم أو الوظيفة أو المدينة..." oninput="filterLaborWorkers()" autocomplete="off">
+            </div>
+            <div class="table-scroll">
+              <table class="cand-table" id="lab-table">
+                <thead>
+                  <tr>
+                    <th>الاسم</th>
+                    <th>العمر</th>
+                    <th>الهاتف</th>
+                    <th>المدينة</th>
+                    <th>المجموعة</th>
+                    <th>الحالة</th>
+                    <th>ربح الشهر</th>
+                    <th>البطاقة</th>
+                    <th>موافقة الشركة</th>
+                  </tr>
+                </thead>
+                <tbody id="lab-body"></tbody>
+              </table>
+            </div>
+            <div class="empty-state" id="lab-empty" style="display:none">
+              <div class="empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+              <p>لا يوجد عمال مرتبطين بهذه الشركة</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tab-panel" id="tab-payments">
+        <div class="glass">
+          <div class="cand-section">
+            <div class="section-label">مدفوعات شهر <span id="pay-month">—</span></div>
+            <div class="pay-cards">
+              <div class="pay-card">
+                <div class="num blue" id="pay-total">0 ج.م</div>
+                <div class="label">إجمالي مبلغ الشهر</div>
+                <div class="sub">مبلغ كل الشغالين — مبلغ المندوب داخله</div>
+              </div>
+              <div class="pay-card">
+                <div class="num amber" id="pay-two-months">0 ج.م</div>
+                <div class="label">دفع شهرين (× 2)</div>
+                <div class="sub">لكل شغّال اشتغل شهرين فأكثر</div>
+              </div>
+              <div class="pay-card">
+                <div class="num green" id="pay-working">0</div>
+                <div class="label">عدد الشغالين</div>
+                <div class="sub">منتظرين: <span id="pay-pending">0</span> — مبلغهم <span id="pay-pending-amount">0 ج.م</span></div>
+              </div>
+              <div class="pay-card">
+                <div class="num" id="pay-avg">0 ج.م</div>
+                <div class="label">متوسط ربح الشخص / شهر</div>
+                <div class="sub">المتوسط على الشغالين بس</div>
+              </div>
+            </div>
+            <div class="table-scroll">
+              <table class="cand-table" id="pay-table">
+                <thead>
+                  <tr>
+                    <th>الاسم</th>
+                    <th>الوظيفة</th>
+                    <th>الحالة</th>
+                    <th>مبلغ الشهر</th>
+                    <th>دفع شهرين</th>
+                  </tr>
+                </thead>
+                <tbody id="pay-body"></tbody>
+              </table>
+            </div>
+            <div class="empty-state" id="pay-empty" style="display:none">
+              <div class="empty-icon"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></div>
+              <p>لا يوجد عمال لعرض مدفوعاتهم</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
+  <div class="tab-panel" id="tab-agents">
+    <div class="glass">
+      <div class="cand-section">
+        <div class="section-label">المندوبين</div>
+        <div class="cand-filters">
+          <input type="text" id="agents-search" placeholder="🔍 بحث بالاسم أو الكود..." oninput="filterAgents()" autocomplete="off">
+        </div>
+        <div class="table-scroll">
+          <table class="cand-table" id="agents-table">
+            <thead>
+              <tr>
+                <th>الاسم</th>
+                <th>الكود</th>
+                <th>الهاتف</th>
+                <th>النوع</th>
+                <th>الحالة</th>
+                <th>المسجلين</th>
+                <th>التوظيفات</th>
+              </tr>
+            </thead>
+            <tbody id="agents-body"></tbody>
+          </table>
+        </div>
+        <div class="empty-state" id="agents-empty" style="display:none">
+          <div class="empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+          <p>لا يوجد مندوبين</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="lab-worker-modal" onclick="if(event.target===this)closeLabWorker()">
+    <div class="lwv-card">
+      <div class="lwv-title" id="lwv-name">—</div>
+      <div class="lwv-sub" id="lwv-sub">بيانات العامل كاملة</div>
+
+      <div class="lwv-grid">
+        <div class="lwv-item"><div class="lwv-k">الاسم رباعي</div><div class="lwv-v" id="lwv-full_name">—</div></div>
+        <div class="lwv-item"><div class="lwv-k">السن</div><div class="lwv-v" id="lwv-age">—</div></div>
+        <div class="lwv-item"><div class="lwv-k">الرقم القومي</div><div class="lwv-v" id="lwv-national_id" dir="ltr">—</div></div>
+        <div class="lwv-item"><div class="lwv-k">رقم الموبايل</div><div class="lwv-v" id="lwv-phone" dir="ltr">—</div></div>
+        <div class="lwv-item"><div class="lwv-k">المدينة</div><div class="lwv-v" id="lwv-city">—</div></div>
+        <div class="lwv-item"><div class="lwv-k">العنوان</div><div class="lwv-v" id="lwv-address">—</div></div>
+        <div class="lwv-item"><div class="lwv-k">المجموعة</div><div class="lwv-v" id="lwv-group">—</div></div>
+        <div class="lwv-item"><div class="lwv-k">مندوب العمالة</div><div class="lwv-v" id="lwv-agent">—</div></div>
+        <div class="lwv-item"><div class="lwv-k">الحالة</div><div class="lwv-v" id="lwv-status">—</div></div>
+        <div class="lwv-item"><div class="lwv-k">الربح الشهري</div><div class="lwv-v" id="lwv-earning">—</div></div>
+        <div class="lwv-item"><div class="lwv-k">تاريخ الإضافة</div><div class="lwv-v" id="lwv-created">—</div></div>
+        <div class="lwv-item"><div class="lwv-k">تاريخ بدء الشغل</div><div class="lwv-v" id="lwv-working_at">—</div></div>
+      </div>
+
+      <div class="lwv-sec">📝 ملاحظات</div>
+      <div class="lwv-item"><div class="lwv-v" id="lwv-notes">—</div></div>
+
+      <div class="lwv-sec">🪪 صورة البطاقة الشخصية</div>
+      <div class="lwv-photos">
+        <div class="lwv-photo">
+          <div id="lwv-front-box"></div>
+          <div class="lwv-cap">الوجه الأمامي</div>
+        </div>
+        <div class="lwv-photo">
+          <div id="lwv-back-box"></div>
+          <div class="lwv-cap">ظهر البطاقة</div>
+        </div>
+      </div>
+
+      <button class="lwv-close" onclick="closeLabWorker()">إغلاق</button>
+    </div>
+  </div>
+
+  <div class="lwv-viewer" id="lab-viewer" onclick="if(event.target===this)labCloseView()">
+    <img id="lab-view-img" src="" alt="">
+    <button class="lab-btn" style="padding:10px 30px" onclick="labCloseView()">إغلاق</button>
+  </div>
   <script>
     /* ===== CANVAS BACKGROUND ===== */
     const canvas=document.getElementById('bg-canvas'),ctx=canvas.getContext('2d');
@@ -475,6 +821,20 @@
       setTimeout(()=>t.classList.remove('show'),3000);
     }
 
+    function confirmDialog(msg,title){
+      return new Promise(resolve=>{
+        const bd=document.getElementById('confirm-backdrop');
+        document.getElementById('confirm-msg').textContent=msg;
+        document.getElementById('confirm-title').textContent=title||'تأكيد';
+        bd.classList.add('show');
+        const yes=document.getElementById('confirm-yes'),no=document.getElementById('confirm-no');
+        const close=v=>{bd.classList.remove('show');yes.onclick=null;no.onclick=null;resolve(v)};
+        yes.onclick=()=>close(true);
+        no.onclick=()=>close(false);
+        bd.onclick=e=>{if(e.target===bd)close(false)};
+      });
+    }
+
     function togglePass(id,btn){
       const inp=document.getElementById(id);const open=inp.type==='password';
       inp.type=open?'text':'password';
@@ -507,6 +867,7 @@
         document.getElementById('user-display').textContent=u.name||u.email;
       }
       loadProfile();
+      loadCandidatesCount();
     }
 
     /* ===== LOGIN ===== */
@@ -528,6 +889,170 @@
 
     function doLogout(){clearAuth();showLoginScreen()}
 
+    /* ===== LABOR (عمال الشركة) ===== */
+    let _coWorkers = [];
+    async function loadLaborWorkers(){
+      try{
+        const d = await api('/api/company/labor-workers');
+        const changed = _sig('co-workers', d);
+        _coWorkers = (d && d.workers) || [];
+        if (changed) {
+          renderLaborWorkers();
+          const payTab = document.getElementById('tab-payments');
+          if (payTab && payTab.classList.contains('active')) renderPayments();
+        }
+      }catch(e){ showToast('تعذر تحميل العمال','error'); }
+    }
+
+    const AR_MONTHS = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+    function loadPayments(){
+      if (_coWorkers && _coWorkers.length) renderPayments();
+      else loadLaborWorkers().then(renderPayments).catch(function(){ renderPayments(); });
+    }
+    function renderPayments(){
+      const all = (_coWorkers || []).filter(w => w.status === 'working' || w.status === 'pending');
+      const working = all.filter(w => w.status === 'working');
+      const pending = all.filter(w => w.status === 'pending');
+      const total = working.reduce((s, w) => s + Number(w.earning_per_month || 0), 0);
+      const pendingAmt = pending.reduce((s, w) => s + Number(w.earning_per_month || 0), 0);
+      const avg = working.length ? Math.round(total / working.length) : 0;
+      const now = new Date();
+      const mEl = document.getElementById('pay-month'); if (mEl) mEl.textContent = AR_MONTHS[now.getMonth()] + ' ' + now.getFullYear();
+      const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+      set('pay-total', Number(total).toLocaleString('en-US') + ' ج.م');
+      set('pay-two-months', Number(total * 2).toLocaleString('en-US') + ' ج.م');
+      set('pay-working', working.length);
+      set('pay-pending', pending.length);
+      set('pay-pending-amount', Number(pendingAmt).toLocaleString('en-US') + ' ج.م');
+      set('pay-avg', Number(avg).toLocaleString('en-US') + ' ج.م');
+      const body = document.getElementById('pay-body');
+      const empty = document.getElementById('pay-empty');
+      if (body) {
+        body.innerHTML = all.map(w => {
+          const amt = Number(w.earning_per_month || 0);
+          const st = w.status === 'working' ? '<span class="lab-pill working">شغّال</span>' : '<span class="lab-pill pending">منتظر التأكيد</span>';
+          return '<tr>' +
+            '<td data-label="الاسم"><strong>' + escH(w.full_name) + '</strong>' + (w.position ? '<div style="font-size:11px;color:#94a3b8;margin-top:2px">' + escH(w.position) + '</div>' : '') + '</td>' +
+            '<td data-label="الوظيفة">' + (escH(w.position) || '-') + '</td>' +
+            '<td data-label="الحالة">' + st + '</td>' +
+            '<td data-label="مبلغ الشهر"><span class="pay-amt">' + amt.toLocaleString('en-US') + ' ج.م</span></td>' +
+            '<td data-label="دفع شهرين"><span class="pay-amt two">' + (amt * 2).toLocaleString('en-US') + ' ج.م</span></td>' +
+            '</tr>';
+        }).join('');
+      }
+      if (empty) empty.style.display = all.length ? 'none' : '';
+      const table = document.getElementById('pay-table');
+      if (table) table.style.display = all.length ? '' : 'none';
+    }
+    let _labOpen = {}, _lastLabQ = null;
+    function labApCell(w){
+      const ap = String(w.company_approval || '');
+      if (ap === 'confirmed') return '<span class="lab-pill working">✓ تمت الموافقة</span>';
+      if (ap === 'requested') return '<span class="lab-pill pending">بانتظار الإدارة</span>';
+      return '<button class="lab-btn" style="padding:5px 10px;font-size:11px" onclick="approveLabWorker(' + w.id + ')">✓ أوافق على العامل</button>';
+    }
+    function labRow(w, open, gid){
+      const hide = open ? '' : ' style="display:none"';
+      return `
+        <tr data-gid="${gid != null ? gid : ''}"${hide}>
+          <td data-label="الاسم"><strong>${escH(w.full_name)}</strong> <button class="lab-btn" style="padding:3px 9px;font-size:11px" onclick="openLabWorker(${w.id})">التفاصيل</button>${w.position ? '<div style="font-size:11px;color:#94a3b8;margin-top:2px">' + escH(w.position) + '</div>' : ''}</td>
+          <td data-label="العمر">${escH(w.age)}</td>
+          <td data-label="الهاتف" dir="ltr">${escH(w.phone)||'-'}</td>
+          <td data-label="المدينة">${escH(w.city)||'-'}</td>
+          <td data-label="المجموعة">${escH(w.group_name)||'-'}</td>
+          <td data-label="الحالة">${w.status==='working' ? '<span class="lab-pill working">شغّال</span>' : (w.status==='pending' ? '<span class="lab-pill pending">منتظر التأكيد</span>' : '<span class="lab-pill new">جديد</span>')}</td>
+          <td data-label="ربح الشهر">${(w.status==='working'||w.status==='pending') ? '<strong style="color:'+(w.status==='working'?'#34d399':'#38bdf8')+'">'+Number(w.earning_per_month||0).toLocaleString('en-US')+' ج.م</strong>' : '-'}</td>
+          <td data-label="البطاقة"><span class="lab-thumbs">${labThumb(w.id_card_front)}${labThumb(w.id_card_back)}</span></td>
+          <td data-label="موافقة الشركة">${labApCell(w)}</td>
+        </tr>`;
+    }
+    function renderLaborWorkers(){
+      const q = (val('lab-search')||'').toLowerCase();
+      const src = _coWorkers || [];
+      const buckets = [], idx = {};
+      src.forEach(w => {
+        const key = String(w.position || '').trim();
+        if (!idx[key]) { idx[key] = { gid: String(buckets.length), name: key, members: [] }; buckets.push(idx[key]); }
+        idx[key].members.push(w);
+      });
+      const groups = buckets.map(g => {
+        const gHit = !q || String(g.name || '').toLowerCase().indexOf(q) >= 0;
+        const shown = gHit ? g.members : g.members.filter(w =>
+          [w.full_name, w.city, w.national_id, w.phone, w.position, w.group_name, w.status].some(v => String(v || '').toLowerCase().indexOf(q) >= 0));
+        return { gid: g.gid, name: g.name, members: g.members, shown: shown, hit: gHit || shown.length > 0 };
+      }).filter(g => g.hit);
+      const tb = document.getElementById('lab-body');
+      const emp = document.getElementById('lab-empty');
+      const tbl = document.getElementById('lab-table');
+      const badge = document.getElementById('lab-tab-badge');
+      if (badge) badge.textContent = src.length;
+      if (!tb) return;
+      if (!groups.length){ tb.innerHTML=''; if(emp) emp.style.display='block'; if(tbl) tbl.style.display='none'; return; }
+      if (emp) emp.style.display='none';
+      if (tbl) tbl.style.display='';
+      tb.innerHTML = groups.map(g => {
+        const open = Object.prototype.hasOwnProperty.call(_labOpen, g.gid) ? !!_labOpen[g.gid] : !!q;
+        const head = `
+        <tr class="lab-grp-h" data-gid="${g.gid}">
+          <td colspan="9" class="lab-grp-cell" onclick="toggleLabGroup('${g.gid}')">
+            <span class="lab-grp-arrow">${open ? '▾' : '◂'}</span>
+            <span class="lab-grp-name">${escH(g.name || 'بدون وظيفة')}</span>
+            <span class="lab-grp-meta">${g.members.length} شخص${g.shown.length !== g.members.length ? ' • مطابق ' + g.shown.length : ''}</span>
+          </td>
+        </tr>`;
+        return head + g.shown.map(w => labRow(w, open, g.gid)).join('');
+      }).join('');
+    }
+    function toggleLabGroup(gid){
+      const key = String(gid);
+      const q = (val('lab-search')||'').trim();
+      const open = Object.prototype.hasOwnProperty.call(_labOpen, key) ? !!_labOpen[key] : !!q;
+      _labOpen[key] = !open;
+      renderLaborWorkers();
+    }
+    function filterLaborWorkers(){
+      const q = (val('lab-search')||'').trim();
+      if (q !== _lastLabQ) { _labOpen = {}; _lastLabQ = q; }
+      renderLaborWorkers();
+    }
+    async function approveLabWorker(id){
+      try{
+        const d = await api('/api/company/labor-workers/' + id + '/approve', { method: 'POST' });
+        showToast((d && d.message) || 'تم الإرسال', 'success');
+        await loadLaborWorkers();
+      }catch(e){ showToast((e && e.message) || 'تعذر إرسال الموافقة', 'error'); }
+    }
+    function escH(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function labThumb(f){ if(!f) return '<span class="noimg">-</span>'; return '<img src="/uploads/'+escH(f)+'" alt="" title="عرض" onclick="window.open(this.src,\'_blank\')">'; }
+    function openLabWorker(id){
+      const w = _coWorkers.find(x => x.id === id); if(!w) return;
+      const set=(k,v)=>{const e=document.getElementById('lwv-'+k); if(e) e.textContent = (v===0||v)?String(v):'—';};
+      set('name', w.full_name);
+      const stTxt = w.status==='working'?'شغّال':(w.status==='pending'?'منتظر التأكيد':'جديد');
+      const sub=document.getElementById('lwv-sub'); if(sub) sub.textContent = stTxt + ' • ' + (w.position || 'بدون وظيفة') + ' • ' + (w.group_name || 'بدون مجموعة') + ' • ' + (w.labor_agent_name || 'بدون مندوب');
+      set('full_name', w.full_name);
+      set('age', w.age ? w.age + ' سنة' : '');
+      set('national_id', w.national_id);
+      set('phone', w.phone);
+      set('city', w.city);
+      set('address', w.address);
+      set('group', w.group_name);
+      set('agent', w.labor_agent_name);
+      const stEl=document.getElementById('lwv-status');
+      if(stEl){ stEl.textContent=stTxt; stEl.style.color = w.status==='working'?'#34d399':(w.status==='pending'?'#38bdf8':'#fbbf24'); }
+      set('earning', ((w.status==='working'||w.status==='pending') && w.earning_per_month) ? Number(w.earning_per_month).toLocaleString('en-US')+' ج.م/شهر' : '—');
+      set('created', w.created_at ? String(w.created_at).replace('T',' ').slice(0,16) : '—');
+      set('working_at', w.working_at ? String(w.working_at).replace('T',' ').slice(0,16) : '—');
+      set('notes', w.notes);
+      document.getElementById('lwv-front-box').innerHTML = w.id_card_front ? '<img src="/uploads/'+escH(w.id_card_front)+'" alt="وش البطاقة" title="تكبير" onclick="labView(this.src)">' : '<div class="lwv-noimg">لا توجد صورة</div>';
+      document.getElementById('lwv-back-box').innerHTML = w.id_card_back ? '<img src="/uploads/'+escH(w.id_card_back)+'" alt="ظهر البطاقة" title="تكبير" onclick="labView(this.src)">' : '<div class="lwv-noimg">لا توجد صورة</div>';
+      const m=document.getElementById('lab-worker-modal'); if(m) m.classList.add('show');
+      document.body.style.overflow='hidden';
+    }
+    function closeLabWorker(){ const m=document.getElementById('lab-worker-modal'); if(m) m.classList.remove('show'); document.body.style.overflow=''; }
+    function labView(src){ const i=document.getElementById('lab-view-img'); if(i) i.src=src; const v=document.getElementById('lab-viewer'); if(v) v.classList.add('show'); }
+    function labCloseView(){ const v=document.getElementById('lab-viewer'); if(v) v.classList.remove('show'); }
+
     /* ===== TABS ===== */
     function switchDashTab(tab,el){
       document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
@@ -536,7 +1061,69 @@
       document.getElementById('tab-'+tab).classList.add('active');
       if(tab==='languages')loadLanguages();
       if(tab==='candidates')loadCandidates();
+      if(tab==='labor')loadLaborWorkers();
+      if(tab==='payments')loadPayments();
+      if(tab==='agents')loadAgents();
     }
+
+    /* ===== AGENTS (المندوبين) ===== */
+    let _coAgents = [];
+    /* ---- quiet auto-refresh: re-fetch, touch the DOM only when the data changed ---- */
+    const _sigCache = {};
+    function _sig(key, value) {
+      let s;
+      try { s = (typeof value === 'string') ? value : JSON.stringify(value); } catch (e) { s = String(value); }
+      if (s === undefined) s = String(value);
+      if (_sigCache[key] === s) return false;
+      _sigCache[key] = s;
+      return true;
+    }
+    function _applyHTML(node, html) {
+      if (!node) return false;
+      if (node.innerHTML === html) return false;
+      const sx = window.scrollX, sy = window.scrollY;
+      const focusId = (document.activeElement && document.activeElement.id) || '';
+      node.innerHTML = html;
+      if (window.scrollX !== sx || window.scrollY !== sy) window.scrollTo(sx, sy);
+      if (focusId) { const f = document.getElementById(focusId); if (f && f.focus) { try { f.focus({ preventScroll: true }); } catch (e) { try { f.focus(); } catch (e2) {} } } }
+      return true;
+    }
+    async function loadAgents(){
+      try{
+        const d = await api('/api/company/agents');
+        const changed = _sig('co-agents', d);
+        _coAgents = d || [];
+        if (changed) renderAgents();
+      }catch(e){ showToast('تعذر تحميل المندوبين','error'); }
+    }
+    function renderAgents(){
+      const q = (val('agents-search')||'').toLowerCase();
+      const src = _coAgents.filter(a => !q || (a.name||'').toLowerCase().indexOf(q) >= 0 || (a.referral_code||'').toLowerCase().indexOf(q) >= 0);
+      const body = document.getElementById('agents-body');
+      const empty = document.getElementById('agents-empty');
+      const table = document.getElementById('agents-table');
+      if(!body) return;
+      body.innerHTML = src.map(a => {
+        const rk = a.role || a.agent_type || 'agent';
+        const type = rk === 'super_qualty' ? '<span class="lab-pill working">سوبر قولتي</span>'
+          : rk === 'qualty' ? '<span class="lab-pill pending">قولتي</span>'
+          : rk === 'team_leader' ? '<span class="lab-pill new">قائد فريق</span>'
+          : '<span class="lab-pill">مندوب</span>';
+        const st = a.is_active ? '<span style="color:#34d399;font-weight:700">نشط</span>' : '<span style="color:#ef4444;font-weight:700">موقوف</span>';
+        return '<tr>' +
+          '<td data-label="الاسم"><strong>'+escH(a.name)+'</strong></td>' +
+          '<td data-label="الكود" dir="ltr">'+escH(a.referral_code||'—')+'</td>' +
+          '<td data-label="الهاتف" dir="ltr">'+escH(a.phone||'—')+'</td>' +
+          '<td data-label="النوع">'+type+'</td>' +
+          '<td data-label="الحالة">'+st+'</td>' +
+          '<td data-label="المسجلين">'+Number(a.total_users||0)+'</td>' +
+          '<td data-label="التوظيفات">'+Number(a.total_hired||0)+'</td>' +
+          '</tr>';
+      }).join('');
+      if(empty) empty.style.display = src.length ? 'none' : '';
+      if(table) table.style.display = src.length ? '' : 'none';
+    }
+    function filterAgents(){ renderAgents(); }
 
     /* ===== PROFILE ===== */
     async function loadProfile(){
@@ -545,6 +1132,13 @@
         const c=data.company;
         document.getElementById('p-name').value=c.name||'';
         document.getElementById('p-company_email').value=c.company_email||'';
+        document.getElementById('p-education').value=c.education_requirement||'both';
+        const _labBtn=document.getElementById('lab-tab-btn');
+        if(_labBtn)_labBtn.style.display=(c.type==='labor')?'':'none';
+        const _payBtn=document.getElementById('pay-tab-btn');
+        if(_payBtn)_payBtn.style.display=(c.type==='labor')?'':'none';
+        _isLaborCo=(c.type==='labor');
+        applyLaborLangUI();
         renderLanguages(data.languages||[]);
       }catch(e){showToast(e.message,'error')}
     }
@@ -552,7 +1146,7 @@
     async function saveProfile(){
       try{
         await api('/api/company/profile',{method:'PUT',body:JSON.stringify({
-          name:val('p-name'),company_email:val('p-company_email')
+          name:val('p-name'),company_email:val('p-company_email'),education_requirement:val('p-education')
         })});
         showToast('تم حفظ التعديلات بنجاح','success');
         const u=getUser();if(u){u.company_name=val('p-name');setUser(u);document.getElementById('company-title').textContent=val('p-name')}
@@ -572,11 +1166,53 @@
 
     /* ===== LANGUAGES ===== */
     let currentLanguages=[];
+    let langsExpanded=false;
     let editingLangId=null;
+    let _isLaborCo=false;
+    function applyLaborLangUI(){
+      const lf=document.getElementById('lang-lang-field');
+      const vf=document.getElementById('lang-level-field');
+      const pf=document.getElementById('lang-pos-field');
+      if(!lf||!vf||!pf)return;
+      const q=id=>document.getElementById(id);
+      if(_isLaborCo){
+        lf.style.display='none';
+        vf.style.display='none';
+        pf.style.display='';
+        if(q('lang-list-title'))q('lang-list-title').textContent='الوظائف المطلوبة';
+        if(q('lang-add-title'))q('lang-add-title').textContent='➕ إضافة وظيفة جديدة';
+        if(q('lang-search'))q('lang-search').placeholder='🔍 البحث عن الأعمال...';
+        if(q('lang-position'))q('lang-position').placeholder='مثال: سباك / أمن / نظافة';
+        if(q('lang-lang-filter')){
+          q('lang-lang-filter').value='';
+          q('lang-lang-filter').style.display='none';
+          const _lpw=q('lang-lang-filter').closest('.lp-wrap');
+          if(_lpw)_lpw.style.display='none';
+        }
+      }else{
+        lf.style.display='';
+        vf.style.display='';
+        pf.style.display='';
+        if(q('lang-list-title'))q('lang-list-title').textContent='اللغات المطلوبة';
+        if(q('lang-add-title'))q('lang-add-title').textContent='➕ إضافة لغة جديدة';
+        if(q('lang-search'))q('lang-search').placeholder='🔍 بحث باللغة أو الوظيفة...';
+        if(q('lang-position'))q('lang-position').placeholder='مثال: مطور ويب';
+        if(q('lang-lang-filter')){
+          q('lang-lang-filter').style.display='';
+          const _lpw2=q('lang-lang-filter').closest('.lp-wrap');
+          if(_lpw2)_lpw2.style.display='';
+        }
+      }
+      if(!editingLangId){const b=document.querySelector('.btn-add-lang');if(b){b.textContent=_isLaborCo?'+ إضافة وظيفة':'+ إضافة اللغة';b.style.background='linear-gradient(135deg,#b8860b,#d4a853)';}}
+      const tb=q('lang-tab-btn');if(tb)tb.textContent=_isLaborCo?'الوظائف':'اللغات';
+      const cb=q('cand-tab-btn');if(cb)cb.style.display=_isLaborCo?'none':'';
+    }
     async function loadLanguages(){
       try{
         const data=await api('/api/company/profile');
-        renderLanguages(data.languages||[]);
+        const langs=data.languages||[];
+        if (!_sig('co-langs', langs)) return;
+        renderLanguages(langs);
       }catch(e){showToast(e.message,'error')}
     }
     function editLangById(id){
@@ -586,8 +1222,13 @@
     }
     function editLang(l){
       editingLangId=l.id;
-      document.getElementById('lang-select').value=l.language||'';
-      document.getElementById('lang-level').value=l.level||'';
+      // لو اللغة/المستوى مش من القيم المعروفة (بيانات قديمة) نضيفهم كخيار مؤقت
+      const _opt=(selId,val)=>{if(!val)return;const sel=document.getElementById(selId);if(!sel)return;if(![...sel.options].some(o=>o.value===val)){const o=document.createElement('option');o.value=val;o.textContent=val;sel.appendChild(o);}};
+      _opt('lang-select', l.language);
+      _opt('lang-level', l.level);
+      document.getElementById('lang-select').value=_isLaborCo?'':(l.language||'');
+      document.getElementById('lang-level').value=_isLaborCo?'':(l.level||'');
+      document.getElementById('lang-position').value=_isLaborCo?(l.position||l.language||''):(l.position||'');
       document.getElementById('lang-count').value=l.needed_count||1;
       document.getElementById('lang-position').value=l.position||'';
       document.getElementById('lang-salary-min').value=l.salary_min||'';
@@ -596,10 +1237,12 @@
       document.getElementById('lang-deadline').value=l.deadline||'';
       document.getElementById('lang-notify-days').value=l.notify_days||5;
       document.getElementById('lang-desc').value=l.description||'';
+      const wl=document.getElementById('lang-work-location'); if(wl) wl.value=l.work_location||'';
+      const et=document.getElementById('lang-employment-type'); if(et) et.value=l.employment_type||'';
       const btn=document.querySelector('.btn-add-lang');
       btn.textContent='💾 حفظ التعديلات';
       btn.style.background='linear-gradient(135deg,#16a34a,#22c55e)';
-      document.getElementById('lang-select').scrollIntoView({behavior:'smooth',block:'center'});
+      (_isLaborCo?document.getElementById('lang-pos-field'):document.getElementById('lang-select')).scrollIntoView({behavior:'smooth',block:'center'});
     }
     function cancelEditLang(){
       editingLangId=null;
@@ -608,8 +1251,10 @@
       document.getElementById('lang-salary-min').value='';
       document.getElementById('lang-salary-max').value='';
       document.getElementById('lang-notify-days').value='5';
+      const wl=document.getElementById('lang-work-location'); if(wl) wl.value='';
+      const et=document.getElementById('lang-employment-type'); if(et) et.value='';
       const btn=document.querySelector('.btn-add-lang');
-      btn.textContent='+ إضافة اللغة';
+      btn.textContent=_isLaborCo?'+ إضافة وظيفة':'+ إضافة اللغة';
       btn.style.background='linear-gradient(135deg,#b8860b,#d4a853)';
     }
 
@@ -657,9 +1302,28 @@
         });
       }
       list.querySelectorAll('.lang-item').forEach(x=>x.remove());
-      if(!langs.length){empty.style.display='';return}
+      const toggleBtn=document.getElementById('lang-toggle-btn');
+      const filtering=!!(q||langFilter||posFilter);
+      const emptyP=empty.querySelector('p');
+      if(!langs.length){
+        empty.style.display='';
+        if(emptyP)emptyP.textContent=_isLaborCo?'لم تتم إضافة أي وظائف بعد':'لم تتم إضافة أي لغات بعد';
+        if(toggleBtn)toggleBtn.style.display='none';return
+      }
       empty.style.display='none';
-      langs.forEach(l=>{
+      const collapsible=!filtering;
+      if(toggleBtn){
+        if(collapsible){
+          toggleBtn.style.display='block';
+          toggleBtn.textContent=langsExpanded?`▲ إخفاء القائمة`:`▼ عرض كل الوظائف (${langs.length} وظيفة)`;
+        }else{toggleBtn.style.display='none'}
+      }
+      if(collapsible&&!langsExpanded){
+        empty.style.display='';
+        if(emptyP)emptyP.textContent='اضغط "عرض كل الوظائف" لعرض القائمة';
+      }
+      const visible=(collapsible&&!langsExpanded)?[]:langs;
+      visible.forEach(l=>{
         const div=document.createElement('div');div.className='lang-item';div.dataset.id=l.id;
         div.innerHTML=`
           <div class="lang-item-actions">
@@ -668,50 +1332,59 @@
           </div>
           <div class="lang-item-head">
             <span class="lang-item-name">${esc(l.language)}</span>
-            <span class="lang-item-level">${esc(l.level)}</span>
+            ${l.level?`<span class="lang-item-level">${esc(l.level)}</span>`:''}
             <span class="lang-item-count">${l.needed_count||1} مطلوب</span>
             <span class="lang-item-sent">📤 أُرسل ${l.sent_count||0}</span>
           </div>
           <div class="lang-item-meta">
-            ${l.position?`<span>💼 ${esc(l.position)}</span>`:''}
+            ${l.position&&l.position!==l.language?`<span>💼 ${esc(l.position)}</span>`:''}
             ${(l.salary_min||l.salary_max)?`<span>💰 ${(l.salary_min||0).toLocaleString()} - ${(l.salary_max||0).toLocaleString()} ج</span>`:''}
             ${l.interview_time?`<span>🕐 ${esc(l.interview_time)}</span>`:''}
             ${l.deadline?`<span>📅 ${esc(l.deadline)}</span>`:''}
             ${l.notify_days?`<span>🔔 ${l.notify_days} يوم</span>`:''}
+            ${l.work_location?`<span class="job-opt-badge ${l.work_location==='home'?'home':l.work_location==='hybrid'?'hybrid':''}">${l.work_location==='home'?'🏠 من البيت':l.work_location==='hybrid'?'🔄 هجين':'🏢 في العمل'}</span>`:''}
+            ${l.employment_type?`<span class="job-opt-badge ${l.employment_type==='part_time'?'part':''}">${l.employment_type==='part_time'?'⏰ بارت تايم':'🕐 فل تايم'}</span>`:''}
           </div>
           ${l.description?`<div class="lang-item-desc">📝 ${esc(l.description)}</div>`:''}`;
         list.appendChild(div);
       });
     }
 
+    function toggleLangList(){langsExpanded=!langsExpanded;filterLangs();}
     async function addLanguage(){
-      const lang=val('lang-select'),level=val('lang-level'),count=val('lang-count')||1;
       const position=val('lang-position');
+      const lang=_isLaborCo?(position||''):val('lang-select');
+      const level=_isLaborCo?'':val('lang-level');
+      const count=val('lang-count')||1;
       const salary_min=parseFloat(val('lang-salary-min'))||0;
       const salary_max=parseFloat(val('lang-salary-max'))||0;
       const interview_time=val('lang-interview');
       const deadline=val('lang-deadline');
       const notify_days=parseInt(val('lang-notify-days'))||5;
       const description=val('lang-desc');
-      if(!lang)return showToast('اختر اللغة','error');
-      if(!level)return showToast('اختر المستوى','error');
-      const body={language:lang,level,needed_count:parseInt(count),position,salary_min,salary_max,interview_time,deadline,notify_days,description};
+      const work_location=val('lang-work-location');
+      const employment_type=val('lang-employment-type');
+      if(!lang)return showToast(_isLaborCo?'اكتب اسم الوظيفة':'اختر اللغة','error');
+      if(!level&&!_isLaborCo)return showToast('اختر المستوى','error');
+      const body={language:lang,level,needed_count:parseInt(count),position:position||lang,salary_min,salary_max,interview_time,deadline,notify_days,description,work_location,employment_type};
       try{
         if(editingLangId){
           await api('/api/company/languages/'+editingLangId,{method:'PUT',body:JSON.stringify(body)});
-          showToast('تم تحديث اللغة','success');
+          showToast('تم تحديث البيانات','success');
         }else{
           await api('/api/company/languages',{method:'POST',body:JSON.stringify(body)});
           showToast('تمت الإضافة بنجاح','success');
         }
         cancelEditLang();
+        langsExpanded=true;
         const data=await api('/api/company/profile');
         renderLanguages(data.languages||[]);
+        applyLaborLangUI();
       }catch(e){showToast(e.message,'error')}
     }
 
     async function deleteLanguage(id){
-      if(!confirm('هل أنت متأكد من حذف هذه اللغة؟'))return;
+      if(!await confirmDialog('هل أنت متأكد من حذف هذه اللغة؟','حذف اللغة'))return;
       try{
         await api('/api/company/languages/'+id,{method:'DELETE'});
         showToast('تم الحذف','success');
@@ -722,12 +1395,23 @@
 
     /* ===== CANDIDATES ===== */
     let allCandidates=[];
+    async function loadCandidatesCount(){
+      try{
+        const data=await api('/api/company/candidates');
+        const n=(data.candidates||[]).length;
+        const el=document.getElementById('cand-count-badge');
+        if(el && el.textContent !== String(n)) el.textContent=n;
+      }catch(e){}
+    }
     async function loadCandidates(){
       try{
         const data=await api('/api/company/candidates');
+        const changed=_sig('co-cands',data.candidates);
         allCandidates=data.candidates||[];
-        populateCandidateFilters();
-        filterCandidates();
+        const el=document.getElementById('cand-count-badge');
+        const cn=String(allCandidates.length);
+        if(el && el.textContent!==cn) el.textContent=cn;
+        if(changed){ populateCandidateFilters(); filterCandidates(); }
       }catch(e){showToast(e.message,'error')}
     }
     function populateCandidateFilters(){
@@ -739,7 +1423,7 @@
       const ls=document.getElementById('cand-lang-filter');
       ps.innerHTML='<option value="">كل الوظائف</option>'+positions.map(p=>`<option value="${esc(p)}">${esc(p)}</option>`).join('');
       cs.innerHTML='<option value="">كل المدن</option>'+cities.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
-      ls.innerHTML='<option value="">كل اللغات</option>'+langs.map(l=>`<option value="${esc(l)}">${esc(l)}</option>`).join('');
+      ls.innerHTML='<option value="">كل اللغات</option>'+langs.map(l=>`<option value="${esc(l)}">${esc(window.LangPicker ? LangPicker.display(l) : l)}</option>`).join('');
     }
     function filterCandidates(){
       const q=(document.getElementById('cand-search').value||'').trim().toLowerCase();
@@ -766,16 +1450,102 @@
         tbody.innerHTML='';empty.style.display='';table.style.display='none';return;
       }
       empty.style.display='none';table.style.display='';
-      tbody.innerHTML=list.map(c=>`<tr>
+      tbody.innerHTML=list.map(c=>{
+        const dec=c.company_decision;
+        let statusBadge='';
+        if(dec==='accepted')statusBadge='<span style="display:block;margin-bottom:6px;padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;background:rgba(34,197,94,0.12);color:#22c55e;border:1px solid rgba(34,197,94,0.25);white-space:nowrap">✅ تم القبول</span>';
+        else if(dec==='rejected')statusBadge='<span style="display:block;margin-bottom:6px;padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;background:rgba(239,68,68,0.12);color:#ef4444;border:1px solid rgba(239,68,68,0.25);white-space:nowrap">❌ تم الرفض</span>';
+        const nameEsc=(c.name||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+        const posEsc=(c.position||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+        const actionBtn=(dec==='accepted'||dec==='rejected')?'':`
+          <button class="cand-act-btn" onclick="event.stopPropagation();toggleCandActions(this, ${c.id}, '${dec||''}', '${nameEsc}', '${posEsc}')">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+            إجراءات
+          </button>`;
+        const decisionCell=`${statusBadge}${actionBtn}`;
+        return `<tr>
         <td class="name-cell" data-label="الاسم">${esc(c.name)}</td>
         <td data-label="البريد" style="direction:ltr;text-align:left;font-size:12px;color:#94a3b8">${esc(c.email)}</td>
         <td class="phone-cell" data-label="الهاتف">${esc(c.phone||'-')}</td>
         <td data-label="الجنسية">${esc(c.nationality||'-')}</td>
         <td data-label="المدينة">${esc(c.city||'-')}</td>
-        <td data-label="اللغة"><span style="padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;background:rgba(212,168,83,0.08);color:#d4a853;border:1px solid rgba(212,168,83,0.12)">${esc(c.language_applied||'-')}</span></td>
+        <td data-label="اللغة"><span style="padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;background:rgba(212,168,83,0.08);color:#d4a853;border:1px solid rgba(212,168,83,0.12)">${esc((window.LangPicker && LangPicker.display(c.language_applied)) || c.language_applied || '-')}</span></td>
         <td data-label="الوظيفة">${esc(c.position||'-')}</td>
         <td data-label="المقابلة">${esc(c.interview_time||'-')}</td>
-      </tr>`).join('');
+        <td data-label="القرار">${decisionCell}</td>
+      </tr>`}).join('');
+    }
+
+    let candActivePopup=null,candActiveBackdrop=null;
+    function toggleCandActions(btn,selId,decision,userName,position){
+      event.stopPropagation();
+      let existing=document.getElementById('cand-actions-popup-'+selId);
+      if(!existing){
+        existing=document.createElement('div');
+        existing.className='cand-actions-popup';
+        existing.id='cand-actions-popup-'+selId;
+        const isAcc=decision==='accepted',isRej=decision==='rejected';
+        existing.innerHTML=`<div class="popup-header"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg><span>إجراءات المتقدم</span></div>
+          <div class="popup-info">
+            <div class="popup-info-row"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><strong>${userName}</strong></div>
+            <div class="popup-info-row"><svg viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="7" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>${position||'-'}</div>
+          </div>
+          <div class="popup-item" ${isAcc?'style="opacity:0.5;cursor:default"':'onclick="event.stopPropagation();closeCandActions();decideCandidate('+selId+',\'accepted\',this)"'}>
+            <div class="popup-item-icon green"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+            <div class="popup-item-text"><span>${isAcc?'✅ تم القبول مسبقاً':'قبول المتقدم'}</span><small>${isAcc?'القرار الحالي: مقبول':'إرسال إشعار للإدارة'}</small></div>
+          </div>
+          <div class="popup-divider"></div>
+          <div class="popup-item" ${isRej?'style="opacity:0.5;cursor:default"':'onclick="event.stopPropagation();closeCandActions();decideCandidate('+selId+',\'rejected\',this)"'}>
+            <div class="popup-item-icon red"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
+            <div class="popup-item-text"><span>${isRej?'❌ تم الرفض مسبقاً':'رفض المتقدم'}</span><small>${isRej?'القرار الحالي: مرفوض':'تحديث حالة المتقدم'}</small></div>
+          </div>`;
+        document.body.appendChild(existing);
+      }
+      let backdrop=document.getElementById('cand-actions-backdrop');
+      if(!backdrop){
+        backdrop=document.createElement('div');
+        backdrop.id='cand-actions-backdrop';
+        backdrop.className='cand-actions-backdrop';
+        backdrop.onclick=closeCandActions;
+        document.body.appendChild(backdrop);
+      }
+      if(candActivePopup&&candActivePopup!==existing){
+        candActivePopup.classList.remove('show');
+        if(candActiveBackdrop)candActiveBackdrop.classList.remove('show');
+      }
+      if(existing.classList.contains('show')){
+        existing.classList.remove('show');
+        backdrop.classList.remove('show');
+        candActivePopup=null;candActiveBackdrop=null;
+        return;
+      }
+      existing.classList.add('show');
+      backdrop.classList.add('show');
+      candActivePopup=existing;candActiveBackdrop=backdrop;
+    }
+    function closeCandActions(){
+      if(candActivePopup)candActivePopup.classList.remove('show');
+      if(candActiveBackdrop)candActiveBackdrop.classList.remove('show');
+      candActivePopup=null;candActiveBackdrop=null;
+    }
+    document.addEventListener('click',function(e){
+      if(candActivePopup&&!candActivePopup.contains(e.target)&&!e.target.closest('.cand-act-btn'))closeCandActions();
+    });
+
+    async function decideCandidate(selId, decision, btn){
+      const label=decision==='accepted'?'قبول':'رفض';
+      if(!await confirmDialog(`هل تريد ${label} هذا المتقدم؟`,label+' المتقدم'))return;
+      try{
+        if(btn&&btn.closest&&btn.closest('.popup-item'))btn.style.opacity='0.5';
+        await api('/api/company/candidates/'+selId+'/decision',{method:'POST',body:JSON.stringify({decision})});
+        showToast(decision==='accepted'?'تم القبول وإرسال إشعار للإدارة':'تم رفض المتقدم','success');
+        closeCandActions();
+        loadCandidates();
+        loadCandidatesCount();
+      }catch(e){
+        showToast(e.message,'error');
+        if(btn&&btn.style)btn.style.opacity='1';
+      }
     }
 
     function esc(s){const d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
@@ -788,6 +1558,19 @@
     (function init(){
       if(getToken()){showDashboard()}else{showLoginScreen()}
     })();
+
+    /* ===== AUTO REFRESH (like other dashboards) ===== */
+    setInterval(() => {
+      if(!getToken())return;
+      if(document.hidden)return;
+      loadCandidatesCount();
+      const candTab=document.getElementById('tab-candidates');
+      if(candTab && candTab.classList.contains('active')) loadCandidates();
+      const langTab=document.getElementById('tab-languages');
+      if(langTab && langTab.classList.contains('active')) loadLanguages();
+      const laborTab=document.getElementById('tab-labor');
+      if(laborTab && laborTab.classList.contains('active') && typeof loadLaborWorkers==='function') loadLaborWorkers();
+    }, 15000);
   </script>
 </body>
 </html>

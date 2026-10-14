@@ -1,9 +1,11 @@
-const CACHE_NAME = 'wazef-v3';
+const CACHE_NAME = 'wazef-v11';
 const ASSETS = [
   '/',
   '/login.html',
   '/dashboard',
   '/admin',
+  '/agent',
+  '/company',
   '/sw.js',
   '/manifest.json'
 ];
@@ -29,6 +31,8 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
+  // Cache API only supports GET — let POST/PUT/DELETE go straight to network
+  if (e.request.method !== 'GET') return;
   if (e.request.url.includes('/api/')) {
     e.respondWith(fetch(e.request));
     return;

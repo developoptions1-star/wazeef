@@ -123,6 +123,15 @@ app.use((req, res, next) => {
   if (req.body == null) req.body = {};
   next();
 });
+// Vercel: wait for DB init before processing any request
+let _dbReady = Promise.resolve();
+if (process.env.VERCEL) {
+  _dbReady = initDatabase().then(() => console.log('Vercel: DB ready')).catch(e => console.error('Vercel DB error:', e.message));
+  app.use(async (req, res, next) => {
+    try { await _dbReady; } catch (_) {}
+    next();
+  });
+}
 app.use(express.urlencoded({
   extended: true
 }));
@@ -466,224 +475,105 @@ async function initDatabase() {
   );
 `);
 
+  // Fast migration: check existing columns once instead of 73 individual ALTER TABLE calls
+  const _existingCols = new Set();
+  try {
+    const colRows = await db.prepare("SELECT table_name, column_name FROM information_schema.columns WHERE table_schema='public'").all();
+    for (const r of colRows) _existingCols.add(r.table_name + '.' + r.column_name);
+  } catch (e) {
+    // fallback: run all migrations normally
+    for (const c of ['agents.qualty_languages','selections.agent_amount','applications.rerecord_request','jobs.company_id','applications.rejection_date','applications.rejection_reason','users.nationality','users.city','users.language_applied','users.age','users.national_id','users.college','users.education_level','users.military_status','users.call_center_experience','users.qualty_languages','users.gender','users.language_level','users.verification_code','users.email_verified','users.code_expiry','users.reset_token','users.reset_token_expiry','selections.is_frozen','selections.unfrozen_at','selections.frozen_deadline','selections.apology','selections.hired_at','selections.company_emailed','selections.company_decision','selections.company_decision_at','applications.approval_date','jobs.company_email','jobs.language','jobs.level','jobs.needed_count','jobs.deadline','jobs.notify_days','companies.position','companies.interview_time','companies.salary_min','companies.salary_max','companies.company_email','companies.available_slots','companies.used_slots','companies.pending_count','companies.hired_count','companies.deadline','companies.notify_days_before','companies.description','agents.role','companies.interview_schedule','applications.assigned_qualty_id','applications.reviewed_by','applications.reviewed_at','companies.education_requirement','agents.payment_method','agents.payment_operator','agents.agent_type','companies.type','labor_groups.labor_agent_amount','labor_workers.labor_agent_amount']) _existingCols.add(c);
+  }
+  const _mig = (sql, colKey) => { if (!_existingCols.has(colKey)) return db.exec(sql).catch(() => {}); return Promise.resolve(); };
+
   // Migration: languages a qualty may review (CSV of codes, set by the admin)
-  try {
-    await db.exec('ALTER TABLE agents ADD COLUMN qualty_languages TEXT');
-  } catch (e) {}
+  await _mig('ALTER TABLE agents ADD COLUMN qualty_languages TEXT', 'agents.qualty_languages');
   // Migration: add agent_amount column if missing
-  try {
-    await db.exec('ALTER TABLE selections ADD COLUMN agent_amount REAL DEFAULT 0');
-  } catch (e) {}
+  await _mig('ALTER TABLE selections ADD COLUMN agent_amount REAL DEFAULT 0', 'selections.agent_amount');
   // Migration: add rerecord_request column if missing
-  try {
-    await db.exec('ALTER TABLE applications ADD COLUMN rerecord_request INTEGER DEFAULT 0');
-  } catch (e) {}
+  await _mig('ALTER TABLE applications ADD COLUMN rerecord_request INTEGER DEFAULT 0', 'applications.rerecord_request');
   // Migration: jobs.company_id
-  try {
-    await db.exec('ALTER TABLE jobs ADD COLUMN company_id INTEGER');
-  } catch (e) {}
+  await _mig('ALTER TABLE jobs ADD COLUMN company_id INTEGER', 'jobs.company_id');
   // Migration: add rejection_date column if missing
-  try {
-    await db.exec('ALTER TABLE applications ADD COLUMN rejection_date DATETIME');
-  } catch (e) {}
+  await _mig('ALTER TABLE applications ADD COLUMN rejection_date DATETIME', 'applications.rejection_date');
   // Migration: add rejection_reason column if missing
-  try {
-    await db.exec('ALTER TABLE applications ADD COLUMN rejection_reason TEXT');
-  } catch (e) {}
+  await _mig('ALTER TABLE applications ADD COLUMN rejection_reason TEXT', 'applications.rejection_reason');
   // Migration: add user profile columns if missing
-  try {
-    await db.exec('ALTER TABLE users ADD COLUMN nationality TEXT');
-  } catch (e) {}
-  try {
-    await db.exec('ALTER TABLE users ADD COLUMN city TEXT');
-  } catch (e) {}
-  try {
-    await db.exec('ALTER TABLE users ADD COLUMN language_applied TEXT');
-  } catch (e) {}
-  try {
-    await db.exec('ALTER TABLE users ADD COLUMN age INTEGER');
-  } catch (e) {}
-  try {
-    await db.exec('ALTER TABLE users ADD COLUMN national_id TEXT');
-  } catch (e) {}
-  try {
-    await db.exec('ALTER TABLE users ADD COLUMN college TEXT');
-  } catch (e) {}
-  try {
-    await db.exec('ALTER TABLE users ADD COLUMN education_level TEXT');
-  } catch (e) {}
-  try {
-    await db.exec('ALTER TABLE users ADD COLUMN military_status TEXT');
-  } catch (e) {}
-  try {
-    await db.exec('ALTER TABLE users ADD COLUMN call_center_experience TEXT');
-  } catch (e) {}
+  await _mig('ALTER TABLE users ADD COLUMN nationality TEXT', 'users.nationality');
+  await _mig('ALTER TABLE users ADD COLUMN city TEXT', 'users.city');
+  await _mig('ALTER TABLE users ADD COLUMN language_applied TEXT', 'users.language_applied');
+  await _mig('ALTER TABLE users ADD COLUMN age INTEGER', 'users.age');
+  await _mig('ALTER TABLE users ADD COLUMN national_id TEXT', 'users.national_id');
+  await _mig('ALTER TABLE users ADD COLUMN college TEXT', 'users.college');
+  await _mig('ALTER TABLE users ADD COLUMN education_level TEXT', 'users.education_level');
+  await _mig('ALTER TABLE users ADD COLUMN military_status TEXT', 'users.military_status');
+  await _mig('ALTER TABLE users ADD COLUMN call_center_experience TEXT', 'users.call_center_experience');
   // Migration: languages this user is allowed to be reviewed for (set by the admin when moving him to a qualty)
-  try {
-    await db.exec('ALTER TABLE users ADD COLUMN qualty_languages TEXT');
-  } catch (e) {}
-  try {
-    await db.exec('ALTER TABLE users ADD COLUMN gender TEXT');
-  } catch (e) {}
-  try {
-    await db.exec("ALTER TABLE users ADD COLUMN language_level TEXT DEFAULT ''");
-  } catch (e) {}
+  await _mig('ALTER TABLE users ADD COLUMN qualty_languages TEXT', 'users.qualty_languages');
+  await _mig('ALTER TABLE users ADD COLUMN gender TEXT', 'users.gender');
+  await _mig("ALTER TABLE users ADD COLUMN language_level TEXT DEFAULT ''", 'users.language_level');
   // Migration: add email verification columns
-  try {
-    await db.exec('ALTER TABLE users ADD COLUMN verification_code TEXT');
-  } catch (e) {}
-  try {
-    await db.exec('ALTER TABLE users ADD COLUMN email_verified INTEGER DEFAULT 0');
-  } catch (e) {}
-  try {
-    await db.exec('ALTER TABLE users ADD COLUMN code_expiry TEXT');
-  } catch (e) {}
-  try {
-    await db.exec('ALTER TABLE users ADD COLUMN reset_token TEXT');
-  } catch (e) {}
-  try {
-    await db.exec('ALTER TABLE users ADD COLUMN reset_token_expiry TEXT');
-  } catch (e) {}
+  await _mig('ALTER TABLE users ADD COLUMN verification_code TEXT', 'users.verification_code');
+  await _mig('ALTER TABLE users ADD COLUMN email_verified INTEGER DEFAULT 0', 'users.email_verified');
+  await _mig('ALTER TABLE users ADD COLUMN code_expiry TEXT', 'users.code_expiry');
+  await _mig('ALTER TABLE users ADD COLUMN reset_token TEXT', 'users.reset_token');
+  await _mig('ALTER TABLE users ADD COLUMN reset_token_expiry TEXT', 'users.reset_token_expiry');
   // Migration: add frozen columns to selections
-  try {
-    await db.exec('ALTER TABLE selections ADD COLUMN is_frozen INTEGER DEFAULT 1');
-  } catch (e) {}
-  try {
-    await db.exec('ALTER TABLE selections ADD COLUMN unfrozen_at DATETIME');
-  } catch (e) {}
-  try {
-    await db.exec('ALTER TABLE selections ADD COLUMN frozen_deadline DATETIME');
-  } catch (e) {}
-  try {
-    await db.exec('ALTER TABLE selections ADD COLUMN apology TEXT');
-  } catch (e) {}
-  try {
-    await db.exec('ALTER TABLE selections ADD COLUMN hired_at DATETIME');
-  } catch (e) {}
-  try {
-    await db.exec('ALTER TABLE selections ADD COLUMN company_emailed INTEGER DEFAULT 0');
-  } catch (e) {}
-  try {
-    await db.exec('ALTER TABLE selections ADD COLUMN company_decision TEXT');
-  } catch (e) {}
-  try {
-    await db.exec('ALTER TABLE selections ADD COLUMN company_decision_at DATETIME');
-  } catch (e) {}
-  try {
-    await db.exec('ALTER TABLE applications ADD COLUMN approval_date DATETIME');
-  } catch (e) {}
-  try {
-    await db.exec('ALTER TABLE jobs ADD COLUMN company_email TEXT');
-  } catch (e) {}
-  try {
-    await db.exec("ALTER TABLE jobs ADD COLUMN language TEXT DEFAULT ''");
-  } catch (e) {}
-  try {
-    await db.exec("ALTER TABLE jobs ADD COLUMN level TEXT DEFAULT ''");
-  } catch (e) {}
-  try {
-    await db.exec('ALTER TABLE jobs ADD COLUMN needed_count INTEGER DEFAULT 1');
-  } catch (e) {}
-  try {
-    await db.exec("ALTER TABLE jobs ADD COLUMN deadline TEXT DEFAULT ''");
-  } catch (e) {}
-  try {
-    await db.exec('ALTER TABLE jobs ADD COLUMN notify_days INTEGER DEFAULT 5');
-  } catch (e) {}
+  await _mig('ALTER TABLE selections ADD COLUMN is_frozen INTEGER DEFAULT 1', 'selections.is_frozen');
+  await _mig('ALTER TABLE selections ADD COLUMN unfrozen_at DATETIME', 'selections.unfrozen_at');
+  await _mig('ALTER TABLE selections ADD COLUMN frozen_deadline DATETIME', 'selections.frozen_deadline');
+  await _mig('ALTER TABLE selections ADD COLUMN apology TEXT', 'selections.apology');
+  await _mig('ALTER TABLE selections ADD COLUMN hired_at DATETIME', 'selections.hired_at');
+  await _mig('ALTER TABLE selections ADD COLUMN company_emailed INTEGER DEFAULT 0', 'selections.company_emailed');
+  await _mig('ALTER TABLE selections ADD COLUMN company_decision TEXT', 'selections.company_decision');
+  await _mig('ALTER TABLE selections ADD COLUMN company_decision_at DATETIME', 'selections.company_decision_at');
+  await _mig('ALTER TABLE applications ADD COLUMN approval_date DATETIME', 'applications.approval_date');
+  await _mig('ALTER TABLE jobs ADD COLUMN company_email TEXT', 'jobs.company_email');
+  await _mig("ALTER TABLE jobs ADD COLUMN language TEXT DEFAULT ''", 'jobs.language');
+  await _mig("ALTER TABLE jobs ADD COLUMN level TEXT DEFAULT ''", 'jobs.level');
+  await _mig('ALTER TABLE jobs ADD COLUMN needed_count INTEGER DEFAULT 1', 'jobs.needed_count');
+  await _mig("ALTER TABLE jobs ADD COLUMN deadline TEXT DEFAULT ''", 'jobs.deadline');
+  await _mig('ALTER TABLE jobs ADD COLUMN notify_days INTEGER DEFAULT 5', 'jobs.notify_days');
   try {
     await db.exec("UPDATE jobs SET company_id = (SELECT c.id FROM companies c WHERE TRIM(c.name) = TRIM(jobs.company_name) OR (c.company_email IS NOT NULL AND c.company_email != '' AND c.company_email = jobs.company_email)) WHERE company_id IS NULL");
   } catch (e) {}
   // Migration: add company columns if missing
-  try {
-    await db.exec('ALTER TABLE companies ADD COLUMN position TEXT');
-  } catch (e) {}
-  try {
-    await db.exec('ALTER TABLE companies ADD COLUMN interview_time TEXT');
-  } catch (e) {}
-  try {
-    await db.exec('ALTER TABLE companies ADD COLUMN salary_min REAL DEFAULT 0');
-  } catch (e) {}
-  try {
-    await db.exec('ALTER TABLE companies ADD COLUMN salary_max REAL DEFAULT 0');
-  } catch (e) {}
-  try {
-    await db.exec('ALTER TABLE companies ADD COLUMN company_email TEXT');
-  } catch (e) {}
-  try {
-    await db.exec('ALTER TABLE companies ADD COLUMN available_slots INTEGER DEFAULT 0');
-  } catch (e) {}
-  try {
-    await db.exec('ALTER TABLE companies ADD COLUMN used_slots INTEGER DEFAULT 0');
-  } catch (e) {}
-  try {
-    await db.exec('ALTER TABLE companies ADD COLUMN pending_count INTEGER DEFAULT 0');
-  } catch (e) {}
-  try {
-    await db.exec('ALTER TABLE companies ADD COLUMN hired_count INTEGER DEFAULT 0');
-  } catch (e) {}
-  try {
-    await db.exec('ALTER TABLE companies ADD COLUMN deadline TEXT');
-  } catch (e) {}
-  try {
-    await db.exec('ALTER TABLE companies ADD COLUMN notify_days_before INTEGER DEFAULT 5');
-  } catch (e) {}
-  try {
-    await db.exec('ALTER TABLE companies ADD COLUMN description TEXT');
-  } catch (e) {}
-  try {
-    await db.exec("ALTER TABLE agents ADD COLUMN role TEXT DEFAULT 'agent'");
-  } catch (e) {}
-  try {
-    await db.exec('ALTER TABLE companies ADD COLUMN interview_schedule TEXT');
-  } catch (e) {}
-  try {
-    await db.exec('ALTER TABLE applications ADD COLUMN assigned_qualty_id INTEGER');
-  } catch (e) {}
-  try {
-    await db.exec('ALTER TABLE applications ADD COLUMN reviewed_by INTEGER');
-  } catch (e) {}
-  try {
-    await db.exec('ALTER TABLE applications ADD COLUMN reviewed_at DATETIME');
-  } catch (e) {}
+  await _mig('ALTER TABLE companies ADD COLUMN position TEXT', 'companies.position');
+  await _mig('ALTER TABLE companies ADD COLUMN interview_time TEXT', 'companies.interview_time');
+  await _mig('ALTER TABLE companies ADD COLUMN salary_min REAL DEFAULT 0', 'companies.salary_min');
+  await _mig('ALTER TABLE companies ADD COLUMN salary_max REAL DEFAULT 0', 'companies.salary_max');
+  await _mig('ALTER TABLE companies ADD COLUMN company_email TEXT', 'companies.company_email');
+  await _mig('ALTER TABLE companies ADD COLUMN available_slots INTEGER DEFAULT 0', 'companies.available_slots');
+  await _mig('ALTER TABLE companies ADD COLUMN used_slots INTEGER DEFAULT 0', 'companies.used_slots');
+  await _mig('ALTER TABLE companies ADD COLUMN pending_count INTEGER DEFAULT 0', 'companies.pending_count');
+  await _mig('ALTER TABLE companies ADD COLUMN hired_count INTEGER DEFAULT 0', 'companies.hired_count');
+  await _mig('ALTER TABLE companies ADD COLUMN deadline TEXT', 'companies.deadline');
+  await _mig('ALTER TABLE companies ADD COLUMN notify_days_before INTEGER DEFAULT 5', 'companies.notify_days_before');
+  await _mig('ALTER TABLE companies ADD COLUMN description TEXT', 'companies.description');
+  await _mig("ALTER TABLE agents ADD COLUMN role TEXT DEFAULT 'agent'", 'agents.role');
+  await _mig('ALTER TABLE companies ADD COLUMN interview_schedule TEXT', 'companies.interview_schedule');
+  await _mig('ALTER TABLE applications ADD COLUMN assigned_qualty_id INTEGER', 'applications.assigned_qualty_id');
+  await _mig('ALTER TABLE applications ADD COLUMN reviewed_by INTEGER', 'applications.reviewed_by');
+  await _mig('ALTER TABLE applications ADD COLUMN reviewed_at DATETIME', 'applications.reviewed_at');
   // Migration: company education requirement (both / graduates only / students only)
-  try {
-    await db.exec("ALTER TABLE companies ADD COLUMN education_requirement TEXT DEFAULT 'both'");
-  } catch (e) {}
+  await _mig("ALTER TABLE companies ADD COLUMN education_requirement TEXT DEFAULT 'both'", 'companies.education_requirement');
   try {
     await db.exec("UPDATE companies SET education_requirement = 'both' WHERE education_requirement IS NULL OR TRIM(education_requirement) = ''");
   } catch (e) {}
   // Migration: agent payment method (instapay | wallet + operator)
-  try {
-    await db.exec("ALTER TABLE agents ADD COLUMN payment_method TEXT DEFAULT ''");
-  } catch (e) {}
-  try {
-    await db.exec("ALTER TABLE agents ADD COLUMN payment_operator TEXT DEFAULT ''");
-  } catch (e) {}
+  await _mig("ALTER TABLE agents ADD COLUMN payment_method TEXT DEFAULT ''", 'agents.payment_method');
+  await _mig("ALTER TABLE agents ADD COLUMN payment_operator TEXT DEFAULT ''", 'agents.payment_operator');
   // Migration: labor agents / labor companies / labor groups + workers
-  try {
-    await db.exec("ALTER TABLE agents ADD COLUMN agent_type TEXT DEFAULT 'normal'");
-  } catch (e) {}
-  try {
-    await db.exec("ALTER TABLE companies ADD COLUMN type TEXT DEFAULT 'normal'");
-  } catch (e) {}
+  await _mig("ALTER TABLE agents ADD COLUMN agent_type TEXT DEFAULT 'normal'", 'agents.agent_type');
+  await _mig("ALTER TABLE companies ADD COLUMN type TEXT DEFAULT 'normal'", 'companies.type');
   try {
     await db.exec("UPDATE agents SET agent_type = 'normal' WHERE agent_type IS NULL");
-  } catch (e) {}
-  try {
     await db.exec("UPDATE companies SET type = 'normal' WHERE type IS NULL");
   } catch (e) {}
   try {
     await db.exec("CREATE TABLE IF NOT EXISTS labor_groups (id INTEGER PRIMARY KEY AUTOINCREMENT, labor_agent_id INTEGER NOT NULL, name TEXT NOT NULL, city TEXT DEFAULT '', is_working INTEGER DEFAULT 0, company_id INTEGER, earning_per_month REAL DEFAULT 0, working_at DATETIME, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
-  } catch (e) {}
-  try {
     await db.exec('ALTER TABLE labor_groups ADD COLUMN labor_agent_amount REAL DEFAULT 0');
-  } catch (e) {}
-  try {
     await db.exec("CREATE TABLE IF NOT EXISTS labor_workers (id INTEGER PRIMARY KEY AUTOINCREMENT, labor_agent_id INTEGER NOT NULL, group_id INTEGER, full_name TEXT NOT NULL, age INTEGER, phone TEXT DEFAULT '', national_id TEXT DEFAULT '', city TEXT DEFAULT '', address TEXT DEFAULT '', id_card_front TEXT DEFAULT '', id_card_back TEXT DEFAULT '', status TEXT DEFAULT 'new', company_id INTEGER, earning_per_month REAL DEFAULT 0, working_at DATETIME, notes TEXT DEFAULT '', created_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
-  } catch (e) {}
-  // Labor agent commission: money that belongs to the labor agent only
-  // (never counted in company earnings or normal agent commissions).
-  try {
     await db.exec('ALTER TABLE labor_workers ADD COLUMN labor_agent_amount REAL DEFAULT 0');
   } catch (e) {}
 

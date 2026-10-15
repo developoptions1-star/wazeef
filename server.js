@@ -371,6 +371,17 @@ async function initDatabase() {
     dbPath
   });
   global.db = db;
+  // Fast path: if the DB already has real users, skip ALL migrations (saves ~70s)
+  let _hasData = false;
+  try {
+    const c = (await db.prepare("SELECT COUNT(*) as c FROM users WHERE role != 'admin'").get()).c;
+    _hasData = c > 0;
+  } catch (_) {}
+  if (_hasData) {
+    console.log('DB has data — skipping migrations');
+    try { await seedAdmins(); } catch (_) {}
+    return;
+  }
   await db.exec(`
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

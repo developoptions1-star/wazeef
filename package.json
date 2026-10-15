@@ -4,9 +4,9 @@
   "description": "Wazeef job platform",
   "main": "server.js",
   "scripts": {
-    "build": "echo ok",
+    "build": "node build.js",
     "start": "node server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --check server.js && node --check db-layer.js"
   },
   "engines": {
     "node": "20.x || 22.x"
@@ -30,6 +30,7 @@
     "@babel/generator": "^8.0.6",
     "@babel/parser": "^8.0.7",
     "@babel/traverse": "^8.0.7",
-    "@babel/types": "^8.0.6"
+    "@babel/types": "^8.0.6",
+    "esbuild": "^0.28.2"
   }
 }

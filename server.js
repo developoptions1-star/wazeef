@@ -3917,24 +3917,29 @@ app.get('/api/admin/agents', authMiddleware, adminOrQualtyMiddleware, async (req
     const wantLabor = String(req.query.type || '') === 'labor';
     const typeSql = wantLabor ? "IFNULL(agent_type,'normal') = 'labor'" : "IFNULL(agent_type,'normal') != 'labor'";
     const agents = await db.prepare('SELECT id, name, email, phone, referral_code, is_active, role, team_leader_id, created_at, payment_method, payment_operator, agent_type, qualty_languages FROM agents WHERE ' + typeSql + ' ORDER BY created_at DESC').all();
-    const agentsWithStats = await Promise.all(agents.map(async a => {
-      const referredUsers = (await db.prepare('SELECT COUNT(*) as c FROM users WHERE referred_by = ?').get(a.id)).c;
-      const referredWithApps = (await db.prepare(`
-        SELECT COUNT(*) as c FROM users u
-        JOIN applications a ON u.id = a.user_id
-        WHERE u.referred_by = ?
-      `).get(a.id)).c;
-      const hired = (await db.prepare(`
-        SELECT COUNT(*) as c FROM users u
-        JOIN selections s ON u.id = s.user_id
-        WHERE u.referred_by = ? AND s.hired = 1
-      `).get(a.id)).c;
-      return {
-        ...a,
-        referredUsers,
-        referredWithApps,
-        hired
-      };
+    // Batch stats in 3 queries total instead of 3 per agent
+    const ids = agents.map(a => a.id);
+    const refMap = {}, appsMap = {}, hiredMap = {};
+    if (ids.length) {
+      const ph = ids.map(() => '?').join(',');
+      try {
+        const rows = await db.prepare('SELECT referred_by as aid, COUNT(*) as c FROM users WHERE referred_by IN (' + ph + ') GROUP BY referred_by').all(...ids);
+        rows.forEach(r => refMap[r.aid] = r.c);
+      } catch (e) {}
+      try {
+        const rows = await db.prepare('SELECT u.referred_by as aid, COUNT(*) as c FROM users u JOIN applications ap ON u.id = ap.user_id WHERE u.referred_by IN (' + ph + ') GROUP BY u.referred_by').all(...ids);
+        rows.forEach(r => appsMap[r.aid] = r.c);
+      } catch (e) {}
+      try {
+        const rows = await db.prepare('SELECT u.referred_by as aid, COUNT(*) as c FROM users u JOIN selections s ON u.id = s.user_id WHERE u.referred_by IN (' + ph + ') AND s.hired = 1 GROUP BY u.referred_by').all(...ids);
+        rows.forEach(r => hiredMap[r.aid] = r.c);
+      } catch (e) {}
+    }
+    const agentsWithStats = agents.map(a => ({
+      ...a,
+      referredUsers: refMap[a.id] || 0,
+      referredWithApps: appsMap[a.id] || 0,
+      hired: hiredMap[a.id] || 0
     }));
     res.json(agentsWithStats);
   } catch (e) {
@@ -3986,25 +3991,37 @@ app.put('/api/admin/agents/:id/qualty', authMiddleware, adminMiddleware, async (
 app.get('/api/admin/agent-earnings', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const agents = await db.prepare("SELECT id, name, email, phone, referral_code FROM agents WHERE IFNULL(agent_type,'normal') != 'labor' ORDER BY created_at DESC").all();
-    const result = await Promise.all(agents.map(async a => {
-      const hiredSelections = await db.prepare(`
-        SELECT s.amount, s.agent_amount, s.created_at,
-          j.company_name, j.position, u.name as user_name
-        FROM selections s
-        JOIN users u ON s.user_id = u.id
-        JOIN jobs j ON s.job_id = j.id
-        WHERE u.referred_by = ? AND s.hired = 1
-      `).all(a.id);
-      const cancelledSelections = (await db.prepare(`
-        SELECT COUNT(*) as c FROM selections s
-        JOIN users u ON s.user_id = u.id
-        WHERE u.referred_by = ? AND s.status = 'cancelled'
-      `).get(a.id)).c;
-      const waitingSelections = (await db.prepare(`
-        SELECT COUNT(*) as c FROM selections s
-        JOIN users u ON s.user_id = u.id
-        WHERE u.referred_by = ? AND s.status = 'selected'
-      `).get(a.id)).c;
+    // Batch: get ALL hired selections joined with referred_by in ONE query
+    const allHired = await db.prepare(`
+      SELECT u.referred_by as aid, s.amount, s.agent_amount, s.created_at,
+        j.company_name, j.position, u.name as user_name
+      FROM selections s
+      JOIN users u ON s.user_id = u.id
+      JOIN jobs j ON s.job_id = j.id
+      WHERE s.hired = 1
+    `).all();
+    const allCancelled = await db.prepare(`
+      SELECT u.referred_by as aid, COUNT(*) as c FROM selections s
+      JOIN users u ON s.user_id = u.id
+      WHERE s.status = 'cancelled' GROUP BY u.referred_by
+    `).all();
+    const allWaiting = await db.prepare(`
+      SELECT u.referred_by as aid, COUNT(*) as c FROM selections s
+      JOIN users u ON s.user_id = u.id
+      WHERE s.status = 'selected' GROUP BY u.referred_by
+    `).all();
+    // Index by agent id
+    const hiredByAgent = {};
+    allHired.forEach(s => {
+      if (!hiredByAgent[s.aid]) hiredByAgent[s.aid] = [];
+      hiredByAgent[s.aid].push(s);
+    });
+    const cancelledMap = {};
+    allCancelled.forEach(r => cancelledMap[r.aid] = r.c);
+    const waitingMap = {};
+    allWaiting.forEach(r => waitingMap[r.aid] = r.c);
+    const result = agents.map(a => {
+      const hiredSelections = hiredByAgent[a.id] || [];
       const totalAgentEarnings = hiredSelections.reduce((sum, s) => sum + (s.agent_amount || 0), 0);
       const totalCompanyEarnings = hiredSelections.reduce((sum, s) => sum + (s.amount || 0), 0);
       const highest = hiredSelections.length > 0 ? Math.max(...hiredSelections.map(s => s.agent_amount || 0)) : 0;
@@ -4016,15 +4033,15 @@ app.get('/api/admin/agent-earnings', authMiddleware, adminMiddleware, async (req
         phone: a.phone,
         referral_code: a.referral_code,
         totalHired: hiredSelections.length,
-        totalCancelled: cancelledSelections,
-        totalWaiting: waitingSelections,
+        totalCancelled: cancelledMap[a.id] || 0,
+        totalWaiting: waitingMap[a.id] || 0,
         totalAgentEarnings,
         totalCompanyEarnings,
         highestEarning: highest,
         lowestEarning: lowest,
         details: hiredSelections
       };
-    }));
+    });
     res.json(result);
   } catch (e) {
     res.status(500).json({
@@ -4489,6 +4506,40 @@ async function teamStatsForAgents(ids, withDays) {
     } catch (e) {}
   }
   return out;
+}
+
+// Batch stats for many agents in ONE query each (instead of 4 queries per agent)
+async function teamStatsBatch(ids) {
+  const map = {};
+  if (!ids || !ids.length) return map;
+  const ph = ids.map(() => '?').join(',');
+  const now = new Date();
+  const monthStart = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-01';
+  try {
+    const reg = await db.prepare('SELECT referred_by as aid, COUNT(*) as c FROM users WHERE referred_by IN (' + ph + ') GROUP BY referred_by').all(...ids);
+    reg.forEach(r => { if (!map[r.aid]) map[r.aid] = {}; map[r.aid].registered_total = r.c; });
+  } catch (e) {}
+  try {
+    const hired = await db.prepare('SELECT u.referred_by as aid, COUNT(*) as c FROM selections s JOIN users u ON u.id = s.user_id WHERE u.referred_by IN (' + ph + ') AND s.hired = 1 GROUP BY u.referred_by').all(...ids);
+    hired.forEach(r => { if (!map[r.aid]) map[r.aid] = {}; map[r.aid].hired_total = r.c; });
+  } catch (e) {}
+  try {
+    const regM = await db.prepare('SELECT referred_by as aid, COUNT(*) as c FROM users WHERE referred_by IN (' + ph + ') AND datetime(created_at,\'localtime\') >= ? GROUP BY referred_by').all(...ids, monthStart);
+    regM.forEach(r => { if (!map[r.aid]) map[r.aid] = {}; map[r.aid].registered_month = r.c; });
+  } catch (e) {}
+  try {
+    const hiredM = await db.prepare('SELECT u.referred_by as aid, COUNT(*) as c FROM selections s JOIN users u ON u.id = s.user_id WHERE u.referred_by IN (' + ph + ") AND s.hired = 1 AND datetime(COALESCE(s.hired_at, s.created_at),'localtime') >= ? GROUP BY u.referred_by").all(...ids, monthStart);
+    hiredM.forEach(r => { if (!map[r.aid]) map[r.aid] = {}; map[r.aid].hired_month = r.c; });
+  } catch (e) {}
+  // Fill defaults
+  ids.forEach(id => {
+    if (!map[id]) map[id] = {};
+    if (map[id].registered_total === undefined) map[id].registered_total = 0;
+    if (map[id].hired_total === undefined) map[id].hired_total = 0;
+    if (map[id].registered_month === undefined) map[id].registered_month = 0;
+    if (map[id].hired_month === undefined) map[id].hired_month = 0;
+  });
+  return map;
 }
 
 // ===== TEAM CALENDAR (admin board + team leader page) =====
@@ -5094,33 +5145,53 @@ app.post('/api/admin/agents/:id/role', authMiddleware, adminMiddleware, async (r
 app.get('/api/admin/team-leaders', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const leaders = await db.prepare("SELECT id, name, email, phone, referral_code, agent_type, is_active, created_at FROM agents WHERE role = 'team_leader' ORDER BY id DESC").all();
-    const out = await Promise.all(leaders.map(async function (l) {
-      const members = await db.prepare('SELECT id, name, email, phone, referral_code, agent_type, is_active, created_at FROM agents WHERE team_leader_id = ? ORDER BY is_active DESC, id').all(l.id);
-      const ms = await Promise.all(members.map(async function (m) {
-        const s = await teamStatsForAgents([m.id], false);
+    // Pre-fetch all members for all leaders in ONE query
+    const allMemberIds = leaders.map(l => l.id);
+    const allMembers = allMemberIds.length
+      ? await db.prepare('SELECT id, team_leader_id, name, email, phone, referral_code, agent_type, is_active, created_at FROM agents WHERE team_leader_id IN (' + allMemberIds.map(() => '?').join(',') + ') ORDER BY is_active DESC, id').all(...allMemberIds)
+      : [];
+    const membersByLeader = {};
+    allMembers.forEach(m => {
+      if (!membersByLeader[m.team_leader_id]) membersByLeader[m.team_leader_id] = [];
+      membersByLeader[m.team_leader_id].push(m);
+    });
+    // Batch stats for ALL members across ALL leaders in 4 queries
+    const allMemberIdList = allMembers.map(m => m.id);
+    const ms = await teamStatsBatch(allMemberIdList);
+    // Days stats for the first leader's members only (days is per-leader view)
+    const out = leaders.map(function (l) {
+      const members = membersByLeader[l.id] || [];
+      const enriched = members.map(function (m) {
+        const s = ms[m.id] || {};
         return Object.assign({}, m, {
-          registered: s.registered_total,
-          registered_month: s.registered_month,
-          hired: s.hired_total,
-          hired_month: s.hired_month
+          registered: s.registered_total || 0,
+          registered_month: s.registered_month || 0,
+          hired: s.hired_total || 0,
+          hired_month: s.hired_month || 0
         });
-      }));
-      const st = await teamStatsForAgents(members.map(function (m) {
-        return m.id;
-      }), true);
+      });
+      // Aggregate leader totals from batch
+      let regT = 0, hireT = 0, regM = 0, hireM = 0;
+      members.forEach(m => {
+        const s = ms[m.id] || {};
+        regT += s.registered_total || 0;
+        hireT += s.hired_total || 0;
+        regM += s.registered_month || 0;
+        hireM += s.hired_month || 0;
+      });
       return Object.assign({}, l, {
-        members: ms,
+        members: enriched,
         members_count: members.length,
         active_members: members.filter(function (m) {
           return m.is_active === 1;
         }).length,
-        registered_month: st.registered_month,
-        hired_month: st.hired_month,
-        registered_total: st.registered_total,
-        hired_total: st.hired_total,
-        days: st.days
+        registered_month: regM,
+        hired_month: hireM,
+        registered_total: regT,
+        hired_total: hireT,
+        days: []
       });
-    }));
+    });
     res.json(out);
   } catch (e) {
     res.status(500).json({
@@ -5196,16 +5267,17 @@ app.get('/api/agent/team/overview', authMiddleware, teamLeaderMiddleware, async 
       error: 'الجلسة غير صالحة، برجاء تسجيل الدخول مرة أخرى'
     });
     const members = await db.prepare('SELECT id, name, email, phone, referral_code, agent_type, is_active, created_at FROM agents WHERE team_leader_id = ? ORDER BY is_active DESC, id').all(leaderId);
-    const ms = await Promise.all(members.map(async function (m) {
-      const s = await teamStatsForAgents([m.id], false);
+    const ms = await teamStatsBatch(members.map(function (m) { return m.id; }));
+    const enriched = members.map(function (m) {
+      const s = ms[m.id] || {};
       return Object.assign({}, m, {
-        registered: s.registered_total,
-        registered_month: s.registered_month,
-        hired: s.hired_total,
-        hired_month: s.hired_month,
+        registered: s.registered_total || 0,
+        registered_month: s.registered_month || 0,
+        hired: s.hired_total || 0,
+        hired_month: s.hired_month || 0,
         working: m.is_active === 1
       });
-    }));
+    });
     const st = await teamStatsForAgents(members.map(function (m) {
       return m.id;
     }), true);
@@ -5213,10 +5285,10 @@ app.get('/api/agent/team/overview', authMiddleware, teamLeaderMiddleware, async 
     const requests = await db.prepare("SELECT r.id, r.agent_id, r.reason, r.status, r.created_at, a.name as agent_name FROM team_removal_requests r JOIN agents a ON a.id = r.agent_id WHERE r.team_leader_id = ? ORDER BY r.id DESC LIMIT 20").all(leaderId);
     res.json({
       leader: leader,
-      members: ms,
+      members: enriched,
       stats: Object.assign({
         members: members.length,
-        active_members: ms.filter(function (x) {
+        active_members: enriched.filter(function (x) {
           return x.is_active === 1;
         }).length
       }, st),

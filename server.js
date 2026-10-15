@@ -1277,10 +1277,10 @@ app.post('/api/login', authLimiter, async (req, res) => {
       password
     } = req.body;
     const user = await db.prepare('SELECT * FROM users WHERE email = ?').get(email);
-    if (!user) return res.status(400).json({
+    if (!user || !user.password) return res.status(400).json({
       error: 'Invalid credentials'
     });
-    if (!bcrypt.compareSync(password, user.password)) return res.status(400).json({
+    if (!bcrypt.compareSync(password || '', user.password)) return res.status(400).json({
       error: 'Invalid credentials'
     });
     if (user.email_verified === 0) return res.status(400).json({
@@ -1310,7 +1310,7 @@ app.post('/api/login', authLimiter, async (req, res) => {
       }
     });
   } catch (e) {
-    console.log('Login error:', e.message);
+    console.log('Login error:', e && e.message, '| code:', e && e.code, '| stack:', (e && e.stack || '').split('\n').slice(0,3).join(' | '));
     res.status(500).json({
       error: 'حدث خطأ في الخادم'
     });

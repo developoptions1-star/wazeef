@@ -171,6 +171,7 @@ class PgDriver {
   // Translate SQLite-flavored SQL to PostgreSQL
   _prep(sql) {
     let s = sql;
+    if (process.env.DB_DEBUG && /strftime/i.test(s)) console.log('PREP INPUT:', JSON.stringify(s));
     const pragma = s.match(/^\s*PRAGMA\s+table_info\((\w+)\)\s*$/i);
     if (pragma) {
       return toDollarParams(
@@ -209,10 +210,12 @@ class PgDriver {
       if (distinct) expr = expr.replace(/^DISTINCT\s+/i, '');
       return 'STRING_AGG(' + (distinct ? 'DISTINCT ' : '') + '(' + expr + ')::text, ' + sep + ')';
     });
-    // strftime('%Y', col) -> CAST(EXTRACT(YEAR FROM col::timestamp) AS INTEGER)-ish
-    s = s.replace(/strftime\s*\(\s*'%Y'\s*,\s*/gi, 'EXTRACT(YEAR FROM ');
+    // strftime('%Y', col) -> EXTRACT(YEAR FROM col::timestamp)
+    s = s.replace(/strftime\s*\(\s*'%Y'\s*,\s*([a-zA-Z_][a-zA-Z0-9_.]*)\s*\)/gi, 'EXTRACT(YEAR FROM $1::timestamp)');
     s = this._replaceDateTime(s);
-    return toDollarParams(s);
+    const result = toDollarParams(s);
+    if (process.env.DB_DEBUG && /strftime|EXTRACT/i.test(sql)) console.log('PREP OUTPUT:', JSON.stringify(result));
+    return result;
   }
 
   // Generic paren-aware function-call replacer: finds fn( ... ) and rebuilds via cb(args[])
@@ -310,6 +313,7 @@ class PgDriver {
     // For INSERT statements, append RETURNING id so lastInsertRowid works like
     // SQLite's last_insert_rowid(). Skip if the SQL already has RETURNING.
     let q = this._prep(sql);
+    if (process.env.DB_DEBUG && /strftime|EXTRACT/i.test(sql)) console.log('SQL PREP:', sql, '->', q);
     if (/^\s*INSERT\s+INTO/i.test(sql) && !/\bRETURNING\b/i.test(sql)) {
       q += ' RETURNING id';
     }

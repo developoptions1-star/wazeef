@@ -4167,6 +4167,7 @@ app.get('/api/admin/qualty-rankings', authMiddleware, adminMiddleware, async (re
 });
 app.get('/api/admin/ranking-years', authMiddleware, adminMiddleware, async (req, res) => {
   try {
+    if (process.env.DB_DEBUG) console.log('RANKING-YEARS: db.driverName =', db.driverName, 'typeof prepare =', typeof db.prepare);
     const years = await db.prepare(`
       SELECT DISTINCT CAST(strftime('%Y', created_at) AS INTEGER) as year
       FROM selections

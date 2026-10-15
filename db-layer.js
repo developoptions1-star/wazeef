@@ -387,7 +387,7 @@ async function openUnifiedDb(opts) {
   if (_db) return _db;
   if (process.env.DB_DRIVER === 'pg' && process.env.DATABASE_URL) {
     const url = rewriteSupabaseUrl(process.env.DATABASE_URL);
-    // Try session pooler (5432), then transaction pooler (6543), then sqljs fallback
+    // Try session pooler (5432), then transaction pooler (6543)
     const hosts = [url];
     try {
       const u2 = new URL(url);
@@ -407,12 +407,10 @@ async function openUnifiedDb(opts) {
         console.log('PG failed on port', new URL(h).port + ':', e.message);
       }
     }
-    // All PG attempts failed — fall back to local sql.js so the server still boots
-    console.log('PG unreachable — falling back to sql.js (local file). Error:', lastErr && lastErr.message);
+    // NO fallback — data must come from Supabase only
+    throw new Error('Cannot connect to Supabase PostgreSQL. All ports failed. Last error: ' + (lastErr && lastErr.message));
   }
-  _db = await new SqlJsDriver().init(opts.dbPath);
-  console.log('DB driver: sql.js (local file)');
-  return _db;
+  throw new Error('DB_DRIVER=pg and DATABASE_URL are required. No local database allowed.');
 }
 
 module.exports = { openUnifiedDb, rewriteSupabaseUrl };

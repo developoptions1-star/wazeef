@@ -712,112 +712,12 @@ async function initDatabase() {
     FOREIGN KEY (company_id) REFERENCES companies(id)
   );
 `);
-  if (restoredFromBackup) {
-    // A restored backup already holds its own data -> never wipe it.
-    // Only guarantee that the admin accounts exist.
-    const insertAdmin = db.prepare('INSERT OR IGNORE INTO users (name, email, password, role, email_verified) VALUES (?, ?, ?, ?, 1)');
-    for (const a of ADMIN_SEED) await insertAdmin.run(a.name, a.email, bcrypt.hashSync(a.password, 10), 'admin');
-    console.log('Restored backup kept: auto-reset skipped, ' + ADMIN_SEED.length + ' admins ensured');
-  } else {
-    // Startup only ensures admin accounts exist — NEVER wipe user data.
-    // Explicit wipe is only via POST /api/admin/reset-db (admin + confirm string).
-    await seedAdmins();
-    // Auto-seed from bundled backup if the DB has no real users yet
-    try {
-      let userCount = 0;
-      try { userCount = (await db.prepare("SELECT COUNT(*) as c FROM users WHERE role != 'admin'").get()).c; } catch (_) {}
-      if (!userCount) {
-        const seedPath = path.join(__dirname, 'seed-backup.sql');
-        if (fs.existsSync(seedPath)) {
-          console.log('Empty DB detected — auto-loading seed-backup.sql ...');
-          await applySqlRestore(fs.readFileSync(seedPath, 'utf8'));
-          console.log('Seed backup loaded automatically');
-        }
-      }
-    } catch (e) {
-      console.log('Auto-seed failed:', e.message);
-    }
-    if (process.env.SEED_DEMO === '1') {
-      await seedDemoData();
-      console.log('Demo fixtures loaded (SEED_DEMO=1)');
-    }
+  // All data comes from Supabase PostgreSQL only — no local storage, no auto-seed
+  await seedAdmins();
+  if (process.env.SEED_DEMO === '1') {
+    await seedDemoData();
+    console.log('Demo fixtures loaded (SEED_DEMO=1)');
   }
-
-  // Force save so CREATE TABLE statements persist to disk
-  try {
-    db._save && db._save();
-  } catch (e) {}
-
-  // ==== Auto-backup & self-recovery (safety net so data is never silently lost) ====
-  const autoBackupDir = path.join(dataDir, 'backups');
-  async function autoBackupNow() {
-    try {
-      if (!fs.existsSync(dbPath)) return;
-      try {
-        db._save && db._save();
-      } catch (e) {}
-      if (!fs.existsSync(autoBackupDir)) fs.mkdirSync(autoBackupDir, {
-        recursive: true
-      });
-      const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-      const dest = path.join(autoBackupDir, 'app-' + stamp + '.db');
-      fs.copyFileSync(dbPath, dest);
-      let users = 0;
-      try {
-        users = (await db.prepare("SELECT COUNT(*) as c FROM users WHERE role != 'admin'").get()).c;
-      } catch (e) {}
-      fs.writeFileSync(path.join(autoBackupDir, 'latest.meta'), JSON.stringify({
-        users,
-        ts: Date.now()
-      }));
-      const files = fs.readdirSync(autoBackupDir).filter(f => /^app-.*\.db$/.test(f)).sort();
-      while (files.length > 7) {
-        try {
-          fs.unlinkSync(path.join(autoBackupDir, files.shift()));
-        } catch (e) {}
-      }
-      console.log('Auto-backup written:', path.basename(dest), '(users: ' + users + ')');
-    } catch (e) {
-      console.log('Auto-backup failed:', e.message);
-    }
-  }
-  async function recoverFromBackupIfNeeded() {
-    try {
-      let users = 0;
-      try {
-        users = (await db.prepare("SELECT COUNT(*) as c FROM users WHERE role != 'admin'").get()).c;
-      } catch (e) {}
-      if (users > 0) return; // real data present — nothing to do
-      const metaPath = path.join(autoBackupDir, 'latest.meta');
-      if (!fs.existsSync(metaPath)) return;
-      let meta = {};
-      try {
-        meta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
-      } catch (e) {}
-      if (!meta.users || meta.users <= 0) return; // last backup had no real users either — respect that
-      if (!fs.existsSync(autoBackupDir)) return;
-      const files = fs.readdirSync(autoBackupDir).filter(f => /^app-.*\.db$/.test(f)).sort();
-      if (!files.length) return;
-      const latest = path.join(autoBackupDir, files[files.length - 1]);
-      try {
-        db._save && db._save();
-      } catch (e) {}
-      fs.copyFileSync(latest, dbPath);
-      if (db.reload) db.reload();
-      let now = 0;
-      try {
-        now = (await db.prepare("SELECT COUNT(*) as c FROM users WHERE role != 'admin'").get()).c;
-      } catch (e) {}
-      console.log('RECOVERED: database was empty — restored from auto-backup ' + files[files.length - 1] + ' (users: ' + now + ')');
-    } catch (e) {
-      console.log('Auto-recovery check failed:', e.message);
-    }
-  }
-
-  // Recovery FIRST (so an empty DB cannot overwrite the recovery meta), then snapshot
-  await recoverFromBackupIfNeeded();
-  await autoBackupNow();
-  setInterval(autoBackupNow, 6 * 60 * 60 * 1000); // periodic snapshot every 6h
 } // end initDatabase
 
 // Email transporter (global scope - used by routes)

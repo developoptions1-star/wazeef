@@ -8263,8 +8263,15 @@ async function start() {
   await initDatabase();
   app.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT}`));
 }
-start().catch(e => {
-  console.error('Failed to start:', e.message);
-  console.error(e.stack);
-  process.exit(1);
-});
+
+// Vercel serverless: export app instead of listening
+if (process.env.VERCEL) {
+  initDatabase().then(() => console.log('Vercel: DB initialized')).catch(e => console.error('Vercel DB error:', e.message));
+  module.exports = app;
+} else {
+  start().catch(e => {
+    console.error('Failed to start:', e.message);
+    console.error(e.stack);
+    process.exit(1);
+  });
+}

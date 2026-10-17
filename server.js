@@ -753,8 +753,16 @@ function wrapEmail(html) {
   if (html.indexOf('data-wz-card') !== -1) return html;
   return emailShell(html);
 }
+async function logEmail(recipient, subject, method, status, error) {
+  try {
+    await db.prepare('INSERT INTO email_log (recipient, subject, method, status, error) VALUES (?, ?, ?, ?, ?)').run(recipient, String(subject || '').slice(0, 200), String(method || '').slice(0, 80), String(status || '').slice(0, 40), String(error || '').slice(0, 500));
+  } catch (e) {
+    console.log('email_log insert failed:', (e.message || '').slice(0, 120));
+  }
+}
 async function sendEmail(to, subject, html, attachments) {
   console.log('sendEmail →', to, '|', subject.slice(0, 40));
+  logEmail(to, subject, 'START', 'attempt', '');
   try {
   const files = (attachments || []).map(a => ({
     filename: a.filename,
@@ -821,9 +829,11 @@ async function sendEmail(to, subject, html, attachments) {
       }
       await t.sendMail(msg);
       console.log('Email sent to:', to, 'via', cfg.name, cfg.port);
+      logEmail(to, subject, cfg.name + ' ' + cfg.port, 'sent', '');
       return;
     } catch (e) {
       console.log(`${cfg.name}:${cfg.port} failed:`, e.code || '', e.responseCode || '', (e.message || '').split('\n')[0].slice(0, 200));
+      logEmail(to, subject, cfg.name + ' ' + cfg.port, 'failed', (e.code || '') + ' ' + (e.responseCode || '') + ' ' + (e.message || '').split('\n')[0].slice(0, 300));
     }
   }
   // Priority 2: Brevo API (only reached if Gmail SMTP failed)
@@ -867,9 +877,11 @@ async function sendEmail(to, subject, html, attachments) {
         throw new Error('Brevo HTTP ' + r.status + ': ' + errBody.slice(0, 200));
       }
       console.log('Email sent to:', to, 'via Brevo API (Gmail SMTP failed)');
+      logEmail(to, subject, 'Brevo API', 'sent', '');
       return;
     } catch (e) {
       console.log('Brevo failed:', e.message.split('\n')[0]);
+      logEmail(to, subject, 'Brevo API', 'failed', e.message.split('\n')[0].slice(0, 400));
     }
   }
   // Priority 3: Resend (only reached if everything above failed)
@@ -900,12 +912,15 @@ async function sendEmail(to, subject, html, attachments) {
         throw new Error('Resend HTTP ' + r.status);
       }
       console.log('Email sent via Resend to:', to);
+      logEmail(to, subject, 'Resend', 'sent', '');
       return;
     } catch (e) {
       console.log('Resend failed:', e.message.split('\n')[0]);
+      logEmail(to, subject, 'Resend', 'failed', e.message.split('\n')[0].slice(0, 400));
     }
   }
   console.log('Email send error: ALL methods failed for', to, '| BREVO_API_KEY:', process.env.BREVO_API_KEY ? 'set' : 'missing', '| RESEND_API_KEY:', process.env.RESEND_API_KEY ? 'set' : 'missing');
+  logEmail(to, subject, 'ALL', 'all_failed', 'Gmail/Brevo/Resend all failed');
   } catch (e) {
     console.log('sendEmail EXCEPTION:', e && (e.stack || e.message || String(e)));
   }
@@ -8198,6 +8213,11 @@ app.use((req, res) => {
 });
 async function start() {
   await initDatabase();
+  try {
+    await db.exec(`CREATE TABLE IF NOT EXISTS email_log (id BIGSERIAL PRIMARY KEY, recipient TEXT, subject TEXT, method TEXT, status TEXT, error TEXT, created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW())`);
+  } catch (e) {
+    console.log('email_log create failed:', (e.message || '').slice(0, 150));
+  }
   console.log('Email config: BREVO_API_KEY=' + (process.env.BREVO_API_KEY ? 'set' : 'missing') + ' RESEND_API_KEY=' + (process.env.RESEND_API_KEY ? 'set' : 'missing') + ' SMTP_USER=' + (SMTP_USER || 'missing'));
   app.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT}`));
 }

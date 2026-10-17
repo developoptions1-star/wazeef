@@ -762,6 +762,39 @@ async function sendEmail(to, subject, html, attachments) {
   }));
   // Every mail goes through the shared branded card (wrapEmail is idempotent).
   const body = wrapEmail(html);
+  // Priority 1: Resend (free 3000/month, no IP restriction)
+  if (process.env.RESEND_API_KEY) {
+    try {
+      const payload = {
+        from: `"وَظِيف" <${process.env.RESEND_FROM || 'onboarding@resend.dev'}>`,
+        to: [to],
+        subject,
+        html: body
+      };
+      if (files.length) payload.attachments = files.map(a => ({
+        filename: a.filename,
+        content: Buffer.isBuffer(a.content) ? a.content.toString('base64') : a.content
+      }));
+      const r = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + process.env.RESEND_API_KEY
+        },
+        body: JSON.stringify(payload)
+      });
+      if (!r.ok) {
+        const errBody = await r.text();
+        console.log('Resend error:', r.status, errBody.slice(0, 300));
+        throw new Error('Resend HTTP ' + r.status);
+      }
+      console.log('Email sent via Resend to:', to);
+      return;
+    } catch (e) {
+      console.log('Resend failed:', e.message.split('\n')[0]);
+    }
+  }
+  // Priority 2: Brevo
   if (process.env.BREVO_API_KEY) {
     try {
       const payload = {
@@ -795,13 +828,20 @@ async function sendEmail(to, subject, html, attachments) {
         },
         body: JSON.stringify(payload)
       });
-      if (!r.ok) throw new Error('Brevo HTTP ' + r.status + ': ' + (await r.text()).slice(0, 200));
+      if (!r.ok) {
+        const errBody = await r.text();
+        console.log('Brevo error:', r.status, errBody.slice(0, 300));
+        throw new Error('Brevo HTTP ' + r.status + ': ' + errBody.slice(0, 200));
+      }
       console.log('Email sent to:', to);
       return;
     } catch (e) {
-      console.log('Brevo failed, trying SMTP:', e.message.split('\n')[0]);
+      console.log('Brevo failed:', e.message.split('\n')[0]);
     }
   }
+  console.log('Email skipped: no BREVO_API_KEY set and SMTP fallback may fail');
+  console.log('  SMTP_USER:', SMTP_USER ? SMTP_USER.slice(0,5)+'...' : 'NOT SET');
+  console.log('  SMTP_PASS:', SMTP_PASS ? '***set***' : 'NOT SET');
   const attempts = [{
     host: 'smtp.gmail.com',
     port: 587,

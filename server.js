@@ -764,40 +764,69 @@ async function sendEmail(to, subject, html, attachments) {
   }));
   // Every mail goes through the shared branded card (wrapEmail is idempotent).
   const body = wrapEmail(html);
-  // Priority 1: Resend (free 3000/month, no IP restriction)
-  if (process.env.RESEND_API_KEY) {
+  // Priority 1: Gmail SMTP — same as the old working site
+  const attempts = [{
+    name: 'Gmail',
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    user: SMTP_USER,
+    pass: SMTP_PASS
+  }, {
+    name: 'Gmail-SSL',
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
+    user: SMTP_USER,
+    pass: SMTP_PASS
+  }];
+  if (process.env.BREVO_SMTP_KEY) {
+    attempts.push({
+      name: 'Brevo relay',
+      host: 'smtp-relay.brevo.com',
+      port: 587,
+      secure: false,
+      user: process.env.BREVO_SMTP_USER || SMTP_USER,
+      pass: process.env.BREVO_SMTP_KEY
+    });
+  }
+  for (const cfg of attempts) {
     try {
-      const payload = {
-        from: `"وَظِيف" <${process.env.RESEND_FROM || 'onboarding@resend.dev'}>`,
-        to: [to],
+      const t = nodemailer.createTransport({
+        host: cfg.host,
+        port: cfg.port,
+        secure: cfg.secure,
+        auth: {
+          user: cfg.user,
+          pass: cfg.pass
+        },
+        connectionTimeout: 8000,
+        socketTimeout: 10000
+      });
+      const msg = {
+        from: `"وَظِيف" <${cfg.user}>`,
+        to,
         subject,
         html: body
       };
-      if (files.length) payload.attachments = files.map(a => ({
-        filename: a.filename,
-        content: Buffer.isBuffer(a.content) ? a.content.toString('base64') : a.content
-      }));
-      const r = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + process.env.RESEND_API_KEY
-        },
-        body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(10000)
-      });
-      if (!r.ok) {
-        const errBody = await r.text();
-        console.log('Resend error:', r.status, errBody.slice(0, 300));
-        throw new Error('Resend HTTP ' + r.status);
+      if (files.length) {
+        msg.attachments = files.map(a => {
+          const o = {
+            filename: a.filename,
+            content: Buffer.isBuffer(a.content) ? a.content : Buffer.from(a.content, 'base64')
+          };
+          if (a.cid) o.cid = a.cid;
+          return o;
+        });
       }
-      console.log('Email sent via Resend to:', to);
+      await t.sendMail(msg);
+      console.log('Email sent to:', to, 'via', cfg.name, cfg.port);
       return;
     } catch (e) {
-      console.log('Resend failed:', e.message.split('\n')[0]);
+      console.log(`${cfg.name}:${cfg.port} failed:`, e.code || '', e.responseCode || '', (e.message || '').split('\n')[0].slice(0, 200));
     }
   }
-  // Priority 2: Brevo
+  // Priority 2: Brevo API (only reached if Gmail SMTP failed)
   if (process.env.BREVO_API_KEY) {
     try {
       const payload = {
@@ -837,72 +866,43 @@ async function sendEmail(to, subject, html, attachments) {
         console.log('Brevo error:', r.status, errBody.slice(0, 300));
         throw new Error('Brevo HTTP ' + r.status + ': ' + errBody.slice(0, 200));
       }
-      console.log('Email sent to:', to);
+      console.log('Email sent to:', to, 'via Brevo API (Gmail SMTP failed)');
       return;
     } catch (e) {
       console.log('Brevo failed:', e.message.split('\n')[0]);
     }
   }
-  const attempts = [];
-  if (process.env.BREVO_SMTP_KEY) {
-    attempts.push({
-      name: 'Brevo relay',
-      host: 'smtp-relay.brevo.com',
-      port: 587,
-      secure: false,
-      user: process.env.BREVO_SMTP_USER || SMTP_USER,
-      pass: process.env.BREVO_SMTP_KEY
-    });
-  }
-  attempts.push({
-    name: 'Gmail',
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
-    user: SMTP_USER,
-    pass: SMTP_PASS
-  }, {
-    name: 'Gmail-SSL',
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
-    user: SMTP_USER,
-    pass: SMTP_PASS
-  });
-  for (const cfg of attempts) {
+  // Priority 3: Resend (only reached if everything above failed)
+  if (process.env.RESEND_API_KEY) {
     try {
-      const t = nodemailer.createTransport({
-        host: cfg.host,
-        port: cfg.port,
-        secure: cfg.secure,
-        auth: {
-          user: cfg.user,
-          pass: cfg.pass
-        },
-        connectionTimeout: 8000,
-        socketTimeout: 10000
-      });
-      const msg = {
-        from: `"وَظِيف" <${cfg.user}>`,
-        to,
+      const payload = {
+        from: `"وَظِيف" <${process.env.RESEND_FROM || 'onboarding@resend.dev'}>`,
+        to: [to],
         subject,
         html: body
       };
-      if (files.length) {
-        msg.attachments = files.map(a => {
-          const o = {
-            filename: a.filename,
-            content: Buffer.isBuffer(a.content) ? a.content : Buffer.from(a.content, 'base64')
-          };
-          if (a.cid) o.cid = a.cid;
-          return o;
-        });
+      if (files.length) payload.attachments = files.map(a => ({
+        filename: a.filename,
+        content: Buffer.isBuffer(a.content) ? a.content.toString('base64') : a.content
+      }));
+      const r = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + process.env.RESEND_API_KEY
+        },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(10000)
+      });
+      if (!r.ok) {
+        const errBody = await r.text();
+        console.log('Resend error:', r.status, errBody.slice(0, 300));
+        throw new Error('Resend HTTP ' + r.status);
       }
-      await t.sendMail(msg);
-      console.log('Email sent to:', to, 'via', cfg.name, cfg.port);
+      console.log('Email sent via Resend to:', to);
       return;
     } catch (e) {
-      console.log(`${cfg.name}:${cfg.port} failed:`, e.code || '', e.responseCode || '', (e.message || '').split('\n')[0].slice(0, 200));
+      console.log('Resend failed:', e.message.split('\n')[0]);
     }
   }
   console.log('Email send error: ALL methods failed for', to, '| BREVO_API_KEY:', process.env.BREVO_API_KEY ? 'set' : 'missing', '| RESEND_API_KEY:', process.env.RESEND_API_KEY ? 'set' : 'missing');

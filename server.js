@@ -754,6 +754,8 @@ function wrapEmail(html) {
   return emailShell(html);
 }
 async function sendEmail(to, subject, html, attachments) {
+  console.log('sendEmail →', to, '|', subject.slice(0, 40));
+  try {
   const files = (attachments || []).map(a => ({
     filename: a.filename,
     content: a.content,
@@ -781,7 +783,8 @@ async function sendEmail(to, subject, html, attachments) {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ' + process.env.RESEND_API_KEY
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(10000)
       });
       if (!r.ok) {
         const errBody = await r.text();
@@ -826,7 +829,8 @@ async function sendEmail(to, subject, html, attachments) {
           'Content-Type': 'application/json',
           'api-key': process.env.BREVO_API_KEY
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(10000)
       });
       if (!r.ok) {
         const errBody = await r.text();
@@ -839,31 +843,47 @@ async function sendEmail(to, subject, html, attachments) {
       console.log('Brevo failed:', e.message.split('\n')[0]);
     }
   }
-  console.log('Email skipped: no BREVO_API_KEY set and SMTP fallback may fail');
-  console.log('  SMTP_USER:', SMTP_USER ? SMTP_USER.slice(0,5)+'...' : 'NOT SET');
-  console.log('  SMTP_PASS:', SMTP_PASS ? '***set***' : 'NOT SET');
-  const attempts = [{
+  const attempts = [];
+  if (process.env.BREVO_SMTP_KEY) {
+    attempts.push({
+      name: 'Brevo relay',
+      host: 'smtp-relay.brevo.com',
+      port: 587,
+      secure: false,
+      user: process.env.BREVO_SMTP_USER || SMTP_USER,
+      pass: process.env.BREVO_SMTP_KEY
+    });
+  }
+  attempts.push({
+    name: 'Gmail',
     host: 'smtp.gmail.com',
     port: 587,
-    secure: false
+    secure: false,
+    user: SMTP_USER,
+    pass: SMTP_PASS
   }, {
+    name: 'Gmail-SSL',
     host: 'smtp.gmail.com',
     port: 465,
-    secure: true
-  }];
+    secure: true,
+    user: SMTP_USER,
+    pass: SMTP_PASS
+  });
   for (const cfg of attempts) {
     try {
       const t = nodemailer.createTransport({
-        ...cfg,
+        host: cfg.host,
+        port: cfg.port,
+        secure: cfg.secure,
         auth: {
-          user: SMTP_USER,
-          pass: SMTP_PASS
+          user: cfg.user,
+          pass: cfg.pass
         },
         connectionTimeout: 8000,
         socketTimeout: 10000
       });
       const msg = {
-        from: `"وَظِيف" <${SMTP_USER}>`,
+        from: `"وَظِيف" <${cfg.user}>`,
         to,
         subject,
         html: body
@@ -879,13 +899,16 @@ async function sendEmail(to, subject, html, attachments) {
         });
       }
       await t.sendMail(msg);
-      console.log('Email sent to:', to);
+      console.log('Email sent to:', to, 'via', cfg.name, cfg.port);
       return;
     } catch (e) {
-      console.log(`SMTP ${cfg.port} failed:`, (e.message || '').split('\n')[0]);
+      console.log(`${cfg.name}:${cfg.port} failed:`, e.code || '', e.responseCode || '', (e.message || '').split('\n')[0].slice(0, 200));
     }
   }
-  console.log('Email send error: all methods failed for', to);
+  console.log('Email send error: ALL methods failed for', to, '| BREVO_API_KEY:', process.env.BREVO_API_KEY ? 'set' : 'missing', '| RESEND_API_KEY:', process.env.RESEND_API_KEY ? 'set' : 'missing');
+  } catch (e) {
+    console.log('sendEmail EXCEPTION:', e && (e.stack || e.message || String(e)));
+  }
 }
 async function backupDatabase(manual) {
   try {
@@ -8175,6 +8198,7 @@ app.use((req, res) => {
 });
 async function start() {
   await initDatabase();
+  console.log('Email config: BREVO_API_KEY=' + (process.env.BREVO_API_KEY ? 'set' : 'missing') + ' RESEND_API_KEY=' + (process.env.RESEND_API_KEY ? 'set' : 'missing') + ' SMTP_USER=' + (SMTP_USER || 'missing'));
   app.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT}`));
 }
 

@@ -723,6 +723,7 @@ async function initDatabase() {
 // Email transporter (global scope - used by routes)
 const SMTP_USER = process.env.SMTP_USER || 'mohamedfaron297@gmail.com';
 const SMTP_PASS = process.env.SMTP_PASS || 'ushf stxg rmgp xhig';
+const BREVO_KEY = process.env.BREVO_API_KEY || '';
 
 // ===== Shared email shell =====
 // Every outbound mail is wrapped in this one branded card so a template only has
@@ -762,7 +763,7 @@ async function logEmail(recipient, subject, method, status, error) {
 }
 async function sendEmail(to, subject, html, attachments) {
   console.log('sendEmail →', to, '|', subject.slice(0, 40));
-  await logEmail(to, subject, 'START', 'attempt', '');
+  await logEmail(to, subject, 'START', 'attempt', 'BREVO=' + (BREVO_KEY ? 'set' : 'MISSING') + ' RESEND=' + (process.env.RESEND_API_KEY ? 'set' : 'missing'));
   try {
   const files = (attachments || []).map(a => ({
     filename: a.filename,
@@ -773,7 +774,7 @@ async function sendEmail(to, subject, html, attachments) {
   // Every mail goes through the shared branded card (wrapEmail is idempotent).
   const body = wrapEmail(html);
   // Priority 1: Brevo API over HTTPS (Railway blocks outbound SMTP ports 587/465)
-  if (process.env.BREVO_API_KEY) {
+  if (BREVO_KEY) {
     try {
       const payload = {
         sender: {
@@ -802,7 +803,7 @@ async function sendEmail(to, subject, html, attachments) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'api-key': process.env.BREVO_API_KEY
+          'api-key': BREVO_KEY
         },
         body: JSON.stringify(payload),
         signal: AbortSignal.timeout(10000)
@@ -920,7 +921,7 @@ async function sendEmail(to, subject, html, attachments) {
     }
   }
   console.log('Email send error: ALL methods failed for', to, '| BREVO_API_KEY:', process.env.BREVO_API_KEY ? 'set' : 'missing', '| RESEND_API_KEY:', process.env.RESEND_API_KEY ? 'set' : 'missing');
-  await logEmail(to, subject, 'ALL', 'all_failed', 'Gmail/Brevo/Resend all failed');
+  await logEmail(to, subject, 'ALL', 'all_failed', 'BREVO=' + (BREVO_KEY ? 'set' : 'MISSING') + ' RESEND=' + (process.env.RESEND_API_KEY ? 'set' : 'missing') + ' — Gmail/Brevo/Resend all failed');
   } catch (e) {
     console.log('sendEmail EXCEPTION:', e && (e.stack || e.message || String(e)));
   }
@@ -8218,7 +8219,7 @@ async function start() {
   } catch (e) {
     console.log('email_log create failed:', (e.message || '').slice(0, 150));
   }
-  console.log('Email config: BREVO_API_KEY=' + (process.env.BREVO_API_KEY ? 'set' : 'missing') + ' RESEND_API_KEY=' + (process.env.RESEND_API_KEY ? 'set' : 'missing') + ' SMTP_USER=' + (SMTP_USER || 'missing'));
+  console.log('Email config: BREVO_API_KEY=' + (BREVO_KEY ? 'set' : 'missing') + ' RESEND_API_KEY=' + (process.env.RESEND_API_KEY ? 'set' : 'missing') + ' SMTP_USER=' + (SMTP_USER || 'missing'));
   app.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT}`));
 }
 

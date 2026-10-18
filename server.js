@@ -257,8 +257,8 @@ async function seedAdmins() {
 async function seedDemoData() {
   // 1) Default test company + its login + its first job (so company login always works)
   try {
-    await db.prepare('INSERT INTO companies (name, position, company_email, available_slots) VALUES (?,?,?,?)').run('TestCo', 'Dev', 'test@co.com', 5);
-    const coId = (await db.prepare('SELECT last_insert_rowid() as id').get()).id;
+    const rCo = await db.prepare('INSERT INTO companies (name, position, company_email, available_slots) VALUES (?,?,?,?)').run('TestCo', 'Dev', 'test@co.com', 5);
+    const coId = rCo.lastInsertRowid;
     await db.prepare('INSERT INTO company_users (company_id, email, password, name) VALUES (?,?,?,?)').run(coId, 'test@co.com', bcrypt.hashSync('Test@123', 10), 'TestCo');
     await db.prepare('INSERT INTO company_languages (company_id, language, level, needed_count, position, salary_min, salary_max, interview_time, deadline, notify_days, description) VALUES (?,?,?,?,?,?,?,?,?,?,?)').run(coId, 'الإنجليزية', 'B2', 3, 'مطور ويب', 5000, 15000, 'السبت 2 م', new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0], 5, 'وظيفة مطور ويب - تيست');
     console.log('Test company seeded: test@co.com / Test@123');
@@ -304,8 +304,8 @@ async function seedDemoData() {
       level: 'C1'
     }];
     for (const p of testPeople) {
-      await db.prepare('INSERT INTO users (name,email,password,phone,role,nationality,city,language_applied,language_level,age,college,education_level,military_status,email_verified) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,1)').run(p.name, p.email, testHash, p.phone, 'user', 'مصري', p.city, p.lang, p.level, p.age, p.college, p.edu, p.mil);
-      const uid = (await db.prepare('SELECT last_insert_rowid() as id').get()).id;
+      const rU1 = await db.prepare('INSERT INTO users (name,email,password,phone,role,nationality,city,language_applied,language_level,age,college,education_level,military_status,email_verified) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,1)').run(p.name, p.email, testHash, p.phone, 'user', 'مصري', p.city, p.lang, p.level, p.age, p.college, p.edu, p.mil);
+      const uid = rU1.lastInsertRowid;
       await db.prepare('INSERT INTO applications (user_id, language, status) VALUES (?,?,?)').run(uid, p.lang, 'approved');
       console.log('Test applicant seeded:', p.name);
     }
@@ -354,8 +354,8 @@ async function seedDemoData() {
       status: 'pending'
     }];
     for (const p of testApplications) {
-      await db.prepare('INSERT INTO users (name,email,password,phone,role,nationality,city,language_applied,language_level,age,college,education_level,military_status,email_verified) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,1)').run(p.name, p.email, testHash2, p.phone, 'user', 'مصري', p.city, p.lang, p.level, p.age, p.college, p.edu, p.mil);
-      const uid = (await db.prepare('SELECT last_insert_rowid() as id').get()).id;
+      const rU2 = await db.prepare('INSERT INTO users (name,email,password,phone,role,nationality,city,language_applied,language_level,age,college,education_level,military_status,email_verified) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,1)').run(p.name, p.email, testHash2, p.phone, 'user', 'مصري', p.city, p.lang, p.level, p.age, p.college, p.edu, p.mil);
+      const uid = rU2.lastInsertRowid;
       await db.prepare('INSERT INTO applications (user_id, language, status) VALUES (?,?,?)').run(uid, p.lang, p.status);
       console.log('Test application seeded:', p.name, '(' + p.status + ')');
     }
@@ -1048,7 +1048,7 @@ async function getAgentRowOf(req) {
 // Does the account behind this token still exist (and is it not blocked)?
 // Deleted / deactivated accounts must be rejected with 401 so the frontend
 // clears the session and returns to the login screen.
-async function sessionAccount(decoded) {
+async function _sessionAccountRaw(decoded) {
   try {
     if (!decoded || !decoded.id) return null;
     if (decoded.role === 'company') {
@@ -1090,6 +1090,18 @@ async function sessionAccount(decoded) {
       type: 'unknown'
     }; // transient DB problem: never mass-logout
   }
+}
+async function sessionAccount(decoded) {
+  if (!decoded || !decoded.id) return null;
+  const _k = 'sess:' + (decoded.agent_id || decoded.id) + ':' + (decoded.role || '') + ':' + (decoded.iat || 0);
+  const _hit = _memCache.get(_k);
+  if (_hit && _hit.t > Date.now()) return _hit.v;
+  const _v = await _sessionAccountRaw(decoded);
+  if (_v) {
+    _memCache.set(_k, { t: Date.now() + 8000, v: _v });
+    if (_memCache.size > 80) { const _mk = _memCache.keys().next().value; _memCache.delete(_mk); }
+  }
+  return _v;
 }
 async function authMiddleware(req, res, next) {
   const token = req.headers.authorization?.split(' ')[1];
@@ -2419,15 +2431,27 @@ app.put('/api/notifications/read-all', authMiddleware, async (req, res) => {
     });
   }
 });
+const _memCache = new Map();
+async function memCached(ttlMs, key, fn) {
+  const hit = _memCache.get(key);
+  if (hit && hit.t > Date.now()) return hit.v;
+  const v = await fn();
+  _memCache.set(key, { t: Date.now() + ttlMs, v });
+  if (_memCache.size > 50) { const k = _memCache.keys().next().value; _memCache.delete(k); }
+  return v;
+}
+function memInvalidate(prefix) { for (const k of _memCache.keys()) if (k.startsWith(prefix)) _memCache.delete(k); }
 app.get('/api/admin/stats', authMiddleware, adminMiddleware, async (req, res) => {
   try {
-    const totalApps = (await db.prepare('SELECT COUNT(*) as c FROM applications').get()).c;
-    const pending = (await db.prepare("SELECT COUNT(*) as c FROM applications WHERE status = 'pending'").get()).c;
-    const approved = (await db.prepare("SELECT COUNT(*) as c FROM applications WHERE status = 'approved'").get()).c;
-    const rejected = (await db.prepare("SELECT COUNT(*) as c FROM applications WHERE status = 'rejected'").get()).c;
-    const totalJobs = (await db.prepare('SELECT COUNT(*) as c FROM jobs').get()).c;
-    const totalUsers = (await db.prepare("SELECT COUNT(*) as c FROM users WHERE role = 'user'").get()).c;
-    const selections = await db.prepare(`
+    const data = await memCached(8000, 'adminstats', async () => {
+    const [rApps, rPending, rApproved, rRejected, rJobs, rUsers, selRows, noSelRows] = await Promise.all([
+      db.prepare('SELECT COUNT(*) as c FROM applications').get(),
+      db.prepare("SELECT COUNT(*) as c FROM applications WHERE status = 'pending'").get(),
+      db.prepare("SELECT COUNT(*) as c FROM applications WHERE status = 'approved'").get(),
+      db.prepare("SELECT COUNT(*) as c FROM applications WHERE status = 'rejected'").get(),
+      db.prepare('SELECT COUNT(*) as c FROM jobs').get(),
+      db.prepare("SELECT COUNT(*) as c FROM users WHERE role = 'user'").get(),
+      db.prepare(`
       SELECT s.*, j.company_name, j.position, j.salary, j.salary_min, j.salary_max,
         u.name as user_name, u.email as user_email, u.phone as user_phone,
         u.referred_by, u.nationality, u.city, u.language_applied as user_language,
@@ -2442,8 +2466,8 @@ app.get('/api/admin/stats', authMiddleware, adminMiddleware, async (req, res) =>
       LEFT JOIN agents ag ON u.referred_by = ag.id
       WHERE s.status != 'cancelled'
       ORDER BY s.created_at DESC
-    `).all();
-    const usersWithJobsNoSelection = (await db.prepare(`
+    `).all(),
+      db.prepare(`
       SELECT
         u.id as user_id,
         GROUP_CONCAT(DISTINCT j.company_name) as company_name,
@@ -2468,7 +2492,10 @@ app.get('/api/admin/stats', authMiddleware, adminMiddleware, async (req, res) =>
       AND j.id NOT IN (SELECT job_id FROM selections WHERE user_id = a.user_id AND status = 'cancelled')
       GROUP BY u.id, ag.id
       ORDER BY MIN(j.created_at) DESC
-    `).all()).map(row => ({
+    `).all()
+    ]);
+    const selections = selRows;
+    const usersWithJobsNoSelection = noSelRows.map(row => ({
       id: 'pending_' + row.user_id,
       user_id: row.user_id,
       job_id: null,
@@ -2511,19 +2538,21 @@ app.get('/api/admin/stats', authMiddleware, adminMiddleware, async (req, res) =>
     const totalEarnings = hired.reduce((sum, s) => sum + (s.amount || 0), 0);
     const cancelled = selections.filter(s => s.hired === 0 && s.status === 'cancelled');
     const waiting = allSelections.filter(s => s.status === 'selected');
-    res.json({
-      totalApps,
-      pending,
-      approved,
-      rejected,
-      totalJobs,
-      totalUsers,
+    return {
+      totalApps: rApps.c,
+      pending: rPending.c,
+      approved: rApproved.c,
+      rejected: rRejected.c,
+      totalJobs: rJobs.c,
+      totalUsers: rUsers.c,
       selections: allSelections,
       hired,
       totalEarnings,
       cancelled,
       waiting
+    };
     });
+    res.json(data);
   } catch (e) {
     res.status(500).json({
       error: e.message
@@ -2865,7 +2894,7 @@ async function educationFromRequest(req) {
 }
 app.get('/api/companies', authMiddleware, async (req, res) => {
   try {
-    const all = await db.prepare('SELECT * FROM companies WHERE available_slots > used_slots ORDER BY name').all();
+    const all = await memCached(15000, 'companies', () => db.prepare('SELECT * FROM companies WHERE available_slots > used_slots ORDER BY name').all());
     const edu = await educationFromRequest(req);
     if (!edu) return res.json(all);
     const companies = all.filter(c => eduAllows(c.education_requirement, edu));
@@ -3405,21 +3434,23 @@ app.post('/api/admin/pending-notifications/:id/reject', authMiddleware, adminOrQ
 // Admin: redo company plan (reset schedule)
 app.get('/api/user/jobs', authMiddleware, async (req, res) => {
   try {
-    const apps = await db.prepare("SELECT id FROM applications WHERE user_id = ? AND status = 'approved'").all(req.user.id);
+    const [apps, cancelledJobs, comps, eduOf] = await Promise.all([
+      db.prepare("SELECT id FROM applications WHERE user_id = ? AND status = 'approved'").all(req.user.id),
+      db.prepare(`SELECT job_id FROM selections WHERE user_id = ? AND status = 'cancelled'`).all(req.user.id),
+      db.prepare('SELECT id, name, company_email, education_requirement FROM companies').all(),
+      db.prepare('SELECT education_level FROM users WHERE id = ?').get(req.user.id)
+    ]);
     const appIds = apps.map(a => a.id);
     if (appIds.length === 0) return res.json([]);
     const placeholders = appIds.map(() => '?').join(',');
     const jobs = await db.prepare(`SELECT * FROM jobs WHERE application_id IN (${placeholders})`).all(...appIds);
     // Company education requirement map (id / email / name fallback, same matching as companyJobsSql)
-    const comps = await db.prepare('SELECT id, name, company_email, education_requirement FROM companies').all();
-    const eduOf = await db.prepare('SELECT education_level FROM users WHERE id = ?').get(req.user.id);
     const reqFor = j => {
       let c = j.company_id ? comps.find(x => x.id === j.company_id) : null;
       if (!c && j.company_email) c = comps.find(x => x.company_email && x.company_email === j.company_email);
       if (!c && j.company_name) c = comps.find(x => String(x.name || '').trim() === String(j.company_name).trim());
       return c ? c.education_requirement : 'both';
     };
-    const cancelledJobs = await db.prepare(`SELECT job_id FROM selections WHERE user_id = ? AND status = 'cancelled'`).all(req.user.id);
     const cancelledIds = new Set(cancelledJobs.map(c => c.job_id));
     const visibleJobs = jobs.filter(j => !cancelledIds.has(j.id) && eduAllows(reqFor(j), eduOf ? eduOf.education_level : ''));
     const jobsWithStatus = visibleJobs.map(j => ({
@@ -5599,101 +5630,107 @@ app.get('/api/agent/stats', authMiddleware, async (req, res) => {
       error: 'الجلسة غير صالحة، برجاء تسجيل الدخول مرة أخرى',
       code: 'SESSION_INVALID'
     });
-    const totalReferred = (await db.prepare('SELECT COUNT(*) as c FROM users WHERE referred_by = ?').get(agentId)).c;
-    const withApplication = (await db.prepare(`
-      SELECT COUNT(DISTINCT u.id) as c FROM users u
-      JOIN applications a ON u.id = a.user_id
-      WHERE u.referred_by = ?
-    `).get(agentId)).c;
-    const hired = (await db.prepare(`
-      SELECT COUNT(*) as c FROM users u
-      JOIN selections s ON u.id = s.user_id
-      WHERE u.referred_by = ? AND s.hired = 1
-    `).get(agentId)).c;
-    const pending = (await db.prepare(`
-      SELECT COUNT(DISTINCT u.id) as c FROM users u
-      JOIN applications a ON u.id = a.user_id
-      WHERE u.referred_by = ? AND a.status = 'pending'
-    `).get(agentId)).c;
-    const approved = (await db.prepare(`
-      SELECT COUNT(DISTINCT u.id) as c FROM users u
-      JOIN applications a ON u.id = a.user_id
-      WHERE u.referred_by = ? AND a.status = 'approved'
-    `).get(agentId)).c;
-    const rejected = (await db.prepare(`
-      SELECT COUNT(DISTINCT u.id) as c FROM users u
-      JOIN applications a ON u.id = a.user_id
-      WHERE u.referred_by = ? AND a.status = 'rejected'
-    `).get(agentId)).c;
-
-    // Earnings data (agent's own amounts only - company earnings never exposed to agents)
-    const earnings = await db.prepare(`
-      SELECT s.agent_amount, s.created_at,
-        j.company_name, j.position, u.name as user_name
-      FROM selections s
-      JOIN users u ON s.user_id = u.id
-      JOIN jobs j ON s.job_id = j.id
-      WHERE u.referred_by = ? AND s.hired = 1
-      ORDER BY s.created_at DESC
-    `).all(agentId);
-    const totalAgentEarnings = earnings.reduce((sum, e) => sum + (e.agent_amount || 0), 0);
-
-    // Date-based earnings
+    // Date-based earnings (computed locally first — used by parallel queries below)
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
     const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const rankMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const rankMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0] + ' 23:59:59';
+    const data = await memCached(8000, 'agentstats:' + agentId, async () => {
+    const [rTotal, rWithApp, rHired, rPending, rApproved, rRejected, earnings, allAgentsMonth, frozenSelections, referredUsers, myLeaderRow] = await Promise.all([
+      db.prepare('SELECT COUNT(*) as c FROM users WHERE referred_by = ?').get(agentId),
+      db.prepare(`
+        SELECT COUNT(DISTINCT u.id) as c FROM users u
+        JOIN applications a ON u.id = a.user_id
+        WHERE u.referred_by = ?
+      `).get(agentId),
+      db.prepare(`
+        SELECT COUNT(*) as c FROM users u
+        JOIN selections s ON u.id = s.user_id
+        WHERE u.referred_by = ? AND s.hired = 1
+      `).get(agentId),
+      db.prepare(`
+        SELECT COUNT(DISTINCT u.id) as c FROM users u
+        JOIN applications a ON u.id = a.user_id
+        WHERE u.referred_by = ? AND a.status = 'pending'
+      `).get(agentId),
+      db.prepare(`
+        SELECT COUNT(DISTINCT u.id) as c FROM users u
+        JOIN applications a ON u.id = a.user_id
+        WHERE u.referred_by = ? AND a.status = 'approved'
+      `).get(agentId),
+      db.prepare(`
+        SELECT COUNT(DISTINCT u.id) as c FROM users u
+        JOIN applications a ON u.id = a.user_id
+        WHERE u.referred_by = ? AND a.status = 'rejected'
+      `).get(agentId),
+      // Earnings data (agent's own amounts only - company earnings never exposed to agents)
+      db.prepare(`
+        SELECT s.agent_amount, s.created_at,
+          j.company_name, j.position, u.name as user_name
+        FROM selections s
+        JOIN users u ON s.user_id = u.id
+        JOIN jobs j ON s.job_id = j.id
+        WHERE u.referred_by = ? AND s.hired = 1
+        ORDER BY s.created_at DESC
+      `).all(agentId),
+      db.prepare(`
+        SELECT a.id, COALESCE(SUM(s.agent_amount), 0) as earned
+        FROM agents a
+        LEFT JOIN users u ON u.referred_by = a.id
+        LEFT JOIN selections s ON s.user_id = u.id AND s.hired = 1 AND s.created_at >= ? AND s.created_at <= ?
+        WHERE a.is_active = 1 AND IFNULL(a.agent_type,'normal') != 'labor'
+        GROUP BY a.id
+        ORDER BY earned DESC
+      `).all(rankMonthStart, rankMonthEnd),
+      db.prepare(`
+        SELECT s.agent_amount, s.frozen_deadline, s.created_at,
+          j.company_name, j.position, u.name as user_name
+        FROM selections s
+        JOIN users u ON s.user_id = u.id
+        JOIN jobs j ON s.job_id = j.id
+        WHERE u.referred_by = ? AND s.hired = 1 AND s.is_frozen = 1
+        ORDER BY s.created_at DESC
+      `).all(agentId),
+      db.prepare(`
+        SELECT u.id, u.name, u.email, u.phone, u.created_at, u.language_level, u.language_applied,
+          (SELECT language FROM applications WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as app_language,
+          (SELECT id FROM applications WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as app_id,
+          (SELECT status FROM applications WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as app_status,
+          (SELECT COUNT(*) FROM selections WHERE user_id = u.id AND hired = 1) as is_hired,
+          (SELECT COALESCE(SUM(agent_amount), 0) FROM selections WHERE user_id = u.id AND hired = 1) as earned_amount,
+          (SELECT COUNT(*) FROM jobs j2 JOIN applications a2 ON j2.application_id = a2.id WHERE a2.user_id = u.id AND j2.id NOT IN (SELECT job_id FROM selections WHERE user_id = u.id AND status = 'cancelled')) as jobs_count,
+          (SELECT id FROM selections WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as sel_id,
+          (SELECT status FROM selections WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as sel_status,
+          (SELECT apology FROM selections WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as sel_apology,
+          (SELECT is_frozen FROM selections WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as sel_frozen,
+          (SELECT j2.company_name FROM selections s2 JOIN jobs j2 ON s2.job_id = j2.id WHERE s2.user_id = u.id ORDER BY s2.created_at DESC LIMIT 1) as sel_company
+        FROM users u
+        WHERE u.referred_by = ?
+        ORDER BY u.created_at DESC
+      `).all(agentId),
+      // Who this agent belongs to (his team leader) — shown on his own dashboard
+      agentRow.team_leader_id ? db.prepare('SELECT id, name, email, phone, is_active FROM agents WHERE id = ?').get(agentRow.team_leader_id) : Promise.resolve(null)
+    ]);
+    const totalReferred = rTotal.c;
+    const withApplication = rWithApp.c;
+    const hired = rHired.c;
+    const pending = rPending.c;
+    const approved = rApproved.c;
+    const rejected = rRejected.c;
+    const totalAgentEarnings = earnings.reduce((sum, e) => sum + (e.agent_amount || 0), 0);
+
+    // Date-based earnings
     const todayEarnings = earnings.filter(e => e.created_at >= todayStart).reduce((sum, e) => sum + (e.agent_amount || 0), 0);
     const weekEarnings = earnings.filter(e => e.created_at >= weekStart).reduce((sum, e) => sum + (e.agent_amount || 0), 0);
     const monthEarnings = earnings.filter(e => e.created_at >= monthStart).reduce((sum, e) => sum + (e.agent_amount || 0), 0);
     const todayHired = earnings.filter(e => e.created_at >= todayStart).length;
     const weekHired = earnings.filter(e => e.created_at >= weekStart).length;
     const monthHired = earnings.filter(e => e.created_at >= monthStart).length;
-
-    // Monthly ranking position
-    const rankMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-    const rankMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0] + ' 23:59:59';
-    const allAgentsMonth = await db.prepare(`
-      SELECT a.id, COALESCE(SUM(s.agent_amount), 0) as earned
-      FROM agents a
-      LEFT JOIN users u ON u.referred_by = a.id
-      LEFT JOIN selections s ON s.user_id = u.id AND s.hired = 1 AND s.created_at >= ? AND s.created_at <= ?
-      WHERE a.is_active = 1 AND IFNULL(a.agent_type,'normal') != 'labor'
-      GROUP BY a.id
-      ORDER BY earned DESC
-    `).all(rankMonthStart, rankMonthEnd);
     const myRank = allAgentsMonth.findIndex(a => a.id === agentId) + 1;
     const totalActiveAgents = allAgentsMonth.length;
-    const frozenSelections = await db.prepare(`
-      SELECT s.agent_amount, s.frozen_deadline, s.created_at,
-        j.company_name, j.position, u.name as user_name
-      FROM selections s
-      JOIN users u ON s.user_id = u.id
-      JOIN jobs j ON s.job_id = j.id
-      WHERE u.referred_by = ? AND s.hired = 1 AND s.is_frozen = 1
-      ORDER BY s.created_at DESC
-    `).all(agentId);
     const frozenTotal = frozenSelections.reduce((sum, f) => sum + (f.agent_amount || 0), 0);
-    const referredUsers = await db.prepare(`
-      SELECT u.id, u.name, u.email, u.phone, u.created_at, u.language_level, u.language_applied,
-        (SELECT language FROM applications WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as app_language,
-        (SELECT id FROM applications WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as app_id,
-        (SELECT status FROM applications WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as app_status,
-        (SELECT COUNT(*) FROM selections WHERE user_id = u.id AND hired = 1) as is_hired,
-        (SELECT COALESCE(SUM(agent_amount), 0) FROM selections WHERE user_id = u.id AND hired = 1) as earned_amount,
-        (SELECT COUNT(*) FROM jobs j2 JOIN applications a2 ON j2.application_id = a2.id WHERE a2.user_id = u.id AND j2.id NOT IN (SELECT job_id FROM selections WHERE user_id = u.id AND status = 'cancelled')) as jobs_count,
-        (SELECT id FROM selections WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as sel_id,
-        (SELECT status FROM selections WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as sel_status,
-        (SELECT apology FROM selections WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as sel_apology,
-        (SELECT is_frozen FROM selections WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as sel_frozen,
-        (SELECT j2.company_name FROM selections s2 JOIN jobs j2 ON s2.job_id = j2.id WHERE s2.user_id = u.id ORDER BY s2.created_at DESC LIMIT 1) as sel_company
-      FROM users u
-      WHERE u.referred_by = ?
-      ORDER BY u.created_at DESC
-    `).all(agentId);
-
-    // Who this agent belongs to (his team leader) — shown on his own dashboard
-    const myLeaderRow = agentRow.team_leader_id ? await db.prepare('SELECT id, name, email, phone, is_active FROM agents WHERE id = ?').get(agentRow.team_leader_id) : null;
     const myLeader = myLeaderRow ? {
       id: myLeaderRow.id,
       name: myLeaderRow.name,
@@ -5701,7 +5738,7 @@ app.get('/api/agent/stats', authMiddleware, async (req, res) => {
       phone: myLeaderRow.phone,
       is_active: Number(myLeaderRow.is_active)
     } : null;
-    res.json({
+    return {
       totalReferred,
       withApplication,
       hired,
@@ -5753,11 +5790,13 @@ app.get('/api/agent/stats', authMiddleware, async (req, res) => {
             hired,
             pending: qualtyPending
           };
-        } catch (e) {
-          return null;
-        }
-      })()
+          } catch (e) {
+            return null;
+          }
+        })()
+    };
     });
+    res.json(data);
   } catch (e) {
     res.status(500).json({
       error: e.message
@@ -7337,7 +7376,7 @@ app.post('/api/company/labor-workers/:id/approve', companyAuthMiddleware, async 
 // Serve pages (in-memory cache fallback for Velixir)
 // Serve pages from embedded module (works on any filesystem)
 function servePage(res, file) {
-  res.set('Cache-Control', 'no-store, max-age=0');
+  res.set('Cache-Control', 'public, max-age=300');
   const html = _embeddedPages[file];
   if (html) return res.type('html').send(html);
   // Fallback to filesystem
@@ -7345,8 +7384,8 @@ function servePage(res, file) {
 }
 app.get('/', (req, res) => servePage(res, 'login.html'));
 app.get('/login.html', (req, res) => servePage(res, 'login.html'));
-function serveAsset(res, file, type) {
-  res.set('Cache-Control', 'no-store, max-age=0');
+function serveAsset(res, file, type, opts) {
+  res.set('Cache-Control', (opts && opts.noStore) ? 'no-store, max-age=0' : 'public, max-age=86400');
   const embedded = _embeddedAssets && _embeddedAssets[file];
   if (typeof embedded === 'string') return res.type(type).send(embedded);
   res.type(type).sendFile(path.join(_publicDir, file), err => {
@@ -7358,7 +7397,7 @@ app.get('/sitemap.xml', (req, res) => serveAsset(res, 'sitemap.xml', 'applicatio
 app.get('/manifest.json', (req, res) => serveAsset(res, 'manifest.json', 'application/json'));
 app.get('/sw.js', (req, res) => {
   res.set('Service-Worker-Allowed', '/');
-  serveAsset(res, 'sw.js', 'application/javascript');
+  serveAsset(res, 'sw.js', 'application/javascript', { noStore: true });
 });
 app.get('/i18n-data.js', (req, res) => serveAsset(res, 'i18n-data.js', 'application/javascript; charset=utf-8'));
 app.get('/dashboard', (req, res) => servePage(res, 'dashboard.html'));

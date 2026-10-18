@@ -73,8 +73,9 @@ class SqlJsDriver {
 }
 
 // ---------------------------------------------------------------------------
-// PostgreSQL driver — cloud database. Single pooled connection (max:1) so that
-// session-level helpers like lastval() behave like SQLite's last_insert_rowid().
+// PostgreSQL driver — cloud database. Pool of up to10 connections so parallel
+// awaits in handlers actually run in parallel; every INSERT uses RETURNING id
+// (no cross-connection lastval() dependency).
 // ---------------------------------------------------------------------------
 class PgDriver {
   constructor() {
@@ -125,7 +126,7 @@ class PgDriver {
       try {
         pool = new Pool({
           connectionString: v.url,
-          max: 1,
+          max: 10,
           ssl: { rejectUnauthorized: false },
           connectionTimeoutMillis: 15000,
           idleTimeoutMillis: 60000,

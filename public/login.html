@@ -14,6 +14,7 @@
   <meta name="apple-mobile-web-app-title" content="وَظِيف">
   <link rel="apple-touch-icon" href="/uploads/icon-192.webp">
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
+  <script>(function(){try{var r=new URLSearchParams(location.search).get('ref');if(r){localStorage.setItem('wz_ref',r);}}catch(e){}})();</script>
   <style>
     html{background:#0a0a0a;color-scheme:dark}
     body{padding-top:calc(20px + env(safe-area-inset-top));padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}
@@ -573,10 +574,12 @@
       }
       if(!call_center_experience)push('اختر خبرة سنتر الاتصالات','reg-call-center');
       if(errs.length){ids.forEach(markErr);return showError('راجع الحقول التالية: '+errs.join(' — '))}
-      const ref=new URLSearchParams(window.location.search).get('ref')||'';
+      const ref=new URLSearchParams(window.location.search).get('ref')||localStorage.getItem('wz_ref')||'';
       try{const res=await fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,phone,password,nationality,city,language_applied,age:parseInt(age),national_id,college,education_level,gender,military_status,call_center_experience,ref})});const data=await res.json();if(data.error)return showError(data.error);if(data.needVerification){document.getElementById('verify-email-display').textContent=email;document.getElementById('verify-overlay').classList.add('show');setTimeout(()=>document.getElementById('code-1').focus(),300);return}localStorage.setItem('token',data.token);localStorage.setItem('user',JSON.stringify(data.user));window.location.href='/dashboard'}catch(e){showError('حدث خطأ في الاتصال')}
     }
-    if(new URLSearchParams(window.location.search).get('ref')){document.getElementById('ref-badge').style.display='block';switchTab('register')}
+    var _qs=new URLSearchParams(window.location.search);
+    if(_qs.get('ref')||localStorage.getItem('wz_ref')){document.getElementById('ref-badge').style.display='block'}
+    if(_qs.get('ref')||_qs.get('src')==='landing'){switchTab('register')}
     const token=localStorage.getItem('token'),user=JSON.parse(localStorage.getItem('user')||'null');if(token&&user)window.location.href=homeFor(user.agent_role||user.role);
     document.getElementById('reg-name').addEventListener('input',function(){this.value=this.value.replace(/[0-9]/g,'')});
     document.getElementById('reg-phone').addEventListener('input',function(){this.value=this.value.replace(/[^0-9]/g,'')});

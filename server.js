@@ -48,7 +48,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'sss_super_secret_key_2024';
 // Absolute origin used in every outbound link (emails, notifications).
 // Production is https://wazeef.velixir.run (see public/robots.txt + public/sitemap.xml).
 // Local dev: BASE_URL=http://localhost:8080 node server.js
-const BASE_URL = (process.env.BASE_URL || 'https://wazeef.velixir.run').replace(/\/+$/, '');
+const BASE_URL = (process.env.BASE_URL || 'https://wazef.enzonic.dev').replace(/\/+$/, '');
 
 // Security headers
 app.use(helmet({
@@ -7382,7 +7382,7 @@ function servePage(res, file) {
   // Fallback to filesystem
   res.sendFile(path.join(_publicDir, file));
 }
-app.get('/', (req, res) => servePage(res, 'login.html'));
+app.get('/', (req, res) => servePage(res, 'landing.html'));
 app.get('/login.html', (req, res) => servePage(res, 'login.html'));
 function serveAsset(res, file, type, opts) {
   res.set('Cache-Control', (opts && opts.noStore) ? 'no-store, max-age=0' : 'public, max-age=86400');
@@ -7393,6 +7393,7 @@ function serveAsset(res, file, type, opts) {
   });
 }
 app.get('/robots.txt', (req, res) => serveAsset(res, 'robots.txt', 'text/plain'));
+app.get('/llms.txt', (req, res) => serveAsset(res, 'llms.txt', 'text/plain; charset=utf-8'));
 app.get('/sitemap.xml', (req, res) => serveAsset(res, 'sitemap.xml', 'application/xml'));
 app.get('/manifest.json', (req, res) => serveAsset(res, 'manifest.json', 'application/json'));
 app.get('/sw.js', (req, res) => {

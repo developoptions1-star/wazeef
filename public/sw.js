@@ -1,6 +1,7 @@
-const CACHE_NAME = 'wazef-v11';
+const CACHE_NAME = 'wazef-v12';
 const ASSETS = [
   '/',
+  '/landing.html',
   '/login.html',
   '/dashboard',
   '/admin',

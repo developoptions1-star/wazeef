@@ -7812,7 +7812,8 @@ app.post('/api/company/labor-workers/:id/approve', companyAuthMiddleware, async 
 // Serve pages (in-memory cache fallback for Velixir)
 // Serve pages from embedded module (works on any filesystem)
 function servePage(res, file) {
-  res.set('Cache-Control', 'public, max-age=300');
+  // Pages are always fresh — otherwise browsers/SWs could serve a stale landing forever
+  res.set('Cache-Control', 'no-store, max-age=0');
   const html = _embeddedPages[file];
   if (html) return res.type('html').send(html);
   // Fallback to filesystem

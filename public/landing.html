@@ -294,7 +294,8 @@
     .journey-dot .tip{position:absolute;left:24px;top:50%;transform:translateY(-50%) translateX(-6px);background:#0d0d13;border:1px solid rgba(212,168,83,.32);color:#f0d78c;padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;white-space:nowrap;opacity:0;transition:all .25s;pointer-events:none;box-shadow:0 6px 16px rgba(0,0,0,.5)}
     .journey-dot:hover .tip,.journey-dot.active .tip{opacity:1;transform:translateY(-50%) translateX(0)}
     .journey-dot.active{background:#f0d78c;border-color:#fff3c4;box-shadow:0 0 14px rgba(240,215,140,.7)}
-    @media(max-width:1380px){.journey{display:none}}
+    @media(max-width:1380px){.journey{left:6px;width:44px}.journey-track,.journey-fill{left:19px;width:5px}.journey-dot{left:22px;width:11px;height:11px}.journey-car{left:22px}.journey-dot .tip{left:20px;font-size:10px;padding:4px 9px}}
+    @media(max-width:1024px){.journey{display:none}}
 
     /* smooth reveal extras */
     .reveal{opacity:0;transform:translateY(42px) scale(.985);filter:blur(7px);transition:opacity .9s cubic-bezier(.16,.84,.3,1),transform .9s cubic-bezier(.16,.84,.3,1),filter .9s cubic-bezier(.16,.84,.3,1)}

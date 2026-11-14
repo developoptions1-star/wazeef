@@ -1132,25 +1132,80 @@ function adminMiddleware(req, res, next) {
   });
   next();
 }
-// ===== Job categories (single source of truth) =====
+// ===== Job categories (single source of truth) — defaults only; admin can override per requirement from /admin settings =====
 const JOB_CATEGORIES = [
-  { id: 'call-center', label: 'كول سنتر', needs_cv: false, needs_voice: true, needs_id_card: false },
-  { id: 'sales', label: 'مبيعات', needs_cv: true, needs_voice: false, needs_id_card: false },
-  { id: 'worker', label: 'عمالة وإنتاج', needs_cv: false, needs_voice: false, needs_id_card: true },
-  { id: 'programming', label: 'برمجة وتقنية', needs_cv: true, needs_voice: false, needs_id_card: false },
-  { id: 'quality', label: 'جودة ومراجعة', needs_cv: false, needs_voice: true, needs_id_card: false },
-  { id: 'logistics', label: 'لوجستي وتوصيل', needs_cv: false, needs_voice: true, needs_id_card: false },
-  { id: 'admin', label: 'إداري ومحاسبة', needs_cv: false, needs_voice: true, needs_id_card: false },
-  { id: 'marketing', label: 'تسويق رقمي', needs_cv: true, needs_voice: false, needs_id_card: false },
-  { id: 'all', label: 'كل المجالات', needs_cv: false, needs_voice: true, needs_id_card: false }
+  { id: 'call-center', label: 'كول سنتر', needs_cv: false, needs_voice: true, needs_id_card: false, needs_lang: true },
+  { id: 'sales', label: 'مبيعات', needs_cv: true, needs_voice: false, needs_id_card: false, needs_lang: false },
+  { id: 'worker', label: 'عمالة وإنتاج', needs_cv: false, needs_voice: false, needs_id_card: true, needs_lang: false },
+  { id: 'programming', label: 'برمجة وتقنية', needs_cv: true, needs_voice: false, needs_id_card: false, needs_lang: false },
+  { id: 'quality', label: 'جودة ومراجعة', needs_cv: false, needs_voice: true, needs_id_card: false, needs_lang: true },
+  { id: 'logistics', label: 'لوجستي وتوصيل', needs_cv: false, needs_voice: true, needs_id_card: false, needs_lang: false },
+  { id: 'admin', label: 'إداري ومحاسبة', needs_cv: false, needs_voice: true, needs_id_card: false, needs_lang: false },
+  { id: 'marketing', label: 'تسويق رقمي', needs_cv: true, needs_voice: false, needs_id_card: false, needs_lang: false },
+  { id: 'all', label: 'كل المجالات', needs_cv: false, needs_voice: true, needs_id_card: false, needs_lang: true }
 ];
-// What a category requires to submit: 'voice' | 'cv' | 'id_card'
-function catSubmitMode(catId) {
-  const c = JOB_CATEGORIES.find(x => x.id === catId);
-  if (!c) return 'voice';
-  if (c.needs_cv) return 'cv';
-  if (c.needs_id_card) return 'id_card';
+// Job category: only known ids pass, anything else becomes ''
+function jobCategoryOrEmpty(v) {
+  const s = String(v || '').trim();
+  return JOB_CATEGORIES.some(c => c.id === s) ? s : '';
+}
+
+// Site settings (cached 10s)
+async function getSiteSettings() {
+  return memCached(10000, 'site_settings', async () => {
+    const rows = await db.prepare('SELECT key, value FROM site_settings').all();
+    const out = {};
+    for (const r of rows) out[r.key] = r.value;
+    return out;
+  });
+}
+function parseMeetingList(v) { return String(v || '').split(',').map(s => s.trim()).filter(Boolean); }
+// Per-category requirements, admin-overridable from settings (req_cv_*, req_voice_*, req_idcard_*, req_lang_*)
+// Missing setting keys fall back to the JOB_CATEGORIES defaults — behavior is fully preserved until the admin changes something.
+async function categoryRequirements(catId) {
+  const cat = JOB_CATEGORIES.find(c => c.id === catId);
+  const fallback = cat || { id: catId || '', label: catId || '', needs_cv: false, needs_voice: true, needs_id_card: false, needs_lang: false };
+  let s = {};
+  try { s = await getSiteSettings(); } catch (e) { s = {}; }
+  const read = (name, fb) => {
+    if (!cat) return !!fb;
+    const v = s['req_' + name + '_' + cat.id];
+    if (v === undefined || v === '') return !!fb;
+    return String(v) === '1';
+  };
+  return {
+    id: fallback.id,
+    label: fallback.label,
+    needs_cv: read('cv', fallback.needs_cv),
+    needs_voice: read('voice', fallback.needs_voice),
+    needs_id_card: read('idcard', fallback.needs_id_card),
+    needs_lang: read('lang', fallback.needs_lang)
+  };
+}
+async function catSubmitModeAsync(catId) {
+  const r = await categoryRequirements(catId);
+  if (r.needs_cv) return 'cv';
+  if (r.needs_id_card) return 'id_card';
   return 'voice';
+}
+// Gate: approved candidate must book his meeting before jobs are added.
+// Returns an error message, or null when allowed. Takes application_id or user_id.
+async function meetingGateOrNull(applicationId, userId) {
+  try {
+    const s = await getSiteSettings();
+    if (String(s.meeting_enabled || '1') !== '1') return null;
+    let targetUser = userId ? parseInt(userId) : NaN;
+    if (!Number.isFinite(targetUser) && applicationId) {
+      const app = await db.prepare('SELECT user_id FROM applications WHERE id = ?').get(applicationId);
+      targetUser = app ? Number(app.user_id) : NaN;
+    }
+    if (!Number.isFinite(targetUser)) return null;
+    const app = await db.prepare("SELECT status, meeting_slot FROM applications WHERE user_id = ? ORDER BY created_at DESC LIMIT 1").get(targetUser);
+    if (app && app.status === 'approved' && !String(app.meeting_slot || '').trim()) {
+      return 'المتقدم لسه محجزش ميتينج — لازم يختار الميعاد من صفحته قبل إضافة الوظائف';
+    }
+    return null;
+  } catch (e) { return null; }
 }
 
 async function adminOrQualtyMiddleware(req, res, next) {
@@ -2166,8 +2221,13 @@ app.post('/api/admin/jobs', authMiddleware, adminMiddleware, async (req, res) =>
       deadline,
       notify_days,
       work_location,
-      employment_type
+      employment_type,
+      category
     } = req.body;
+    {
+      const _msg = await meetingGateOrNull(application_id, req.body.user_id);
+      if (_msg) return res.status(400).json({ error: _msg });
+    }
     let cid = company_id || null;
     if (!cid && company_name) {
       const co = await db.prepare("SELECT id FROM companies WHERE TRIM(name) = TRIM(?) OR (company_email IS NOT NULL AND company_email != '' AND company_email = ?) LIMIT 1").get(company_name, company_email || '');
@@ -2176,7 +2236,7 @@ app.post('/api/admin/jobs', authMiddleware, adminMiddleware, async (req, res) =>
     const cname = company_name || (cid ? ((await db.prepare('SELECT name FROM companies WHERE id=?').get(cid)) || {}).name : '');
     const cemail = company_email || (cid ? ((await db.prepare('SELECT company_email FROM companies WHERE id=?').get(cid)) || {}).company_email : '') || '';
     const appLang = ((await db.prepare('SELECT language FROM applications WHERE id = ?').get(application_id)) || {}).language || '';
-    const result = await db.prepare('INSERT INTO jobs (application_id, company_id, company_name, company_email, position, interview_time, salary_min, salary_max, description, language, level, needed_count, deadline, notify_days, work_location, employment_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(application_id, cid, cname, cemail, position, interview_time || '', salary_min || 0, salary_max || 0, description || '', language || appLang, level || '', needed_count ? parseInt(needed_count) || 1 : 1, deadline || '', notify_days ? parseInt(notify_days) || 5 : 5, String(work_location || '').trim(), String(employment_type || '').trim());
+    const result = await db.prepare('INSERT INTO jobs (application_id, company_id, company_name, company_email, position, interview_time, salary_min, salary_max, description, language, level, needed_count, deadline, notify_days, work_location, employment_type, category) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(application_id, cid, cname, cemail, position, interview_time || '', salary_min || 0, salary_max || 0, description || '', language || appLang, level || '', needed_count ? parseInt(needed_count) || 1 : 1, deadline || '', notify_days ? parseInt(notify_days) || 5 : 5, String(work_location || '').trim(), String(employment_type || '').trim(), jobCategoryOrEmpty(category));
     await db.prepare("UPDATE applications SET status = 'approved' WHERE id = ? AND status = 'pending'").run(application_id);
     res.json({
       id: result.lastInsertRowid
@@ -2200,8 +2260,12 @@ app.post('/api/admin/jobs/batch', authMiddleware, adminMiddleware, async (req, r
     if (!jobs || jobs.length === 0) return res.status(400).json({
       error: 'لا توجد وظائف للإضافة'
     });
+    {
+      const _msg = await meetingGateOrNull(application_id, user_id);
+      if (_msg) return res.status(400).json({ error: _msg });
+    }
     const appLang = ((await db.prepare('SELECT language FROM applications WHERE id = ?').get(application_id)) || {}).language || '';
-    const insertJob = db.prepare('INSERT INTO jobs (application_id, company_id, company_name, company_email, position, interview_time, salary_min, salary_max, description, language, level, needed_count, deadline, notify_days, work_location, employment_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    const insertJob = db.prepare('INSERT INTO jobs (application_id, company_id, company_name, company_email, position, interview_time, salary_min, salary_max, description, language, level, needed_count, deadline, notify_days, work_location, employment_type, category) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
     const jobIds = [];
     for (const j of jobs) {
       let cid = j.company_id || null;
@@ -2216,7 +2280,7 @@ app.post('/api/admin/jobs/batch', authMiddleware, adminMiddleware, async (req, r
       }
       let cemail = j.company_email || '';
       if (cid && !cemail) cemail = ((await db.prepare('SELECT company_email FROM companies WHERE id=?').get(cid)) || {}).company_email || '';
-      const result = await insertJob.run(application_id, cid, cname, cemail, j.position, j.interview_time || '', j.salary_min || 0, j.salary_max || 0, j.description || '', j.language || appLang, j.level || '', j.needed_count ? parseInt(j.needed_count) || 1 : 1, j.deadline || '', j.notify_days ? parseInt(j.notify_days) || 5 : 5, String(j.work_location || '').trim(), String(j.employment_type || '').trim());
+      const result = await insertJob.run(application_id, cid, cname, cemail, j.position, j.interview_time || '', j.salary_min || 0, j.salary_max || 0, j.description || '', j.language || appLang, j.level || '', j.needed_count ? parseInt(j.needed_count) || 1 : 1, j.deadline || '', j.notify_days ? parseInt(j.notify_days) || 5 : 5, String(j.work_location || '').trim(), String(j.employment_type || '').trim(), jobCategoryOrEmpty(j.category));
       jobIds.push(result.lastInsertRowid);
     }
 
@@ -2364,6 +2428,10 @@ app.post('/api/agent/jobs/batch', authMiddleware, async (req, res) => {
     if (!jobs || jobs.length === 0) return res.status(400).json({
       error: 'لا توجد وظائف للإضافة'
     });
+    {
+      const _msg = await meetingGateOrNull(application_id, user_id);
+      if (_msg) return res.status(400).json({ error: _msg });
+    }
     const isOwner = await db.prepare('SELECT id FROM users WHERE id = ? AND referred_by = ?').get(user_id, agentId);
     if (!isOwner && !(await isQualtyRole(req))) return res.status(403).json({
       error: 'ليس لديك صلاحية إضافة وظائف لهذا المستخدم'
@@ -2375,7 +2443,7 @@ app.post('/api/agent/jobs/batch', authMiddleware, async (req, res) => {
       });
     }
     const appLang = ((await db.prepare('SELECT language FROM applications WHERE id = ?').get(application_id)) || {}).language || '';
-    const insertJob = db.prepare('INSERT INTO jobs (application_id, company_id, company_name, company_email, position, interview_time, salary_min, salary_max, description, language, level, needed_count, deadline, notify_days, work_location, employment_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    const insertJob = db.prepare('INSERT INTO jobs (application_id, company_id, company_name, company_email, position, interview_time, salary_min, salary_max, description, language, level, needed_count, deadline, notify_days, work_location, employment_type, category) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
     const jobIds = [];
     for (const j of jobs) {
       let cid = j.company_id || null;
@@ -2387,7 +2455,7 @@ app.post('/api/agent/jobs/batch', authMiddleware, async (req, res) => {
       if (!cname && cid) cname = ((await db.prepare('SELECT name FROM companies WHERE id=?').get(cid)) || {}).name || '';
       let cemail = j.company_email || '';
       if (cid && !cemail) cemail = ((await db.prepare('SELECT company_email FROM companies WHERE id=?').get(cid)) || {}).company_email || '';
-      const result = await insertJob.run(application_id, cid, cname, cemail, j.position, j.interview_time || '', j.salary_min || 0, j.salary_max || 0, j.description || '', j.language || appLang, j.level || '', j.needed_count ? parseInt(j.needed_count) || 1 : 1, j.deadline || '', j.notify_days ? parseInt(j.notify_days) || 5 : 5, String(j.work_location || '').trim(), String(j.employment_type || '').trim());
+      const result = await insertJob.run(application_id, cid, cname, cemail, j.position, j.interview_time || '', j.salary_min || 0, j.salary_max || 0, j.description || '', j.language || appLang, j.level || '', j.needed_count ? parseInt(j.needed_count) || 1 : 1, j.deadline || '', j.notify_days ? parseInt(j.notify_days) || 5 : 5, String(j.work_location || '').trim(), String(j.employment_type || '').trim(), jobCategoryOrEmpty(j.category));
       jobIds.push(result.lastInsertRowid);
     }
     const user = await db.prepare('SELECT * FROM users WHERE id = ?').get(user_id);
@@ -2442,12 +2510,12 @@ app.put('/api/user/job-category', authMiddleware, async (req, res) => {
     const validCats = JOB_CATEGORIES.map(c => c.id);
     const cat = validCats.includes(job_category) ? job_category : '';
     if (!cat) return res.status(400).json({ error: 'من فضلك اختر مجال العمل' });
-    const catObj = JOB_CATEGORIES.find(c => c.id === cat);
+    const catReq = await categoryRequirements(cat);
     const u = await db.prepare('SELECT job_category, cv_file FROM users WHERE id = ?').get(req.user.id);
     if (!u) return res.status(404).json({ error: 'الحساب غير موجود' });
-    // CV required for sales/programming/marketing if user doesn't already have one
-    if (catObj.needs_cv && !u.cv_file && !cv_data) {
-      return res.status(400).json({ error: 'مجال ' + catObj.label + ' يتطلب إرفاق السيرة الذاتية (CV)' });
+    // CV required when the (admin-configured) category needs it, if user doesn't already have one
+    if (catReq.needs_cv && !u.cv_file && !cv_data) {
+      return res.status(400).json({ error: 'مجال ' + catReq.label + ' يتطلب إرفاق السيرة الذاتية (CV)' });
     }
     let cvFile = u.cv_file || '';
     if (cv_data && typeof cv_data === 'string' && cv_data.startsWith('data:')) {
@@ -3239,14 +3307,15 @@ app.post('/api/admin/companies/:id/jobs', authMiddleware, adminOrQualtyMiddlewar
       deadline,
       notify_days,
       work_location,
-      employment_type
+      employment_type,
+      category
     } = req.body;
     // الوظائف العمالية مالهاش مستوى ولغتها = اسم الوظيفة
     const lang = String(language || '').trim() || String(position || '').trim();
     if (!lang) return res.status(400).json({
       error: 'اللغة مطلوبة'
     });
-    const result = await db.prepare('INSERT INTO company_languages (company_id, language, level, needed_count, position, salary_min, salary_max, interview_time, deadline, notify_days, description, work_location, employment_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(company.id, lang, String(level || '').trim(), parseInt(needed_count) > 0 ? parseInt(needed_count) : 1, String(position || '').trim(), salary_min || 0, salary_max || 0, interview_time || '', deadline || '', parseInt(notify_days) > 0 ? parseInt(notify_days) : 5, description || '', String(work_location || '').trim(), String(employment_type || '').trim());
+    const result = await db.prepare('INSERT INTO company_languages (company_id, language, level, needed_count, position, salary_min, salary_max, interview_time, deadline, notify_days, description, work_location, employment_type, category) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(company.id, lang, String(level || '').trim(), parseInt(needed_count) > 0 ? parseInt(needed_count) : 1, String(position || '').trim(), salary_min || 0, salary_max || 0, interview_time || '', deadline || '', parseInt(notify_days) > 0 ? parseInt(notify_days) : 5, description || '', String(work_location || '').trim(), String(employment_type || '').trim(), jobCategoryOrEmpty(category));
     res.json({
       success: true,
       id: result.lastInsertRowid,
@@ -3278,14 +3347,23 @@ app.put('/api/admin/company-jobs/:id', authMiddleware, adminOrQualtyMiddleware, 
       deadline,
       notify_days,
       work_location,
-      employment_type
+      employment_type,
+      category
     } = req.body;
     // الوظائف العمالية مالهاش مستوى ولغتها = اسم الوظيفة
     const lang = String(language || '').trim() || String(position || '').trim();
     if (!lang) return res.status(400).json({
       error: 'اللغة مطلوبة'
     });
-    await db.prepare('UPDATE company_languages SET language=?, level=?, needed_count=?, position=?, salary_min=?, salary_max=?, interview_time=?, deadline=?, notify_days=?, description=?, work_location=?, employment_type=? WHERE id=?').run(lang, String(level || '').trim(), parseInt(needed_count) > 0 ? parseInt(needed_count) : 1, String(position || '').trim(), salary_min || 0, salary_max || 0, interview_time || '', deadline || '', parseInt(notify_days) > 0 ? parseInt(notify_days) : 5, description || '', String(work_location || '').trim(), String(employment_type || '').trim(), job.id);
+    // category: only updated when provided so partial edits don't wipe it
+    const sets = ['language=?','level=?','needed_count=?','position=?','salary_min=?','salary_max=?','interview_time=?','deadline=?','notify_days=?','description=?','work_location=?','employment_type=?'];
+    const vals = [lang, String(level || '').trim(), parseInt(needed_count) > 0 ? parseInt(needed_count) : 1, String(position || '').trim(), salary_min || 0, salary_max || 0, interview_time || '', deadline || '', parseInt(notify_days) > 0 ? parseInt(notify_days) : 5, description || '', String(work_location || '').trim(), String(employment_type || '').trim()];
+    if (category !== undefined) {
+      sets.push('category=?');
+      vals.push(jobCategoryOrEmpty(category));
+    }
+    vals.push(job.id);
+    await db.prepare('UPDATE company_languages SET ' + sets.join(', ') + ' WHERE id=?').run(...vals);
     res.json({
       success: true,
       message: 'تم تحديث الوظيفة'
@@ -3714,12 +3792,18 @@ app.get('/api/user/application-status', authMiddleware, async (req, res) => {
       // No application yet — still tell the dashboard what this user must submit
       try {
         const me = await db.prepare('SELECT job_category, id_card_front, id_card_back, cv_file FROM users WHERE id = ?').get(req.user.id);
+        const _req = await categoryRequirements(me.job_category);
         if (me) return res.json({
-          submit_mode: catSubmitMode(me.job_category),
+          submit_mode: _req.needs_cv ? 'cv' : (_req.needs_id_card ? 'id_card' : 'voice'),
           has_id_card: !!(me.id_card_front && me.id_card_back),
           has_cv: !!(me.cv_file),
           job_category: me.job_category,
-          status: null
+          status: null,
+          requirements: _req,
+          meeting_enabled: String((await getSiteSettings()).meeting_enabled || '1') === '1',
+          meeting_days: parseMeetingList((await getSiteSettings()).meeting_days),
+          meeting_hours: parseMeetingList((await getSiteSettings()).meeting_hours),
+          meeting_slot: ''
         });
       } catch (_) {}
       return res.json(null);
@@ -3759,12 +3843,80 @@ app.get('/api/user/application-status', authMiddleware, async (req, res) => {
     // Tell the dashboard what this user must submit: voice | cv | id_card
     try {
       const me = await db.prepare('SELECT job_category, id_card_front, id_card_back, cv_file FROM users WHERE id = ?').get(req.user.id);
-      app.submit_mode = catSubmitMode(me ? me.job_category : '');
+      const _req = await categoryRequirements(me ? me.job_category : '');
+      app.requirements = _req;
+      app.submit_mode = _req.needs_cv ? 'cv' : (_req.needs_id_card ? 'id_card' : 'voice');
       app.has_id_card = !!(me && me.id_card_front && me.id_card_back);
       app.has_cv = !!(me && me.cv_file);
       app.job_category = me ? me.job_category : '';
     } catch (_) {}
+    try {
+      const s = await getSiteSettings();
+      app.meeting_enabled = String(s.meeting_enabled || '1') === '1';
+      app.meeting_days = parseMeetingList(s.meeting_days);
+      app.meeting_hours = parseMeetingList(s.meeting_hours);
+      app.meeting_slot = app.meeting_slot || '';
+    } catch (_) {}
     res.json(app);
+  } catch (e) {
+    res.status(500).json({
+      error: e.message
+    });
+  }
+});
+
+// Candidate books their meeting slot (after being approved, before any jobs are added)
+app.post('/api/user/meeting-slot', authMiddleware, async (req, res) => {
+  try {
+    const slot = String((req.body || {}).slot || '').trim().slice(0, 60);
+    const s = await getSiteSettings();
+    if (String(s.meeting_enabled || '1') !== '1') {
+      return res.status(400).json({
+        error: 'حجز الميتينج متوقف حاليًا — تابع صفحتك'
+      });
+    }
+    const days = parseMeetingList(s.meeting_days);
+    const hours = parseMeetingList(s.meeting_hours);
+    // slot format: "<Day> <Hour>"
+    const m = slot.match(/^([^\s]+)\s+(.+)$/);
+    const day = m ? m[1] : '';
+    const hour = m ? m[2].trim() : '';
+    if (!day || !hour) return res.status(400).json({
+      error: 'اختر اليوم والساعة من القوائم'
+    });
+    if (days.length && days.indexOf(day) < 0) return res.status(400).json({
+      error: 'اليوم غير متاح — اختر من الأيام المحددة'
+    });
+    if (hours.length && hours.indexOf(hour) < 0) return res.status(400).json({
+      error: 'الساعة غير متاحة — اختر من المواعيد المحددة'
+    });
+    const appRow = await db.prepare('SELECT * FROM applications WHERE user_id = ? ORDER BY created_at DESC LIMIT 1').get(req.user.id);
+    if (!appRow) return res.status(400).json({
+      error: 'لا يوجد طلب توظيف مسجل — سجّل أولاً'
+    });
+    if (appRow.status !== 'approved') return res.status(400).json({
+      error: 'الميتينج بيتححدد بعد ما يتم قبول طلبك'
+    });
+    await db.prepare('UPDATE applications SET meeting_slot = ? WHERE id = ?').run(slot, appRow.id);
+    try {
+      await saveNotification(req.user.id, null, 'meeting', 'تم تسجيل الميتينج', 'الميتينج بتاعك يوم ' + slot);
+    } catch (e) { console.log('meeting notif:', e.message); }
+    try {
+      const me = await db.prepare('SELECT name, email FROM users WHERE id = ?').get(req.user.id);
+      if (me && me.email) {
+        await sendEmail(me.email, 'تم تسجيل ميتينج مع فريق وَظِيف', `
+          <h2 style="text-align:center;font-size:20px;color:#d4a853;margin:0 0 14px;">تم تسجيل الميتينج</h2>
+          <p style="color:#888;font-size:15px;line-height:1.9;">مرحباً ${sanitize(me.name || '')},</p>
+          <p style="color:#888;font-size:15px;line-height:1.9;">تم حجز ميتينج بتاعك مع فريق <strong style="color:#d4a853;">وَظِيف</strong> بنجاح.</p>
+          <p style="text-align:center;font-size:22px;color:#f0d78c;font-weight:800;margin:18px 0;">${slot}</p>
+          <p style="color:#888;font-size:13px;line-height:1.9;">هيتم التواصل معاك على نفس الإيميل/الهاتف لتأكيد التفاصيل.</p>
+        `);
+      }
+    } catch (e) { console.log('meeting email:', e.message); }
+    res.json({
+      success: true,
+      meeting_slot: slot
+    });
   } catch (e) {
     res.status(500).json({
       error: e.message
@@ -5931,6 +6083,7 @@ app.get('/api/agent/stats', authMiddleware, async (req, res) => {
           (SELECT apology FROM selections WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as sel_apology,
           (SELECT is_frozen FROM selections WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as sel_frozen,
           (SELECT interview_slot FROM selections WHERE user_id = u.id AND status != 'cancelled' ORDER BY created_at DESC LIMIT 1) as interview_slot,
+          (SELECT meeting_slot FROM applications a2 WHERE a2.user_id = u.id ORDER BY a2.created_at DESC LIMIT 1) as meeting_slot,
           (SELECT j2.company_name FROM selections s2 JOIN jobs j2 ON s2.job_id = j2.id WHERE s2.user_id = u.id ORDER BY s2.created_at DESC LIMIT 1) as sel_company
         FROM users u
         WHERE u.referred_by = ?
@@ -6072,20 +6225,26 @@ app.post('/api/register', registerLimiter, async (req, res) => {
       cv_data
     } = req.body;
     const isPassport = !!nationality && nationality !== 'egypt';
-    // validate job_category
+    // validate job_category + its requirements from admin settings
     const validCats = JOB_CATEGORIES.map(c => c.id);
     const cat = validCats.includes(job_category) ? job_category : '';
-    const catNeedsCv = JOB_CATEGORIES.find(c => c.id === cat && c.needs_cv);
-    if (!name || !email || !password || !phone || !nationality || !city || !language_applied || !age || !national_id && !isPassport || !college || !education_level || !call_center_experience || !gender) {
+    const catReq = await categoryRequirements(cat || 'all');
+    const catNeedsCv = catReq.needs_cv ? catReq : null;
+    if (!name || !email || !password || !phone || !nationality || !city || !age || !national_id && !isPassport || !college || !education_level || !call_center_experience || !gender) {
       return res.status(400).json({
         error: 'من فضلك أكمل كل الحقول المطلوبة'
+      });
+    }
+    if (catReq.needs_lang && !language_applied) {
+      return res.status(400).json({
+        error: 'من فضلك اختر اللغة المطلوبة'
       });
     }
     if (!cat) {
       return res.status(400).json({ error: 'من فضلك اختر مجال العمل' });
     }
     if (catNeedsCv && !cv_data) {
-      return res.status(400).json({ error: 'مجال ' + catNeedsCv.label + ' يتطلب إرفاق السيرة الذاتية (CV)' });
+      return res.status(400).json({ error: 'مجال ' + catReq.label + ' يتطلب إرفاق السيرة الذاتية (CV)' });
     }
     if (gender !== 'male' && gender !== 'female') {
       return res.status(400).json({
@@ -6246,9 +6405,8 @@ app.post('/api/verify-code', authLimiter, async (req, res) => {
       error: 'كود التحقق غير صحيح'
     });
     await db.prepare('UPDATE users SET email_verified = 1, verification_code = NULL WHERE id = ?').run(user.id);
-    // Category submit mode: CV categories skip voice (application auto-created, admin reviews CV);
-    // worker waits for ID-card upload; voice categories keep the recording flow.
-    const submitMode = catSubmitMode(user.job_category);
+    // Category submit mode comes from admin settings (requirements per specialty), defaulting to JOB_CATEGORIES
+    const submitMode = await catSubmitModeAsync(user.job_category);
     if (submitMode === 'cv') {
       try {
         const existing = await db.prepare("SELECT id FROM applications WHERE user_id = ? AND status = 'pending'").get(user.id);
@@ -7991,7 +8149,8 @@ app.post('/api/company/languages', companyAuthMiddleware, async (req, res) => {
       notify_days,
       description,
       work_location,
-      employment_type
+      employment_type,
+      category
     } = req.body;
     if (!language) return res.status(400).json({
       error: 'Language and level required'
@@ -8000,7 +8159,7 @@ app.post('/api/company/languages', companyAuthMiddleware, async (req, res) => {
     if (level && !validLevels.includes(level)) return res.status(400).json({
       error: 'Invalid level'
     });
-    await db.prepare('INSERT INTO company_languages (company_id, language, level, needed_count, position, salary_min, salary_max, interview_time, deadline, notify_days, description, work_location, employment_type) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)').run(req.user.company_id, language, level || '', needed_count || 1, position || '', salary_min || 0, salary_max || 0, interview_time || '', deadline || '', notify_days || 5, description || '', String(work_location || '').trim(), String(employment_type || '').trim());
+    await db.prepare('INSERT INTO company_languages (company_id, language, level, needed_count, position, salary_min, salary_max, interview_time, deadline, notify_days, description, work_location, employment_type, category) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)').run(req.user.company_id, language, level || '', needed_count || 1, position || '', salary_min || 0, salary_max || 0, interview_time || '', deadline || '', notify_days || 5, description || '', String(work_location || '').trim(), String(employment_type || '').trim(), jobCategoryOrEmpty(category));
     res.json({
       success: true,
       message: 'تمت الإضافة'
@@ -8042,12 +8201,20 @@ app.put('/api/company/languages/:id', companyAuthMiddleware, async (req, res) =>
       notify_days,
       description,
       work_location,
-      employment_type
+      employment_type,
+      category
     } = req.body;
     if (!language) return res.status(400).json({
       error: 'Language and level required'
     });
-    await db.prepare('UPDATE company_languages SET language=?, level=?, needed_count=?, position=?, salary_min=?, salary_max=?, interview_time=?, deadline=?, notify_days=?, description=?, work_location=?, employment_type=? WHERE id=? AND company_id=?').run(language, level || '', needed_count || 1, position || '', salary_min || 0, salary_max || 0, interview_time || '', deadline || '', notify_days || 5, description || '', String(work_location || '').trim(), String(employment_type || '').trim(), req.params.id, req.user.company_id);
+    const sets = ['language=?','level=?','needed_count=?','position=?','salary_min=?','salary_max=?','interview_time=?','deadline=?','notify_days=?','description=?','work_location=?','employment_type=?'];
+    const vals = [language, level || '', needed_count || 1, position || '', salary_min || 0, salary_max || 0, interview_time || '', deadline || '', notify_days || 5, description || '', String(work_location || '').trim(), String(employment_type || '').trim()];
+    if (category !== undefined) {
+      sets.push('category=?');
+      vals.push(jobCategoryOrEmpty(category));
+    }
+    vals.push(req.params.id, req.user.company_id);
+    await db.prepare('UPDATE company_languages SET ' + sets.join(', ') + ' WHERE id=? AND company_id=?').run(...vals);
     res.json({
       success: true,
       message: 'تم التحديث'
@@ -8231,13 +8398,14 @@ app.post('/api/company/jobs', companyAuthMiddleware, async (req, res) => {
       deadline,
       notify_days,
       work_location,
-      employment_type
+      employment_type,
+      category
     } = req.body;
     if (!position) return res.status(400).json({
       error: 'اسم الوظيفة مطلوب'
     });
     const company = await db.prepare('SELECT name, company_email FROM companies WHERE id=?').get(req.user.company_id);
-    const result = await db.prepare('INSERT INTO jobs (company_id, company_name, company_email, position, interview_time, salary_min, salary_max, description, language, level, needed_count, deadline, notify_days, work_location, employment_type) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)').run(req.user.company_id, company.name, company.company_email || '', position, interview_time || '', salary_min || 0, salary_max || 0, description || '', String(language || '').trim(), String(level || '').trim(), parseInt(needed_count) > 0 ? parseInt(needed_count) : 1, deadline || '', parseInt(notify_days) > 0 ? parseInt(notify_days) : 5, String(work_location || '').trim(), String(employment_type || '').trim());
+    const result = await db.prepare('INSERT INTO jobs (company_id, company_name, company_email, position, interview_time, salary_min, salary_max, description, language, level, needed_count, deadline, notify_days, work_location, employment_type, category) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)').run(req.user.company_id, company.name, company.company_email || '', position, interview_time || '', salary_min || 0, salary_max || 0, description || '', String(language || '').trim(), String(level || '').trim(), parseInt(needed_count) > 0 ? parseInt(needed_count) : 1, deadline || '', parseInt(notify_days) > 0 ? parseInt(notify_days) : 5, String(work_location || '').trim(), String(employment_type || '').trim(), jobCategoryOrEmpty(category));
     res.json({
       success: true,
       id: result.lastInsertRowid,
@@ -8265,10 +8433,18 @@ app.put('/api/company/jobs/:id', companyAuthMiddleware, async (req, res) => {
       deadline,
       notify_days,
       work_location,
-      employment_type
+      employment_type,
+      category
     } = req.body;
     const company = await db.prepare('SELECT name FROM companies WHERE id=?').get(req.user.company_id);
-    await db.prepare('UPDATE jobs SET position=?, interview_time=?, salary_min=?, salary_max=?, description=?, language=?, level=?, needed_count=?, deadline=?, notify_days=?, work_location=?, employment_type=? WHERE id=? AND company_name=?').run(position || '', interview_time || '', salary_min || 0, salary_max || 0, description || '', String(language || '').trim(), String(level || '').trim(), parseInt(needed_count) > 0 ? parseInt(needed_count) : 1, deadline || '', parseInt(notify_days) > 0 ? parseInt(notify_days) : 5, String(work_location || '').trim(), String(employment_type || '').trim(), req.params.id, company.name);
+    const sets = ['position=?','interview_time=?','salary_min=?','salary_max=?','description=?','language=?','level=?','needed_count=?','deadline=?','notify_days=?','work_location=?','employment_type=?'];
+    const vals = [position || '', interview_time || '', salary_min || 0, salary_max || 0, description || '', String(language || '').trim(), String(level || '').trim(), parseInt(needed_count) > 0 ? parseInt(needed_count) : 1, deadline || '', parseInt(notify_days) > 0 ? parseInt(notify_days) : 5, String(work_location || '').trim(), String(employment_type || '').trim()];
+    if (category !== undefined) {
+      sets.push('category=?');
+      vals.push(jobCategoryOrEmpty(category));
+    }
+    vals.push(req.params.id, company.name);
+    await db.prepare('UPDATE jobs SET ' + sets.join(', ') + ' WHERE id=? AND company_name=?').run(...vals);
     res.json({
       success: true,
       message: 'تم التحديث'
@@ -8387,12 +8563,13 @@ app.post('/api/admin/company-languages', authMiddleware, adminOrQualtyMiddleware
       notify_days,
       description,
       work_location,
-      employment_type
+      employment_type,
+      category
     } = req.body;
     if (!company_id || !language) return res.status(400).json({
       error: 'Missing fields'
     });
-    const result = await db.prepare('INSERT INTO company_languages (company_id, language, level, needed_count, position, salary_min, salary_max, interview_time, deadline, notify_days, description, work_location, employment_type) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)').run(company_id, language, level || '', needed_count || 1, position || '', salary_min || 0, salary_max || 0, interview_time || '', deadline || '', notify_days || 5, description || '', String(work_location || '').trim(), String(employment_type || '').trim());
+    const result = await db.prepare('INSERT INTO company_languages (company_id, language, level, needed_count, position, salary_min, salary_max, interview_time, deadline, notify_days, description, work_location, employment_type, category) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)').run(company_id, language, level || '', needed_count || 1, position || '', salary_min || 0, salary_max || 0, interview_time || '', deadline || '', notify_days || 5, description || '', String(work_location || '').trim(), String(employment_type || '').trim(), jobCategoryOrEmpty(category));
     res.json({
       success: true,
       id: result.lastInsertRowid,
@@ -8468,6 +8645,7 @@ app.get('/api/admin/jobs-by-language/:language', authMiddleware, adminOrAgentMid
     const companies = await db.prepare(`
       SELECT c.id, c.name, c.deadline, c.available_slots, c.hired_count, c.pending_count,
         c.position, c.interview_time, c.salary_min, c.salary_max, c.description, c.company_email,
+        IFNULL(c.categories, '') as categories,
         IFNULL(c.education_requirement, 'both') as education_requirement,
         ${neededSql} as needed,
         IFNULL((SELECT COUNT(*) FROM jobs j JOIN selections s ON s.job_id = j.id WHERE (j.company_id = c.id OR (j.company_email IS NOT NULL AND j.company_email != '' AND j.company_email = c.company_email) OR TRIM(j.company_name) = TRIM(c.name)) AND s.status IN ('selected','confirmed')), 0) as applied,
@@ -8563,6 +8741,7 @@ app.put('/api/admin/settings', authMiddleware, adminMiddleware, async (req, res)
         RETURNING key`).run(k, String(v == null ? '' : v));
       n++;
     }
+    try { memInvalidate('site_settings'); } catch (_) {}
     res.json({ success: true, updated: n });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -8628,7 +8807,17 @@ app.post('/api/user/id-card', authMiddleware, (req, res) => {
   });
 });
 
-app.get('/api/categories', (req, res) => res.json(JOB_CATEGORIES));
+app.get('/api/categories', async (req, res) => {
+  try {
+    const out = [];
+    for (const c of JOB_CATEGORIES) {
+      out.push({ ...c, ...(await categoryRequirements(c.id)) });
+    }
+    res.json(out);
+  } catch (e) {
+    res.json(JOB_CATEGORIES);
+  }
+});
 
 // 404 handler
 app.use((req, res) => {
@@ -8639,10 +8828,50 @@ app.use((req, res) => {
 
 // ===== Site settings + new feature migrations (ALWAYS run, safe on existing DBs) =====
 const SITE_DEFAULTS = {
+  'req_voice_call-center': '1',
+  'req_voice_sales': '0',
+  'req_voice_worker': '0',
+  'req_voice_programming': '0',
+  'req_voice_quality': '1',
+  'req_voice_logistics': '1',
+  'req_voice_admin': '1',
+  'req_voice_marketing': '0',
+  'req_voice_all': '1',
+  'req_cv_call-center': '0',
+  'req_cv_sales': '1',
+  'req_cv_worker': '0',
+  'req_cv_programming': '1',
+  'req_cv_quality': '0',
+  'req_cv_logistics': '0',
+  'req_cv_admin': '0',
+  'req_cv_marketing': '1',
+  'req_cv_all': '0',
+  'req_idcard_call-center': '0',
+  'req_idcard_sales': '0',
+  'req_idcard_worker': '1',
+  'req_idcard_programming': '0',
+  'req_idcard_quality': '0',
+  'req_idcard_logistics': '0',
+  'req_idcard_admin': '0',
+  'req_idcard_marketing': '0',
+  'req_idcard_all': '0',
+  'req_lang_call-center': '1',
+  'req_lang_sales': '0',
+  'req_lang_worker': '0',
+  'req_lang_programming': '0',
+  'req_lang_quality': '1',
+  'req_lang_logistics': '0',
+  'req_lang_admin': '0',
+  'req_lang_marketing': '0',
+  'req_lang_all': '1',
+
   contact_phone: '01000000000',
   contact_email: 'info@wazef.example',
   contact_whatsapp: '201000000000',
   contact_hours: 'السبت - الخميس · 9 ص - 9 م',
+  meeting_enabled: '1',
+  meeting_days: 'السبت,الأحد,الاثنين,الثلاثاء,الأربعاء',
+  meeting_hours: '4:00 م,5:00 م,6:00 م,7:00 م,9:00 ص',
   hero_badge: 'فرص عمل جديدة تُضاف باستمرار',
   hero_title: 'وظيفتك القادمة',
   hero_title2: 'بتبدأ من هنا.',
@@ -8672,7 +8901,9 @@ async function runSiteMigrations() {
       'ALTER TABLE users ADD COLUMN job_category TEXT DEFAULT \'\'',
       'ALTER TABLE users ADD COLUMN cv_file TEXT DEFAULT \'\'',
       'ALTER TABLE jobs ADD COLUMN category TEXT DEFAULT \'\'',
-      'ALTER TABLE selections ADD COLUMN interview_slot TEXT DEFAULT \'\''
+      'ALTER TABLE selections ADD COLUMN interview_slot TEXT DEFAULT \'\'',
+      'ALTER TABLE company_languages ADD COLUMN category TEXT DEFAULT \'\'',
+      'ALTER TABLE applications ADD COLUMN meeting_slot TEXT DEFAULT \'\''
     ];
     for (const t of tries) { try { await db.exec(t); } catch (_) {} }
   }
@@ -8686,6 +8917,8 @@ async function runSiteMigrations() {
     if (!has('users.id_card_back')) { try { await db.exec("ALTER TABLE users ADD COLUMN id_card_back TEXT DEFAULT ''"); } catch (_) {} }
     if (!has('companies.categories')) { try { await db.exec("ALTER TABLE companies ADD COLUMN categories TEXT DEFAULT ''"); } catch (_) {} }
     if (!has('agents.qualty_categories')) { try { await db.exec("ALTER TABLE agents ADD COLUMN qualty_categories TEXT DEFAULT ''"); } catch (_) {} }
+    if (!has('company_languages.category')) { try { await db.exec("ALTER TABLE company_languages ADD COLUMN category TEXT DEFAULT ''"); } catch (_) {} }
+    if (!has('applications.meeting_slot')) { try { await db.exec("ALTER TABLE applications ADD COLUMN meeting_slot TEXT DEFAULT ''"); } catch (_) {} }
   }
   // job_suggestions: admin suggests other jobs when finally rejecting a selection
   try {

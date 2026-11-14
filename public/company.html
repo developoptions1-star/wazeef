@@ -486,6 +486,7 @@
             <div class="lang-search-wrap">
               <input type="text" id="lang-search" placeholder="🔍 بحث باللغة أو الوظيفة..." oninput="filterLangs()" autocomplete="off">
               <select id="lang-lang-filter" onchange="onLangFilterChange()"><option value="">كل اللغات</option></select>
+              <select id="lang-cat-filter" onchange="filterLangs()"><option value="">كل التخصصات</option><option value="call-center">كول سنتر</option><option value="sales">مبيعات</option><option value="worker">عمالة وإنتاج</option><option value="programming">برمجة وتقنية</option><option value="quality">جودة ومراجعة</option><option value="logistics">لوجستي وتوصيل</option><option value="admin">إداري ومحاسبة</option><option value="marketing">تسويق رقمي</option><option value="all">كل المجالات</option></select>
               <select id="lang-pos-filter" onchange="filterLangs()"><option value="">كل الوظائف</option></select>
             </div>
             <div class="lang-list" id="lang-list">
@@ -498,6 +499,23 @@
 
             <div class="section-label" style="margin-top:24px" id="lang-add-title">➕ إضافة لغة جديدة</div>
             <div class="lang-add">
+              <div class="lang-add-row">
+                <div style="flex:1;">
+                  <span class="lang-add-label">التخصص *</span>
+                  <select id="lang-category" style="width:100%;">
+                    <option value="">اختر التخصص</option>
+                    <option value="call-center">كول سنتر</option>
+                    <option value="sales">مبيعات</option>
+                    <option value="worker">عمالة وإنتاج</option>
+                    <option value="programming">برمجة وتقنية</option>
+                    <option value="quality">جودة ومراجعة</option>
+                    <option value="logistics">لوجستي وتوصيل</option>
+                    <option value="admin">إداري ومحاسبة</option>
+                    <option value="marketing">تسويق رقمي</option>
+                    <option value="all">كل المجالات</option>
+                  </select>
+                </div>
+              </div>
               <div class="lang-add-row">
                 <div style="flex:2;" id="lang-lang-field">
                   <span class="lang-add-label">اللغة</span>
@@ -1256,6 +1274,7 @@
       document.getElementById('lang-desc').value=l.description||'';
       const wl=document.getElementById('lang-work-location'); if(wl) wl.value=l.work_location||'';
       const et=document.getElementById('lang-employment-type'); if(et) et.value=l.employment_type||'';
+      const cg=document.getElementById('lang-category'); if(cg){_opt('lang-category',l.category);cg.value=l.category||'';}
       const btn=document.querySelector('.btn-add-lang');
       btn.textContent='💾 حفظ التعديلات';
       btn.style.background='linear-gradient(135deg,#16a34a,#22c55e)';
@@ -1263,7 +1282,7 @@
     }
     function cancelEditLang(){
       editingLangId=null;
-      ['lang-select','lang-level','lang-position','lang-interview','lang-deadline','lang-desc'].forEach(id=>document.getElementById(id).value='');
+      ['lang-select','lang-level','lang-position','lang-interview','lang-deadline','lang-desc','lang-category'].forEach(id=>document.getElementById(id).value='');
       document.getElementById('lang-count').value='1';
       document.getElementById('lang-salary-min').value='';
       document.getElementById('lang-salary-max').value='';
@@ -1303,18 +1322,22 @@
       posSel.innerHTML='<option value="">كل الوظائف</option>'+posList.map(p=>`<option value="${esc(p)}">${esc(p)}</option>`).join('');
       filterLangs();
     }
+    const COMPANY_CAT_LABELS = { 'call-center': 'كول سنتر', sales: 'مبيعات', worker: 'عمالة وإنتاج', programming: 'برمجة وتقنية', quality: 'جودة ومراجعة', logistics: 'لوجستي وتوصيل', admin: 'إداري ومحاسبة', marketing: 'تسويق رقمي', all: 'كل المجالات' };
+    function catLabel(id) { return COMPANY_CAT_LABELS[id] || id || ''; }
     function filterLangs(){
       const list=document.getElementById('lang-list');
       const empty=document.getElementById('lang-empty');
       const q=(document.getElementById('lang-search')?.value||'').trim().toLowerCase();
       const langFilter=document.getElementById('lang-lang-filter')?.value||'';
+      const catFilter=document.getElementById('lang-cat-filter')?.value||'';
       const posFilter=document.getElementById('lang-pos-filter')?.value||'';
       let langs=currentLanguages;
       if(langFilter) langs=langs.filter(l=>l.language===langFilter);
+      if(catFilter) langs=langs.filter(l=>l.category===catFilter);
       if(posFilter) langs=langs.filter(l=>l.position===posFilter);
       if(q){
         langs=langs.filter(l=>{
-          const hay=((l.language||'')+' '+(l.position||'')+' '+(l.level||'')).toLowerCase();
+          const hay=((l.language||'')+' '+(l.position||'')+' '+(l.level||'')+' '+(catLabel(l.category)||'')).toLowerCase();
           return hay.includes(q);
         });
       }
@@ -1348,7 +1371,7 @@
             <button class="lang-item-del" onclick="deleteLanguage(${l.id})" title="حذف">✕</button>
           </div>
           <div class="lang-item-head">
-            <span class="lang-item-name">${esc(l.language)}</span>
+            <span class="lang-item-name">${l.category?`<span style="color:#d4a853;">[${esc(catLabel(l.category))}]</span> `:''}${esc(l.language)}</span>
             ${l.level?`<span class="lang-item-level">${esc(l.level)}</span>`:''}
             <span class="lang-item-count">${l.needed_count||1} مطلوب</span>
             <span class="lang-item-sent">📤 أُرسل ${l.sent_count||0}</span>
@@ -1379,11 +1402,13 @@
       const deadline=val('lang-deadline');
       const notify_days=parseInt(val('lang-notify-days'))||5;
       const description=val('lang-desc');
+      const category=val('lang-category');
+      if(!category)return showToast('اختر التخصص','error');
       const work_location=val('lang-work-location');
       const employment_type=val('lang-employment-type');
       if(!lang)return showToast(_isLaborCo?'اكتب اسم الوظيفة':'اختر اللغة','error');
       if(!level&&!_isLaborCo)return showToast('اختر المستوى','error');
-      const body={language:lang,level,needed_count:parseInt(count),position:position||lang,salary_min,salary_max,interview_time,deadline,notify_days,description,work_location,employment_type};
+      const body={language:lang,level,needed_count:parseInt(count),position:position||lang,salary_min,salary_max,interview_time,deadline,notify_days,description,work_location,employment_type,category};
       try{
         if(editingLangId){
           await api('/api/company/languages/'+editingLangId,{method:'PUT',body:JSON.stringify(body)});

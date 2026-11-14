@@ -2148,6 +2148,31 @@
               <div class="setting-item" style="grid-column:1/-1;"><label>وصف الصفحة (يظهر في جوجل)</label><textarea id="set-seo_description" data-key="seo_description" rows="3"></textarea></div>
             </div>
             <div class="setting-group">
+              <h4 style="color:#d4a853;font-size:14px;margin:0 0 12px;padding-bottom:8px;border-bottom:1px solid rgba(212,168,83,0.1);">📅 الميتينج بعد قبول المتقدم</h4>
+              <div class="setting-item"><label>تفعيل خطوة الميتينج</label><select id="set-meeting_enabled" data-key="meeting_enabled" style="width:100%;padding:10px 12px;background:#0f1117;border:1.5px solid rgba(212,168,83,0.2);border-radius:10px;color:#e2e8f0;font-family:'Tajawal',sans-serif;font-size:13px;outline:none;"><option value="1">مفعل — لازم يحجز ميتينج قبل إضافة وظائف</option><option value="0">متوقف — إضافة الوظائف عادي</option></select></div>
+              <div class="setting-item" style="grid-column:1/-1;"><label>الأيام المتاحة <span style="color:#64748b;font-weight:400;">(بفواصل — الترتيب بيظهر بالشكل ده)</span></label><input type="text" id="set-meeting_days" data-key="meeting_days" placeholder="السبت,الأحد,الاثنين,الثلاثاء,الأربعاء" autocomplete="off"></div>
+              <div class="setting-item" style="grid-column:1/-1;"><label>الساعات المتاحة <span style="color:#64748b;font-weight:400;">(بفواصل)</span></label><input type="text" id="set-meeting_hours" data-key="meeting_hours" placeholder="4:00 م,5:00 م,6:00 م,7:00 م,9:00 ص" autocomplete="off"></div>
+              <div style="grid-column:1/-1;font-size:11.5px;color:#64748b;line-height:1.8;">لما الشخص يتوافق طلبه (تمت الموافقة) يظهر له في صفحته كارت «احجز ميتينج» بيختار منه من الأيام والساعات دي، وبيروح له إيميل بالتأكيد. قبل ما يحجز مش هينفع يتضافله وظائف.</div>
+            </div>
+            <div class="setting-group" style="grid-column:1/-1;">
+              <h4 style="color:#d4a853;font-size:14px;margin:0 0 12px;padding-bottom:8px;border-bottom:1px solid rgba(212,168,83,0.1);">🧩 التخصصات ومتطلباتها</h4>
+              <div style="overflow-x:auto;">
+                <table style="width:100%;border-collapse:collapse;min-width:760px;font-size:12.5px;">
+                  <thead>
+                    <tr style="color:#d4a853;font-size:11px;text-align:right;">
+                      <th style="padding:8px 10px;border-bottom:1px solid rgba(212,168,83,0.15);text-align:right;">التخصص</th>
+                      <th style="padding:8px 10px;border-bottom:1px solid rgba(212,168,83,0.15);text-align:center;">السيرة الذاتية<br><span style="color:#64748b;font-weight:400;">(CV)</span></th>
+                      <th style="padding:8px 10px;border-bottom:1px solid rgba(212,168,83,0.15);text-align:center;">تسجيل صوتي<br><span style="color:#64748b;font-weight:400;">(لمدة دقيقتين)</span></th>
+                      <th style="padding:8px 10px;border-bottom:1px solid rgba(212,168,83,0.15);text-align:center;">صور البطاقة<br><span style="color:#64748b;font-weight:400;">(وش وضهر)</span></th>
+                      <th style="padding:8px 10px;border-bottom:1px solid rgba(212,168,83,0.15);text-align:center;">اللغة<br><span style="color:#64748b;font-weight:400;">(اختيار اللغة مطلوب)</span></th>
+                    </tr>
+                  </thead>
+                  <tbody id="req-table-body"></tbody>
+                </table>
+              </div>
+              <div style="font-size:11px;color:#64748b;margin-top:10px;line-height:1.8;">أي تغيير هنا بيسري فورًا: التسجيل، خطوة ما بعد القبول، الداشبورد، وإضاف الوظائف للمتقدم — كل مكان بيتبع الإعدادات دي. («نعم» = مطلوب لهذا التخصص)</div>
+            </div>
+            <div class="setting-group">
               <h4 style="color:#d4a853;font-size:14px;margin:0 0 12px;padding-bottom:8px;border-bottom:1px solid rgba(212,168,83,0.1);">📝 نصوص إضافية</h4>
               <div class="setting-item" style="grid-column:1/-1;"><label>عبارة الفوتر</label><textarea id="set-footer_tagline" data-key="footer_tagline" rows="2"></textarea></div>
             </div>
@@ -2193,6 +2218,18 @@
           <input type="number" id="cjob-count" min="1" value="1" autocomplete="off">
         </div>
       </div>
+      <div class="form-group"><label>التخصص *</label><select id="cjob-category" style="width:100%;padding:10px 12px;background-color:#0f1117;background:rgba(212,168,83,0.04);border:1.5px solid rgba(212,168,83,0.12);border-radius:10px;color:#e2e8f0;font-family:Tajawal,sans-serif;font-size:13px;outline:none;">
+        <option value="">اختر التخصص</option>
+        <option value="call-center">كول سنتر</option>
+        <option value="sales">مبيعات</option>
+        <option value="worker">عمالة وإنتاج</option>
+        <option value="programming">برمجة وتقنية</option>
+        <option value="quality">جودة ومراجعة</option>
+        <option value="logistics">لوجستي وتوصيل</option>
+        <option value="admin">إداري ومحاسبة</option>
+        <option value="marketing">تسويق رقمي</option>
+        <option value="all">كل المجالات</option>
+      </select></div>
       <div class="form-group"><label>اسم الوظيفة</label><input type="text" id="cjob-position" placeholder="مثال: مطور ويب" autocomplete="off"></div>
       <div class="form-group"><label>المرتب (جنيه) - اختياري</label>
         <div style="display:flex;gap:10px;align-items:center;">
@@ -2234,6 +2271,22 @@
       <h2>إضافة وظائف</h2>
       <input type="hidden" id="modal-app-id">
       <input type="hidden" id="modal-user-id">
+      <div class="form-group"><label>التخصص <span style="color:#e57373">*</span></label>
+        <select id="job-category-select" autocomplete="off" onchange="onJobCategoryChange()" style="width:100%;padding:12px 16px;background:#1a1a1a;border:1.5px solid rgba(212,168,83,0.12);border-radius:12px;color:#e2e8f0;font-family:'Tajawal',sans-serif;font-size:14px;outline:none;color-scheme:dark;">
+          <option value="">اختر التخصص أولاً</option>
+          <option value="call-center">كول سنتر</option>
+          <option value="sales">مبيعات</option>
+          <option value="worker">عمالة وإنتاج</option>
+          <option value="programming">برمجة وتقنية</option>
+          <option value="quality">جودة ومراجعة</option>
+          <option value="logistics">لوجستي وتوصيل</option>
+          <option value="admin">إداري ومحاسبة</option>
+          <option value="marketing">تسويق رقمي</option>
+          <option value="all">كل المجالات</option>
+        </select>
+        <div id="job-category-hint" style="font-size:11.5px;color:#64748b;margin-top:6px;line-height:1.7;">الوظائف والشركات هتتفلتر حسب التخصص المختار — والبيانات المطلوب حفظها بتتحدد حسب التخصص (CV لبعض التخصصات وصور بطاقة للعمالة وما إلى ذلك).</div>
+      </div>
+      <div id="meeting-warn" style="display:none;padding:10px 14px;background:rgba(251,113,133,0.08);border:1px solid rgba(251,113,133,0.25);border-radius:10px;margin-bottom:12px;font-size:12.5px;color:#fda4af;line-height:1.8;"></div>
       <div id="job-lang-hint" style="display:none;padding:8px 14px;background:rgba(212,168,83,0.08);border:1px solid rgba(212,168,83,0.15);border-radius:10px;margin-bottom:12px;font-size:13px;color:#f0d78c;align-items:center;gap:10px;flex-wrap:wrap;">🌍 لغة المتقدم: <strong id="job-lang-name">-</strong>
         <span style="color:#94a3b8;">— مستوى اللغة:</span>
         <div id="job-level-chips" style="display:none;flex-wrap:wrap;gap:6px;align-items:center;"></div>
@@ -2402,6 +2455,20 @@
          <div id="company-languages-list"></div>
 
          <div class="lang-add-form" style="padding:12px;background:rgba(212,168,83,0.04);border:1px solid rgba(212,168,83,0.1);border-radius:10px;margin-top:8px;">
+           <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;">
+             <select id="new-category" style="flex:1;padding:10px 12px;background-color:#0f1117;background:rgba(212,168,83,0.04);border:1.5px solid rgba(212,168,83,0.12);border-radius:10px;color:#e2e8f0;font-family:'Tajawal',sans-serif;font-size:13px;outline:none;appearance:auto;-webkit-appearance:auto;">
+               <option value="">التخصص * (كول سنتر — مبيعات — عمالة — برمجة...)</option>
+               <option value="call-center">كول سنتر</option>
+               <option value="sales">مبيعات</option>
+               <option value="worker">عمالة وإنتاج</option>
+               <option value="programming">برمجة وتقنية</option>
+               <option value="quality">جودة ومراجعة</option>
+               <option value="logistics">لوجستي وتوصيل</option>
+               <option value="admin">إداري ومحاسبة</option>
+               <option value="marketing">تسويق رقمي</option>
+               <option value="all">كل المجالات</option>
+             </select>
+           </div>
            <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;">
              <select id="new-lang" style="flex:2;padding:10px 12px;background-color:#0f1117;background:rgba(212,168,83,0.04);border:1.5px solid rgba(212,168,83,0.12);border-radius:10px;color:#e2e8f0;font-family:'Tajawal',sans-serif;font-size:13px;outline:none;appearance:auto;-webkit-appearance:auto;">
                <option value="" style="background:#0f1117;color:#e2e8f0;">اختر اللغة</option>
@@ -2981,6 +3048,7 @@
               ${a.job_category ? `<div style="font-size:10px;color:#d4a853;margin-top:3px;font-weight:700;">📂 ${esc(catLabel(a.job_category))}</div>` : ''}
               ${a.cv_file ? `<div style="font-size:10px;margin-top:2px;"><a href="/uploads/${esc(a.cv_file)}" target="_blank" style="color:#22c55e;text-decoration:underline;">📎 CV</a></div>` : ''}
               ${a.interview_slot ? `<div style="font-size:10px;color:#fbbf24;margin-top:3px;font-weight:700;">🕐 ${esc(a.interview_slot)}</div>` : ''}
+              ${a.meeting_slot ? `<div style="font-size:10px;color:#38bdf8;margin-top:3px;font-weight:700;">📅 ميتينج: ${esc(a.meeting_slot)}</div>` : (a.status === 'approved' ? `<div style="font-size:10px;color:#fb7185;margin-top:3px;font-weight:700;">📅 ميتينج: لسه محجزش</div>` : '')}
             </div>
             <div data-label="اللغة"><span class="app-lang">${getLangName(a.language)}</span>${a.qualty_languages ? `<div style="font-size:10.5px;color:#64748b;margin-top:3px;line-height:1.5;">لغاته: ${esc(qlLangNames(a.qualty_languages))}</div>` : ''}</div>
             <div data-label="الحالة"><span class="app-status ${a.status}"><span class="status-dot"></span>${statusText}</span></div>
@@ -3010,7 +3078,7 @@
               ${a.status==='pending' && a.rerecord_request ? `<button class="app-action-btn muted" disabled>تم طلب إعادة التسجيل</button>` : ''}
               ${a.status==='approved' ? `
                 ${a.jobs_count > 0 ? `<span class="app-jobs-badge"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> تم إرسال ${a.jobs_count} وظيفة</span>` : ''}
-                <button class="app-action-btn gold" onclick="openJobModal(${a.id},${a.user_id},'${a.language||''}','${(a.language_level||'').replace(/'/g,"\\'")}')">${a.jobs_count > 0 ? '+ إضافة وظائف' : 'إضافة وظيفة'}</button>
+                <button class="app-action-btn gold" onclick="openJobModal(${a.id},${a.user_id},'${a.language||''}','${(a.language_level||'').replace(/'/g,"\\'")}','${(a.job_category||'').replace(/'/g,"\\'")}')">${a.jobs_count > 0 ? '+ إضافة وظائف' : 'إضافة وظيفة'}</button>
               ` : ''}
               ${a.status==='rejected' ? `
                 <div style="width:100%;">
@@ -3285,13 +3353,17 @@ const langs = {
 
     let pendingJobs = [];
     let currentJobLang = '';
+    let currentJobCategory = '';
     let selectedLevels = [];
 
-    function openJobModal(appId, userId, lang, level) {
+    function openJobModal(appId, userId, lang, level, jobCategory) {
       document.getElementById('modal-app-id').value = appId;
-document.getElementById('modal-user-id').value = userId;
-currentJobLang = lang ? ((window.LangPicker && LangPicker.arOf(lang)) || lang) : '';
-syncJobLangSelect();
+      document.getElementById('modal-user-id').value = userId;
+      currentJobLang = lang ? ((window.LangPicker && LangPicker.arOf(lang)) || lang) : '';
+      currentJobCategory = jobCategory && ['call-center','sales','worker','programming','quality','logistics','admin','marketing','all'].includes(jobCategory) ? jobCategory : '';
+      const catSel = document.getElementById('job-category-select');
+      if (catSel) catSel.value = currentJobCategory;
+      syncJobLangSelect();
       resetJobExtraFields();
       const hint = document.getElementById('job-lang-hint');
       const appLevel = (level || '').trim();
@@ -3320,9 +3392,62 @@ syncJobLangSelect();
       renderPendingJobs();
       loadJobsInModal(appId);
       loadCompanyDropdown(currentJobLang);
+      applyJobCategoryFilter();
+      meetingSettingsCached().then(() => updateMeetingWarn(appId));
       const lvlHintEl = document.getElementById('job-level-hint');
       if (lvlHintEl) lvlHintEl.dataset.appLevel = appLevel;
       updateLevelHint(appLevel);
+    }
+    async function meetingSettingsCached() {
+      if (window._meetingEnabled !== undefined) return window._meetingEnabled;
+      try {
+        const r = await fetch('/api/settings');
+        const s = await r.json();
+        window._meetingEnabled = String(s.meeting_enabled || '1') === '1';
+      } catch (e) { window._meetingEnabled = true; }
+      return window._meetingEnabled;
+    }
+    function updateMeetingWarn(applicationId) {
+      const warn = document.getElementById('meeting-warn');
+      if (!warn) return;
+      if (window._meetingEnabled === false) { warn.style.display = 'none'; return; }
+      const rec = (allApps || []).find(x => Number(x.id) === Number(applicationId));
+      if (!rec) { warn.style.display = 'none'; return; }
+      if (rec.meeting_slot) {
+        warn.style.display = 'block';
+        warn.style.background = 'rgba(52,211,153,0.07)';
+        warn.style.borderColor = 'rgba(52,211,153,0.3)';
+        warn.style.color = '#6ee7b7';
+        warn.textContent = '✓ حجز الميتينج: ' + rec.meeting_slot;
+      } else {
+        warn.style.display = 'block';
+        warn.style.background = 'rgba(251,113,133,0.08)';
+        warn.style.borderColor = 'rgba(251,113,133,0.25)';
+        warn.style.color = '#fda4af';
+        warn.textContent = 'تحذير: المتقدم لسه محجزش ميتينج — مش هتقدر تضيف له وظائف لحد ما يختار ميعاد من صفحته (أو وقف الميزة من الإعدادات)';
+      }
+    }
+    function onJobCategoryChange() {
+      const sel = document.getElementById('job-category-select');
+      currentJobCategory = sel ? sel.value : '';
+      applyJobCategoryFilter();
+    }
+    // Hide companies whose specialty doesn't match the chosen category (uncategorized companies stay visible)
+    function applyJobCategoryFilter() {
+      const sel = document.getElementById('job-company-select');
+      if (!sel) return;
+      Array.prototype.forEach.call(sel.options, function (o) {
+        if (!o.value) return;
+        const cats = String(o.dataset.cats || '');
+        const ok = !currentJobCategory || !cats || cats.split(',').indexOf(currentJobCategory) !== -1;
+        o.hidden = !ok;
+        if (!ok && sel.value === o.value) sel.value = '';
+      });
+      const hint = document.getElementById('job-level-hint');
+      if (hint && currentJobCategory) {
+        const visible = Array.prototype.filter.call(sel.options, function (o) { return o.value && !o.hidden; }).length;
+        hint.textContent = visible ? (visible + ' شركة مناسبة لتخصص «' + catLabel(currentJobCategory) + '»') : 'لا توجد شركة بهذا التخصص بعد — اكتب يدوي أو علّم الشركة تخصصها من ملفها';
+      }
     }
     function syncJobLangSelect() {
       const sel = document.getElementById('job-lang-select');
@@ -3494,7 +3619,7 @@ syncJobLangSelect();
               style = ' style="background:#450a0a;color:#f87171"';
             }
             const optStyle = c.near_deadline ? ' style="background:#78350f;color:#fbbf24;font-weight:700"' : (c.expired ? ' style="background:#450a0a;color:#f87171"' : ' style="background:#1a1a1a;color:#e2e8f0"');
-            sel.innerHTML += `<option value="${c.id}" data-name="${c.name}" data-position="${c.position||''}" data-time="${c.interview_time||''}" data-min="${c.salary_min||0}" data-max="${c.salary_max||0}" data-desc="${c.description||''}" data-email="${c.company_email||''}" data-near="${c.near_deadline?1:0}" data-days="${c.days_left??''}"${optStyle}>${label}</option>`;
+            sel.innerHTML += `<option value="${c.id}" data-name="${c.name}" data-position="${c.position||''}" data-time="${c.interview_time||''}" data-min="${c.salary_min||0}" data-max="${c.salary_max||0}" data-desc="${c.description||''}" data-email="${c.company_email||''}" data-near="${c.near_deadline?1:0}" data-days="${c.days_left??''}" data-cats="${esc(c.categories||'')}"${optStyle}>${label}</option>`;
           });
           if (hasNear) {
             sel.style.borderColor = '#eab308';
@@ -3503,6 +3628,7 @@ syncJobLangSelect();
             sel.style.borderColor = '';
             sel.style.boxShadow = '';
           }
+          applyJobCategoryFilter();
           return;
         }
         sel.disabled = false;
@@ -3519,13 +3645,14 @@ syncJobLangSelect();
           const remaining = c.available_slots - (c.pending_count || 0) - (c.hired_count || 0);
           if (remaining > 0) {
             eduUsable++;
-            sel.innerHTML += `<option value="${c.id}" data-name="${c.name}" data-position="${c.position||''}" data-time="${c.interview_time||''}" data-min="${c.salary_min||0}" data-max="${c.salary_max||0}" data-desc="${c.description||''}" data-email="${c.company_email||''}" style="background:#1a1a1a;color:#e2e8f0">${c.name} - ${c.position||''} (${remaining} مقعد متاح)</option>`;
+            sel.innerHTML += `<option value="${c.id}" data-name="${c.name}" data-position="${c.position||''}" data-time="${c.interview_time||''}" data-min="${c.salary_min||0}" data-max="${c.salary_max||0}" data-desc="${c.description||''}" data-email="${c.company_email||''}" data-cats="${esc(c.categories||'')}" style="background:#1a1a1a;color:#e2e8f0">${c.name} - ${c.position||''} (${remaining} مقعد متاح)</option>`;
           }
         });
         const eduHint = document.getElementById('job-level-hint');
         if (eduHint && hiddenByEducation > 0) {
           eduHint.textContent = `${eduUsable ? eduUsable + ' شركة مناسبة' : 'لا توجد شركة مناسبة'} | 🙈 تم إخفاء ${hiddenByEducation} شركة لأنها تقبل فئه غير مناسبه للمتقدم`;
         }
+        applyJobCategoryFilter();
       } catch (e) {}
     }
 
@@ -3551,9 +3678,12 @@ syncJobLangSelect();
           }
           return lv === levelVal;
         };
-        const match = (Array.isArray(langs) ? langs : []).find(l => l.language === lang && matchLevel(l.level))
-          || (Array.isArray(langs) ? langs : []).find(l => l.language === lang)
-          || (Array.isArray(langs) ? langs[0] : null);
+        // Prefer this specialty's rows (rows with no specialty act as wildcard)
+        const allRows = Array.isArray(langs) ? langs : [];
+        const rows = currentJobCategory ? allRows.filter(l => !l.category || l.category === currentJobCategory) : allRows;
+        const match = rows.find(l => l.language === lang && matchLevel(l.level))
+          || rows.find(l => l.language === lang)
+          || rows[0];
         if (match) {
           if (match.position) document.getElementById('job-position').value = match.position;
           if (match.interview_time) document.getElementById('job-time').value = match.interview_time;
@@ -3598,12 +3728,18 @@ syncJobLangSelect();
         description: j.description || '', company_email: j.company_email || '', language: j.language || '',
         level: j.level || '', needed_count: j.needed_count || 1, deadline: j.deadline || '',
         notify_days: j.notify_days || 5, work_location: j.work_location || '', employment_type: j.employment_type || '',
+        category: j.category || currentJobCategory || '',
         _was_cancelled: true
       });
       renderPendingJobs();
     }
 
     function addJobToList() {
+      if (!currentJobCategory) return showResultModal('⚠️', 'اختر التخصص الأول — ده اللي بيحدد بيانات التقديم المطلوبة للمتقدم');
+      const _appRec = (allApps || []).find(x => Number(x.id) === Number((document.getElementById('modal-app-id')||{}).value));
+      if (window._meetingEnabled !== false && _appRec && !_appRec.meeting_slot && _appRec.status === 'approved') {
+        return showResultModal('⚠️', 'المتقدم لسه محجزش ميتينج — لازم يختار ميعاد من صفحته الأول، أو وقف الميزة من الإعدادات');
+      }
       const company = document.getElementById('job-company').value;
       const position = document.getElementById('job-position').value;
       const time = document.getElementById('job-time').value;
@@ -3621,7 +3757,7 @@ syncJobLangSelect();
       const companyId = companySelect.value || null;
       const selectedOption = companySelect.options[companySelect.selectedIndex];
       if (!company || !position) return showResultModal('⚠️', 'من فضلك أكمل البيانات<br>(اسم الشركة + اسم الوظيفة)');
-      pendingJobs.push({ company_id: companyId ? parseInt(companyId) : null, company_name: company, position, interview_time: time, salary_min: salaryMin ? parseFloat(salaryMin) : 0, salary_max: salaryMax ? parseFloat(salaryMax) : 0, description: desc, company_email: companyEmail || '', language: jobLang || (currentJobLang || ''), level: getSelectedLevels(), needed_count: jobCount ? parseInt(jobCount) || 1 : 1, deadline: jobDeadline || '', notify_days: jobNotify ? parseInt(jobNotify) || 5 : 5, work_location: jobWorkLoc || '', employment_type: jobEmpType || '' });
+      pendingJobs.push({ company_id: companyId ? parseInt(companyId) : null, company_name: company, position, interview_time: time, salary_min: salaryMin ? parseFloat(salaryMin) : 0, salary_max: salaryMax ? parseFloat(salaryMax) : 0, description: desc, company_email: companyEmail || '', language: jobLang || (currentJobLang || ''), level: getSelectedLevels(), needed_count: jobCount ? parseInt(jobCount) || 1 : 1, deadline: jobDeadline || '', notify_days: jobNotify ? parseInt(jobNotify) || 5 : 5, work_location: jobWorkLoc || '', employment_type: jobEmpType || '', category: currentJobCategory || '' });
       if ((window._cancelledPositions || []).indexOf(position) >= 0) pendingJobs[pendingJobs.length - 1]._was_cancelled = true;
       if (companyId && selectedOption && selectedOption.value) {
         pendingJobs[pendingJobs.length - 1]._removedOption = selectedOption.outerHTML;
@@ -3645,6 +3781,7 @@ syncJobLangSelect();
 
     function jobCardInfo(j) {
       const bits = [];
+      if (j.category) bits.push(`<span style="padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;background:rgba(212,168,83,.10);color:#d4a853;border:1px solid rgba(212,168,83,.25);white-space:nowrap;">${catLabel(j.category)}</span>`);
       if (j.language) bits.push(`<span style="color:#6ee7b7;">🌐 ${j.language}</span>`);
       if (j.level) bits.push(`<span style="color:#93c5fd;">المستوى: ${j.level}</span>`);
       if (j.work_location) bits.push(`<span style="padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;background:rgba(56,189,248,.10);color:#38bdf8;border:1px solid rgba(56,189,248,.25);white-space:nowrap;">${j.work_location==='home'?'🏠 من البيت':j.work_location==='hybrid'?'🔄 هجين (بيت + عمل)':'🏢 في مكان العمل'}</span>`);
@@ -5806,7 +5943,7 @@ function toggleAgentsSection(forceOpen) {
               <button class="lang-item-del" onclick="deleteCJob(${cid}, ${j.id})" title="حذف">✕</button>
             </div>
             <div class="lang-item-head">
-              <span class="lang-item-name">${esc(j.language || j.position || '—')}</span>
+              <span class="lang-item-name">${j.category ? `<span style="color:#d4a853;">[${catLabel(j.category)}]</span> ` : ''}${esc(j.language || j.position || '—')}</span>
               ${j.level ? `<span class="lang-item-level">${esc(j.level)}</span>` : ''}
               <span class="lang-item-count">${j.needed_count || 1} مطلوب</span>
               <span class="lang-item-sent">📤 أُرسل ${j.sent_count != null ? j.sent_count : (j.confirmed_candidates || 0)}</span>
@@ -5865,6 +6002,7 @@ function toggleAgentsSection(forceOpen) {
       document.getElementById('cjob-desc').value = j ? (j.description || '') : '';
       if (document.getElementById('cjob-work-location')) document.getElementById('cjob-work-location').value = j ? (j.work_location || '') : '';
       if (document.getElementById('cjob-employment-type')) document.getElementById('cjob-employment-type').value = j ? (j.employment_type || '') : '';
+      if (document.getElementById('cjob-category')) document.getElementById('cjob-category').value = j ? (j.category || '') : '';
       document.getElementById('cjob-modal').classList.add('show');
     }
     function closeCJobModal() { document.getElementById('cjob-modal').classList.remove('show'); }
@@ -5888,8 +6026,10 @@ function toggleAgentsSection(forceOpen) {
         deadline: document.getElementById('cjob-deadline').value,
         notify_days: parseInt(document.getElementById('cjob-notify-days').value) || 5,
         work_location: (document.getElementById('cjob-work-location')||{}).value || '',
-        employment_type: (document.getElementById('cjob-employment-type')||{}).value || ''
+        employment_type: (document.getElementById('cjob-employment-type')||{}).value || '',
+        category: (document.getElementById('cjob-category')||{}).value || ''
       };
+      if (!payload.category) return alert('اختر التخصص');
       if (!payload.language) return alert(labor ? 'اسم الوظيفة مطلوب' : 'اللغة مطلوبة');
       if (!payload.level && !labor) return alert('المستوى مطلوب');
       try {
@@ -5937,7 +6077,7 @@ function toggleAgentsSection(forceOpen) {
       box.innerHTML = companyLangRows.map((l,i) => `
         <div style="margin-bottom:8px;padding:10px;background:rgba(212,168,83,0.06);border:1px solid rgba(212,168,83,0.1);border-radius:8px;">
           <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
-            <span style="flex:2;font-size:13px;color:#f0d78c;font-weight:700;">${l.language}</span>
+            <span style="flex:2;font-size:13px;color:#f0d78c;font-weight:700;">${l.category ? '<span style="color:#d4a853;">[' + catLabel(esc(l.category)) + ']</span> ' : ''}${esc(l.language)}</span>
             ${l.level ? `<span style="flex:1;font-size:12px;padding:3px 8px;background:rgba(212,168,83,0.15);border-radius:6px;color:#d4a853;text-align:center;font-weight:700;">${l.level}</span>` : ''}
             <span style="flex:1;font-size:12px;color:#94a3b8;text-align:center;">${l.needed_count} شخص</span>
             <button onclick="removeLangServer(${l.id||0},${i})" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;padding:2px 6px;" title="حذف">✕</button>
@@ -5956,6 +6096,9 @@ function toggleAgentsSection(forceOpen) {
     }
     function addLangRow() {
       const labor = _companyLangLabor;
+      const newCatEl = document.getElementById('new-category');
+      const category = newCatEl ? newCatEl.value : '';
+      if (!category) return alert('اختر التخصص الأول');
       const position = document.getElementById('new-position').value.trim();
       const lang = labor ? position : document.getElementById('new-lang').value;
       const level = labor ? '' : document.getElementById('new-level').value;
@@ -5970,8 +6113,8 @@ function toggleAgentsSection(forceOpen) {
       const employment_type = (document.getElementById('new-employment-type') || {}).value || '';
       if (!lang) return alert(labor ? 'اكتب اسم الوظيفة' : 'اختر اللغة');
       if (!level && !labor) return alert('اختر المستوى');
-      companyLangRows.push({ language: lang, level: level, needed_count: count, position: position || lang, salary_min, salary_max, interview_time, deadline, notify_days, description, work_location, employment_type })
-      ['new-lang','new-level','new-position','new-interview','new-deadline','new-desc','new-work-location','new-employment-type'].forEach(id => document.getElementById(id).value = '');
+      companyLangRows.push({ language: lang, level: level, needed_count: count, position: position || lang, salary_min, salary_max, interview_time, deadline, notify_days, description, work_location, employment_type, category })
+      ['new-lang','new-level','new-position','new-interview','new-deadline','new-desc','new-work-location','new-employment-type','new-category'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
       document.getElementById('new-count').value = '1';
       document.getElementById('new-salary-min').value = '';
       document.getElementById('new-salary-max').value = '';
@@ -6350,7 +6493,7 @@ function toggleAgentsSection(forceOpen) {
          }
          for (const l of companyLangRows) {
            if (!l.id) {
-             await fetch('/api/admin/company-languages', { method:'POST', headers:{'Authorization':`Bearer ${token}`,'Content-Type':'application/json'}, body:JSON.stringify({ company_id: companyId, language: l.language, level: l.level, needed_count: l.needed_count, position: l.position, salary_min: l.salary_min, salary_max: l.salary_max, interview_time: l.interview_time, deadline: l.deadline, notify_days: l.notify_days, description: l.description, work_location: l.work_location || '', employment_type: l.employment_type || '' }) });
+             await fetch('/api/admin/company-languages', { method:'POST', headers:{'Authorization':`Bearer ${token}`,'Content-Type':'application/json'},              body:JSON.stringify({ company_id: companyId, language: l.language, level: l.level, needed_count: l.needed_count, position: l.position, salary_min: l.salary_min, salary_max: l.salary_max, interview_time: l.interview_time, deadline: l.deadline, notify_days: l.notify_days, description: l.description, work_location: l.work_location || '', employment_type: l.employment_type || '', category: l.category || '' }) });
            }
          }
          closeCompanyModal();
@@ -7224,15 +7367,35 @@ const maxApproved = Math.max(...rankings.map(a => a.approved), 1);
       }catch(e){s.textContent='❌ '+e.message;s.style.color='#ef4444'}
     }
 
+    // ===== جدول التخصصات والمتطلبات (يُبنى مرة واحدة) =====
+    const REQ_CATS = [['call-center','كول سنتر'],['sales','مبيعات'],['worker','عمالة وإنتاج'],['programming','برمجة وتقنية'],['quality','جودة ومراجعة'],['logistics','لوجستي وتوصيل'],['admin','إداري ومحاسبة'],['marketing','تسويق رقمي'],['all','كل المجالات']];
+    const REQ_FIELDS = [['cv','السيرة'],['voice','الصوت'],['idcard','البطاقة'],['lang','اللغة']];
+    function buildReqTable() {
+      const tb = document.getElementById('req-table-body');
+      if (!tb || tb.dataset.built) return;
+      tb.dataset.built = '1';
+      const opt = () => '<option value="0">لا</option><option value="1">نعم</option>';
+      tb.innerHTML = REQ_CATS.map(([id, label]) => {
+        const cells = REQ_FIELDS.map(([f]) => {
+          const key = 'req_' + f + '_' + id;
+          return '<td style="padding:8px 10px;border-bottom:1px solid rgba(212,168,83,0.06);text-align:center;"><select data-key="' + key + '" style="width:88px;padding:8px 10px;background:#0f1117;border:1.5px solid rgba(212,168,83,0.15);border-radius:8px;color:#e2e8f0;font-family:Tajawal,sans-serif;font-size:12.5px;outline:none;">' + opt() + '</select></td>';
+        }).join('');
+        return '<tr><td style="padding:8px 10px;border-bottom:1px solid rgba(212,168,83,0.06);color:#f0d78c;font-weight:700;white-space:nowrap;">' + label + '</td>' + cells + '</tr>';
+      }).join('');
+    }
+
     // ===== Site Settings =====
     async function loadSettings(){
       try{
+        buildReqTable();
         const r=await fetch('/api/admin/settings',{headers:{'Authorization':'Bearer '+localStorage.getItem('token')}});
         const rows=await r.json();
         if(Array.isArray(rows)){
           rows.forEach(row=>{
             const el=document.getElementById('set-'+row.key);
             if(el)el.value=row.value||'';
+            // req_* inputs (prebuilt table) — no set- prefix needed
+            document.querySelectorAll('[data-key="' + row.key + '"]').forEach(x => { if (x !== el) x.value = row.value || ''; });
           });
         }
       }catch(e){console.log('loadSettings error:',e)}

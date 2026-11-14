@@ -7832,11 +7832,14 @@ app.get('/robots.txt', (req, res) => serveAsset(res, 'robots.txt', 'text/plain')
 app.get('/llms.txt', (req, res) => serveAsset(res, 'llms.txt', 'text/plain; charset=utf-8'));
 app.get('/sitemap.xml', (req, res) => serveAsset(res, 'sitemap.xml', 'application/xml'));
 app.get('/manifest.json', (req, res) => serveAsset(res, 'manifest.json', 'application/json'));
+app.get('/favicon.svg', (req, res) => serveAsset(res, 'favicon.svg', 'image/svg+xml'));
+app.get('/favicon.ico', (req, res) => res.redirect(302, '/favicon.svg'));
 app.get('/sw.js', (req, res) => {
   res.set('Service-Worker-Allowed', '/');
   serveAsset(res, 'sw.js', 'application/javascript', { noStore: true });
 });
 app.get('/i18n-data.js', (req, res) => serveAsset(res, 'i18n-data.js', 'application/javascript; charset=utf-8'));
+app.get('/landing.html', (req, res) => servePage(res, 'landing.html'));
 app.get('/dashboard', (req, res) => servePage(res, 'dashboard.html'));
 app.get('/admin', (req, res) => servePage(res, 'admin.html'));
 app.get('/select-job', (req, res) => res.redirect('/'));

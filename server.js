@@ -1132,6 +1132,27 @@ function adminMiddleware(req, res, next) {
   });
   next();
 }
+// ===== Job categories (single source of truth) =====
+const JOB_CATEGORIES = [
+  { id: 'call-center', label: 'كول سنتر', needs_cv: false, needs_voice: true, needs_id_card: false },
+  { id: 'sales', label: 'مبيعات', needs_cv: true, needs_voice: false, needs_id_card: false },
+  { id: 'worker', label: 'عمالة وإنتاج', needs_cv: false, needs_voice: false, needs_id_card: true },
+  { id: 'programming', label: 'برمجة وتقنية', needs_cv: true, needs_voice: false, needs_id_card: false },
+  { id: 'quality', label: 'جودة ومراجعة', needs_cv: false, needs_voice: true, needs_id_card: false },
+  { id: 'logistics', label: 'لوجستي وتوصيل', needs_cv: false, needs_voice: true, needs_id_card: false },
+  { id: 'admin', label: 'إداري ومحاسبة', needs_cv: false, needs_voice: true, needs_id_card: false },
+  { id: 'marketing', label: 'تسويق رقمي', needs_cv: true, needs_voice: false, needs_id_card: false },
+  { id: 'all', label: 'كل المجالات', needs_cv: false, needs_voice: true, needs_id_card: false }
+];
+// What a category requires to submit: 'voice' | 'cv' | 'id_card'
+function catSubmitMode(catId) {
+  const c = JOB_CATEGORIES.find(x => x.id === catId);
+  if (!c) return 'voice';
+  if (c.needs_cv) return 'cv';
+  if (c.needs_id_card) return 'id_card';
+  return 'voice';
+}
+
 async function adminOrQualtyMiddleware(req, res, next) {
   if (req.user.role === 'admin') return next();
   if (await isQualtyRole(req)) return next();
@@ -1214,7 +1235,26 @@ async function qualtyCanActOnApp(req, appRow) {
   if (!appRow) return false;
   const myId = await getAgentId(req);
   if (Number(appRow.assigned_qualty_id || 0) === Number(myId || 0)) return true;
-  const me = await db.prepare('SELECT qualty_languages FROM agents WHERE id = ?').get(myId);
+  const me = await db.prepare('SELECT qualty_languages, qualty_categories FROM agents WHERE id = ?').get(myId);
+  // Category gate: if admin pinned categories for this qualty, app must match
+  const myCats = (me && me.qualty_categories) ? String(me.qualty_categories).split(',').filter(Boolean) : [];
+  if (myCats.length) {
+    let cat = appRow.job_category || '';
+    if (!cat && appRow.user_id) {
+      const u = await db.prepare('SELECT job_category FROM users WHERE id = ?').get(appRow.user_id);
+      cat = (u && u.job_category) || '';
+    }
+    if (myCats.indexOf(cat) < 0) return false;
+    // category matched — language gate only applies if languages are also pinned
+    const myLangs = qualtyLangList(me && me.qualty_languages);
+    if (!myLangs.length) return true;
+    let lang = appRow.language || '';
+    if (!lang && appRow.user_id) {
+      const u2 = await db.prepare('SELECT language_applied FROM users WHERE id = ?').get(appRow.user_id);
+      lang = u2 && u2.language_applied || '';
+    }
+    return myLangs.indexOf(normLangCode(lang)) >= 0;
+  }
   const myLangs = qualtyLangList(me && me.qualty_languages);
   if (!myLangs.length) return false;
   let lang = appRow.language || '';
@@ -1750,13 +1790,14 @@ app.get('/api/admin/applications', authMiddleware, adminOrQualtyMiddleware, asyn
     let query = `
       SELECT a.*, u.name as user_name, u.email as user_email, u.phone as user_phone,
         u.referred_by, u.nationality, u.city, u.language_applied as user_language, u.language_level, u.age, u.national_id, u.college, u.education_level, u.military_status, u.call_center_experience,
-        u.qualty_languages,
+        u.qualty_languages, u.job_category, u.cv_file,
         ag.name as agent_name, ag.email as agent_email, ag.phone as agent_phone, ag.referral_code as agent_code,
         ag.payment_method as agent_payment_method, ag.payment_operator as agent_payment_operator,
         agq.name as qualty_name,
         (SELECT COUNT(*) FROM jobs WHERE application_id = a.id AND id NOT IN (SELECT job_id FROM selections WHERE user_id = a.user_id AND status = 'cancelled')) as jobs_count,
         CASE WHEN NOT EXISTS (SELECT 1 FROM selections WHERE user_id = a.user_id AND status IN ('selected','confirmed')) THEN 1 ELSE 0 END as has_no_active_selection,
-        CASE WHEN EXISTS (SELECT 1 FROM jobs WHERE application_id = a.id AND id NOT IN (SELECT job_id FROM selections WHERE user_id = a.user_id AND status = 'cancelled')) THEN 1 ELSE 0 END as has_available_jobs
+        CASE WHEN EXISTS (SELECT 1 FROM jobs WHERE application_id = a.id AND id NOT IN (SELECT job_id FROM selections WHERE user_id = a.user_id AND status = 'cancelled')) THEN 1 ELSE 0 END as has_available_jobs,
+        (SELECT s.interview_slot FROM selections s WHERE s.user_id = a.user_id AND s.status != 'cancelled' ORDER BY s.id DESC LIMIT 1) as interview_slot
       FROM applications a
       JOIN users u ON a.user_id = u.id
       LEFT JOIN agents ag ON u.referred_by = ag.id
@@ -1766,10 +1807,12 @@ app.get('/api/admin/applications', authMiddleware, adminOrQualtyMiddleware, asyn
     const role = await getAgentRole(req);
     // لغات القولتي نفسه (حددها الأدمن من المندوبين) → يشوف بس طلبات لغاته دي
     let myLangs = [];
+    let myCats = [];
     if (role === 'qualty' || role === 'super_qualty') {
       const meId = await getAgentId(req);
-      const me = meId ? await db.prepare('SELECT qualty_languages FROM agents WHERE id = ?').get(meId) : null;
+      const me = meId ? await db.prepare('SELECT qualty_languages, qualty_categories FROM agents WHERE id = ?').get(meId) : null;
       myLangs = qualtyLangList(me && me.qualty_languages);
+      myCats = (me && me.qualty_categories) ? String(me.qualty_categories).split(',').filter(Boolean) : [];
     }
     if (role === 'super_qualty') {
       // السوبر قولتي يرى كل المتقدمين (بنرشح بس بلغاته لو حددها الأدمن)
@@ -1792,6 +1835,10 @@ app.get('/api/admin/applications', authMiddleware, adminOrQualtyMiddleware, asyn
         }
         return true;
       });
+    }
+    // فلتر التخصص: لو الأدمن حدّد تخصصات للقولتي → يشوف طلبات تخصصاته بس
+    if (myCats.length && role === 'qualty') {
+      apps = apps.filter(a => myCats.indexOf(a.job_category || '') >= 0);
     }
     res.json(apps);
   } catch (e) {
@@ -2288,7 +2335,9 @@ app.get('/api/agent/applications', authMiddleware, async (req, res) => {
     const agentId = await getAgentId(req);
     const apps = await db.prepare(`
       SELECT a.*, u.name as user_name, u.email as user_email, u.phone as user_phone,
-        (SELECT COUNT(*) FROM jobs WHERE application_id = a.id AND id NOT IN (SELECT job_id FROM selections WHERE user_id = a.user_id AND status = 'cancelled')) as jobs_count
+        u.job_category, u.cv_file,
+        (SELECT COUNT(*) FROM jobs WHERE application_id = a.id AND id NOT IN (SELECT job_id FROM selections WHERE user_id = a.user_id AND status = 'cancelled')) as jobs_count,
+        (SELECT s.interview_slot FROM selections s WHERE s.user_id = a.user_id AND s.status != 'cancelled' ORDER BY s.id DESC LIMIT 1) as interview_slot
       FROM applications a
       JOIN users u ON a.user_id = u.id
       WHERE u.referred_by = ? AND a.status = 'approved'
@@ -2378,6 +2427,47 @@ app.post('/api/agent/jobs/batch', authMiddleware, async (req, res) => {
 });
 
 // ===== NOTIFICATIONS ROUTES =====
+// ===== User: current profile (job category etc.) =====
+app.get('/api/user/me', authMiddleware, async (req, res) => {
+  try {
+    const u = await db.prepare('SELECT id, name, email, phone, job_category, cv_file FROM users WHERE id = ?').get(req.user.id);
+    if (!u) return res.status(404).json({ error: 'الحساب غير موجود' });
+    res.json(u);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+// ===== User: change job category after registration =====
+app.put('/api/user/job-category', authMiddleware, async (req, res) => {
+  try {
+    const { job_category, cv_data } = req.body || {};
+    const validCats = JOB_CATEGORIES.map(c => c.id);
+    const cat = validCats.includes(job_category) ? job_category : '';
+    if (!cat) return res.status(400).json({ error: 'من فضلك اختر مجال العمل' });
+    const catObj = JOB_CATEGORIES.find(c => c.id === cat);
+    const u = await db.prepare('SELECT job_category, cv_file FROM users WHERE id = ?').get(req.user.id);
+    if (!u) return res.status(404).json({ error: 'الحساب غير موجود' });
+    // CV required for sales/programming/marketing if user doesn't already have one
+    if (catObj.needs_cv && !u.cv_file && !cv_data) {
+      return res.status(400).json({ error: 'مجال ' + catObj.label + ' يتطلب إرفاق السيرة الذاتية (CV)' });
+    }
+    let cvFile = u.cv_file || '';
+    if (cv_data && typeof cv_data === 'string' && cv_data.startsWith('data:')) {
+      try {
+        const m = cv_data.match(/^data:([^;]+);base64,(.+)$/);
+        if (m) {
+          const buf = Buffer.from(m[2], 'base64');
+          if (buf.length > 5 * 1024 * 1024) return res.status(400).json({ error: 'حجم الملف أكبر من 5MB' });
+          const ext = (m[1].includes('pdf') ? 'pdf' : m[1].includes('word') || m[1].includes('doc') ? 'doc' : m[1].includes('png') ? 'png' : 'jpg');
+          const fname = 'cv_' + req.user.id + '_' + Date.now() + '.' + ext;
+          require('fs').writeFileSync(require('path').join(uploadsDir, fname), buf);
+          cvFile = fname;
+        }
+      } catch (e) { /* keep old cv */ }
+    }
+    await db.prepare('UPDATE users SET job_category = ?, cv_file = ? WHERE id = ?').run(cat, cvFile, req.user.id);
+    res.json({ success: true, job_category: cat, cv_file: cvFile });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 app.get('/api/user/notifications', authMiddleware, async (req, res) => {
   try {
     const notifications = await db.prepare('SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 50').all(req.user.id);
@@ -2634,22 +2724,23 @@ app.put('/api/admin/selections/:id', authMiddleware, adminMiddleware, async (req
             `);
           }
         }
-        // User notification
-        await saveNotification(sel.user_id, null, 'selection_confirmed', 'مبروك! تم تثبيت توظيفك', `تم تثبيت توظيفك في شركة ${sel.company_name} للوظيفة: ${sel.position}. وقت المقابلة: ${sel.interview_time || 'يحدد لاحقاً'}.`);
+        // User notification + interview invitation email
+        const slotText = sel.interview_slot || sel.interview_time || 'يحدد لاحقاً';
+        await saveNotification(sel.user_id, null, 'selection_confirmed', 'مبروك! تم تثبيت توظيفك', `تم تثبيت توظيفك في شركة ${sel.company_name} للوظيفة: ${sel.position}. وقت المقابلة: ${slotText}.`);
         if (sel.user_email) {
           const salaryText = sel.salary_min || sel.salary_max ? sel.salary_min && sel.salary_max ? sel.salary_min + ' - ' + sel.salary_max + ' جنيه' : sel.salary_min ? 'من ' + sel.salary_min + ' جنيه' : 'حتى ' + sel.salary_max + ' جنيه' : 'يحدد لاحقاً';
-          sendEmail(sel.user_email, 'تم تثبيت صفقة عملك - وَظِيف', `
+          sendEmail(sel.user_email, 'دعوة مقابلة عمل - وَظِيف', `
             
-              
-              <h2 style="text-align:center;font-size:20px;margin:0 0 16px;color:#66bb6a;">مبروك! تم تثبيت توظيفك</h2>
-              <div style="background:rgba(100,200,100,0.06);border:1px solid rgba(100,200,100,0.12);border-radius:12px;padding:16px;margin-bottom:16px;">
-                <p style="margin:0 0 10px;"><strong style="color:#66bb6a;">الشركة:</strong> ${sel.company_name}</p>
-                <p style="margin:0 0 10px;"><strong style="color:#66bb6a;">الوظيفة:</strong> ${sel.position}</p>
-                <p style="margin:0 0 10px;"><strong style="color:#fbbf24;">وقت المقابلة:</strong> ${sel.interview_time || 'يحدد لاحقاً'}</p>
-                <p style="margin:0;"><strong style="color:#d4a853;">المرتب:</strong> ${salaryText}</p>
-              </div>
-              <p style="color:#888;font-size:13px;text-align:center;line-height:1.8;">تم تثبيت توظيفك بنجاح. تأكد من الحضور في موعد المقابلة المحدد أعلاه. بالتوفيق!</p>
-              <div style="text-align:center;margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.05);"><span style="color:#555;font-size:11px;">وَظِيف - منصة التوظيف الذكي</span></div>
+            
+            <h2 style="text-align:center;font-size:20px;margin:0 0 16px;color:#66bb6a;">مبروك! تم تثبيت توظيفك</h2>
+            <div style="background:rgba(100,200,100,0.06);border:1px solid rgba(100,200,100,0.12);border-radius:12px;padding:16px;margin-bottom:16px;">
+              <p style="margin:0 0 10px;"><strong style="color:#66bb6a;">الشركة:</strong> ${sel.company_name}</p>
+              <p style="margin:0 0 10px;"><strong style="color:#66bb6a;">الوظيفة:</strong> ${sel.position}</p>
+              <p style="margin:0 0 10px;"><strong style="color:#fbbf24;">موعد المقابلة:</strong> ${slotText}</p>
+              <p style="margin:0;"><strong style="color:#d4a853;">المرتب:</strong> ${salaryText}</p>
+            </div>
+            <p style="color:#888;font-size:13px;text-align:center;line-height:1.8;">تم تثبيت توظيفك بنجاح. تأكد من الحضور في موعد المقابلة المحدد أعلاه. بالتوفيق!</p>
+            <div style="text-align:center;margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.05);"><span style="color:#555;font-size:11px;">وَظِيف - منصة التوظيف الذكي</span></div>
             
           `);
         }
@@ -2804,6 +2895,79 @@ app.put('/api/admin/selections/:id/apologize', authMiddleware, adminMiddleware, 
     });
   }
 });
+// ===== Reject a selection FINAL + suggest other jobs to the person =====
+app.get('/api/admin/jobs-for-suggest', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const jobs = await db.prepare(`
+      SELECT id, company_name, position, language, level, created_at
+      FROM jobs ORDER BY created_at DESC LIMIT 100
+    `).all();
+    res.json(jobs);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.put('/api/admin/selections/:id/reject-final', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const { reason, suggested_job_ids } = req.body || {};
+    const sel = await db.prepare(`
+      SELECT s.*, u.name as user_name, u.email as user_email, j.company_name, j.position
+      FROM selections s JOIN users u ON s.user_id = u.id JOIN jobs j ON s.job_id = j.id
+      WHERE s.id = ?
+    `).get(req.params.id);
+    if (!sel) return res.status(404).json({ error: 'الاختيار غير موجود' });
+    // Final rejection: mark cancelled (blocked from re-selecting this job)
+    await db.prepare("UPDATE selections SET status = 'cancelled', is_frozen = 0, hired = 0, amount = 0, agent_amount = 0, apology = ? WHERE id = ?")
+      .run(reason || 'تم رفض هذا التوظيف نهائيًا', req.params.id);
+    if (sel.company_id) await db.prepare('UPDATE companies SET pending_count = MAX(0, pending_count - 1) WHERE id = ?').run(sel.company_id);
+    // Save suggested jobs (replace old suggestions for this user)
+    const ids = Array.isArray(suggested_job_ids) ? suggested_job_ids.map(Number).filter(n => n > 0).slice(0, 10) : [];
+    if (ids.length) {
+      await db.prepare('DELETE FROM job_suggestions WHERE user_id = ?').run(sel.user_id);
+      for (const jid of ids) {
+        await db.prepare('INSERT INTO job_suggestions (user_id, job_id, suggested_by, reason) VALUES (?, ?, ?, ?)')
+          .run(sel.user_id, jid, req.user.id, reason || '');
+      }
+    }
+    // Notify user (with suggestions list if any)
+    let sugList = '';
+    if (ids.length) {
+      const sugJobs = await db.prepare('SELECT j.id, j.company_name, j.position FROM jobs j WHERE j.id IN (' + ids.map(() => '?').join(',') + ')').all(...ids);
+      sugList = '\n\nوظائف مقترحة لك:\n' + sugJobs.map(j => '• ' + j.company_name + ' — ' + j.position).join('\n');
+    }
+    await saveNotification(sel.user_id, null, 'rejected_final', 'تم رفضك في ' + sel.company_name,
+      'للأسف تم رفضك في ' + sel.company_name + ' (' + sel.position + '). السبب: ' + (reason || 'لم يحدد') + sugList + (ids.length ? '\n\nاختر إحدى الوظائف المقترحة من حسابك.' : ''));
+    if (sel.user_email) {
+      const sugHtml = ids.length ? (() => {
+        let h = '';
+        try {
+          const sugJobs = [];
+          // build html list synchronously from ids — jobs fetched async below
+        } catch (e) {}
+        return '';
+      })() : '';
+      // fetch suggestions for email
+      let sugEmailHtml = '';
+      if (ids.length) {
+        try {
+          const sugJobs = await db.prepare('SELECT j.company_name, j.position FROM jobs j WHERE j.id IN (' + ids.map(() => '?').join(',') + ')').all(...ids);
+          sugEmailHtml = '<div style="background:rgba(212,168,83,0.06);border:1px solid rgba(212,168,83,0.2);border-radius:12px;padding:14px 18px;margin:14px 0;"><p style="color:#d4a853;font-weight:700;margin:0 0 8px;">وظائف مقترحة لك:</p>' + sugJobs.map(j => '<p style="color:#ccc;margin:4px 0;">• ' + j.company_name + ' — ' + j.position + '</p>').join('') + '</div>';
+        } catch (e) {}
+      }
+      sendEmail(sel.user_email, 'تم رفضك في ' + sel.company_name + ' — وَظِيف', `
+        <h2 style="text-align:center;font-size:20px;margin:0 0 16px;color:#e57373;">تم رفضك في ${sel.company_name}</h2>
+        <div style="background:rgba(220,50,50,0.06);border:1px solid rgba(220,50,50,0.12);border-radius:12px;padding:16px;margin-bottom:16px;">
+          <p style="margin:0 0 6px;"><strong>الشركة:</strong> ${sel.company_name}</p>
+          <p style="margin:0 0 6px;"><strong>الوظيفة:</strong> ${sel.position}</p>
+          <p style="margin:0;"><strong>السبب:</strong> ${reason || 'لم يحدد'}</p>
+        </div>
+        ${sugEmailHtml}
+        <p style="color:#888;font-size:13px;text-align:center;">هذا الرفض نهائي لهذه الوظيفة. يمكنك اختيار وظائف أخرى من حسابك.</p>
+        <div style="text-align:center;margin-top:18;"><a href="${BASE_URL}/dashboard" style="display:inline-block;padding:12px 30px;background:linear-gradient(135deg,#d4a853,#b8860b);border-radius:10px;color:#0a0a0a;font-weight:800;text-decoration:none;">افتح حسابك</a></div>
+      `);
+    }
+    res.json({ success: true, suggested: ids.length });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 app.put('/api/admin/selections/:id/allow-reapply', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const sel = await db.prepare(`
@@ -3465,10 +3629,26 @@ app.get('/api/user/jobs', authMiddleware, async (req, res) => {
     });
   }
 });
+// Jobs suggested by admin after a final rejection
+app.get('/api/user/suggested-jobs', authMiddleware, async (req, res) => {
+  try {
+    const rows = await db.prepare(`
+      SELECT js.id as suggestion_id, js.reason, js.created_at, j.*
+      FROM job_suggestions js JOIN jobs j ON js.job_id = j.id
+      WHERE js.user_id = ?
+      ORDER BY js.created_at DESC
+    `).all(req.user.id);
+    const cancelled = await db.prepare("SELECT job_id FROM selections WHERE user_id = ? AND status = 'cancelled'").all(req.user.id);
+    const cancelledIds = new Set(cancelled.map(c => c.job_id));
+    const out = rows.filter(r => !cancelledIds.has(r.job_id)).map(r => ({ ...r, is_suggested: true }));
+    res.json(out);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
 app.post('/api/user/select-job', authMiddleware, async (req, res) => {
   try {
     const {
-      job_id
+      job_id,
+      interview_slot
     } = req.body;
     const cancelled = await db.prepare("SELECT id FROM selections WHERE user_id = ? AND job_id = ? AND status = 'cancelled'").get(req.user.id, job_id);
     if (cancelled) return res.status(400).json({
@@ -3484,7 +3664,7 @@ app.post('/api/user/select-job', authMiddleware, async (req, res) => {
       const comps = await db.prepare('SELECT id, name, company_email, education_requirement FROM companies').all();
       let c = target.company_id ? comps.find(x => x.id === target.company_id) : null;
       if (!c && target.company_email) c = comps.find(x => x.company_email && x.company_email === target.company_email);
-      if (!c && target.company_name) c = comps.find(x => String(x.name || '').trim() === String(target.company_name).trim());
+      if (!c && target.company_name) c = comps.find(x => String(x.name || '').trim() === String(target.company_name || '').trim());
       const me = await db.prepare('SELECT education_level FROM users WHERE id = ?').get(req.user.id);
       if (c && !eduAllows(c.education_requirement, me ? me.education_level : '')) {
         const label = EDU_REQ_LABEL[normalizeEduReq(c.education_requirement)] || '';
@@ -3493,10 +3673,15 @@ app.post('/api/user/select-job', authMiddleware, async (req, res) => {
         });
       }
     }
-    const result = await db.prepare('INSERT INTO selections (user_id, job_id, status) VALUES (?, ?, ?)').run(req.user.id, job_id, 'selected');
+    const slot = interview_slot ? String(interview_slot).slice(0, 100) : '';
+    const result = await db.prepare('INSERT INTO selections (user_id, job_id, status, interview_slot) VALUES (?, ?, ?, ?)').run(req.user.id, job_id, 'selected', slot);
     const job = await db.prepare('SELECT company_id FROM jobs WHERE id = ?').get(job_id);
     if (job && job.company_id) {
       await db.prepare('UPDATE companies SET pending_count = pending_count + 1 WHERE id = ?').run(job.company_id);
+    }
+    // Notify user with interview details if slot chosen
+    if (slot) {
+      await saveNotification(req.user_id || req.user.id, null, 'interview_scheduled', 'تم حجز موعد المقابلة', `لقد اخترت موعد المقابلة: ${slot}. سنراسلك بالتفاصيل.`);
     }
     res.json({
       id: result.lastInsertRowid
@@ -3525,7 +3710,20 @@ app.get('/api/user/selections', authMiddleware, async (req, res) => {
 app.get('/api/user/application-status', authMiddleware, async (req, res) => {
   try {
     const app = await db.prepare("SELECT * FROM applications WHERE user_id = ? ORDER BY CASE WHEN status IN ('pending','approved') THEN 0 ELSE 1 END, created_at DESC LIMIT 1").get(req.user.id);
-    if (!app) return res.json(null);
+    if (!app) {
+      // No application yet — still tell the dashboard what this user must submit
+      try {
+        const me = await db.prepare('SELECT job_category, id_card_front, id_card_back, cv_file FROM users WHERE id = ?').get(req.user.id);
+        if (me) return res.json({
+          submit_mode: catSubmitMode(me.job_category),
+          has_id_card: !!(me.id_card_front && me.id_card_back),
+          has_cv: !!(me.cv_file),
+          job_category: me.job_category,
+          status: null
+        });
+      } catch (_) {}
+      return res.json(null);
+    }
 
     // Check if user was hired (unfrozen) → return hired status with company info
     if (app.status === 'approved') {
@@ -3558,6 +3756,14 @@ app.get('/api/user/application-status', authMiddleware, async (req, res) => {
         app.rejection_date = null;
       }
     }
+    // Tell the dashboard what this user must submit: voice | cv | id_card
+    try {
+      const me = await db.prepare('SELECT job_category, id_card_front, id_card_back, cv_file FROM users WHERE id = ?').get(req.user.id);
+      app.submit_mode = catSubmitMode(me ? me.job_category : '');
+      app.has_id_card = !!(me && me.id_card_front && me.id_card_back);
+      app.has_cv = !!(me && me.cv_file);
+      app.job_category = me ? me.job_category : '';
+    } catch (_) {}
     res.json(app);
   } catch (e) {
     res.status(500).json({
@@ -3926,7 +4132,7 @@ app.get('/api/admin/agents', authMiddleware, adminOrQualtyMiddleware, async (req
   try {
     const wantLabor = String(req.query.type || '') === 'labor';
     const typeSql = wantLabor ? "IFNULL(agent_type,'normal') = 'labor'" : "IFNULL(agent_type,'normal') != 'labor'";
-    const agents = await db.prepare('SELECT id, name, email, phone, referral_code, is_active, role, team_leader_id, created_at, payment_method, payment_operator, agent_type, qualty_languages FROM agents WHERE ' + typeSql + ' ORDER BY created_at DESC').all();
+    const agents = await db.prepare('SELECT id, name, email, phone, referral_code, is_active, role, team_leader_id, created_at, payment_method, payment_operator, agent_type, qualty_languages, qualty_categories FROM agents WHERE ' + typeSql + ' ORDER BY created_at DESC').all();
     // Batch stats in 3 queries total instead of 3 per agent
     const ids = agents.map(a => a.id);
     const refMap = {}, appsMap = {}, hiredMap = {};
@@ -3970,25 +4176,44 @@ app.put('/api/admin/agents/:id/qualty', authMiddleware, adminMiddleware, async (
       error: 'المندوب مش قولتي — غيّر الرول الأول'
     });
     const body = req.body || {};
-    const raw = Array.isArray(body.languages) ? body.languages : [];
-    const clean = [];
-    for (const l of raw) {
-      const code = normLangCode(typeof l === 'string' ? l : '');
-      if (!/^[a-z]{2,8}$/.test(code)) return res.status(400).json({
-        error: 'كود لغة غير صالح: ' + String(l).slice(0, 20)
+    // languages: update only when provided (so saving categories alone doesn't wipe languages, and vice versa)
+    if (Array.isArray(body.languages)) {
+      const clean = [];
+      for (const l of body.languages) {
+        const code = normLangCode(typeof l === 'string' ? l : '');
+        if (!/^[a-z]{2,8}$/.test(code)) return res.status(400).json({
+          error: 'كود لغة غير صالح: ' + String(l).slice(0, 20)
+        });
+        if (clean.indexOf(code) === -1) clean.push(code);
+        if (clean.length > 10) return res.status(400).json({
+          error: 'الحد الأقصى 10 لغات'
+        });
+      }
+      await db.prepare('UPDATE agents SET qualty_languages = ? WHERE id = ?').run(clean.join(','), ag.id);
+      res.json({
+        success: true,
+        id: ag.id,
+        name: ag.name,
+        role: ag.role,
+        languages: clean
       });
-      if (clean.indexOf(code) === -1) clean.push(code);
-      if (clean.length > 10) return res.status(400).json({
-        error: 'الحد الأقصى 10 لغات'
+      return;
+    }
+    // categories: update only when provided
+    if (Array.isArray(body.categories)) {
+      const validCats = JOB_CATEGORIES.map(c => c.id);
+      const cats = body.categories.map(s => String(s).trim()).filter(s => validCats.includes(s)).join(',');
+      await db.prepare('UPDATE agents SET qualty_categories = ? WHERE id = ?').run(cats, ag.id);
+      return res.json({
+        success: true,
+        id: ag.id,
+        name: ag.name,
+        role: ag.role,
+        categories: cats.split(',').filter(Boolean)
       });
     }
-    await db.prepare('UPDATE agents SET qualty_languages = ? WHERE id = ?').run(clean.join(','), ag.id);
-    res.json({
-      success: true,
-      id: ag.id,
-      name: ag.name,
-      role: ag.role,
-      languages: clean
+    return res.status(400).json({
+      error: 'لا توجد بيانات للحفظ'
     });
   } catch (e) {
     res.status(500).json({
@@ -5694,7 +5919,7 @@ app.get('/api/agent/stats', authMiddleware, async (req, res) => {
         ORDER BY s.created_at DESC
       `).all(agentId),
       db.prepare(`
-        SELECT u.id, u.name, u.email, u.phone, u.created_at, u.language_level, u.language_applied,
+        SELECT u.id, u.name, u.email, u.phone, u.created_at, u.language_level, u.language_applied, u.job_category, u.cv_file,
           (SELECT language FROM applications WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as app_language,
           (SELECT id FROM applications WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as app_id,
           (SELECT status FROM applications WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as app_status,
@@ -5705,6 +5930,7 @@ app.get('/api/agent/stats', authMiddleware, async (req, res) => {
           (SELECT status FROM selections WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as sel_status,
           (SELECT apology FROM selections WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as sel_apology,
           (SELECT is_frozen FROM selections WHERE user_id = u.id ORDER BY created_at DESC LIMIT 1) as sel_frozen,
+          (SELECT interview_slot FROM selections WHERE user_id = u.id AND status != 'cancelled' ORDER BY created_at DESC LIMIT 1) as interview_slot,
           (SELECT j2.company_name FROM selections s2 JOIN jobs j2 ON s2.job_id = j2.id WHERE s2.user_id = u.id ORDER BY s2.created_at DESC LIMIT 1) as sel_company
         FROM users u
         WHERE u.referred_by = ?
@@ -5841,13 +6067,25 @@ app.post('/api/register', registerLimiter, async (req, res) => {
       education_level,
       military_status,
       call_center_experience,
-      gender
+      gender,
+      job_category,
+      cv_data
     } = req.body;
     const isPassport = !!nationality && nationality !== 'egypt';
+    // validate job_category
+    const validCats = JOB_CATEGORIES.map(c => c.id);
+    const cat = validCats.includes(job_category) ? job_category : '';
+    const catNeedsCv = JOB_CATEGORIES.find(c => c.id === cat && c.needs_cv);
     if (!name || !email || !password || !phone || !nationality || !city || !language_applied || !age || !national_id && !isPassport || !college || !education_level || !call_center_experience || !gender) {
       return res.status(400).json({
         error: 'من فضلك أكمل كل الحقول المطلوبة'
       });
+    }
+    if (!cat) {
+      return res.status(400).json({ error: 'من فضلك اختر مجال العمل' });
+    }
+    if (catNeedsCv && !cv_data) {
+      return res.status(400).json({ error: 'مجال ' + catNeedsCv.label + ' يتطلب إرفاق السيرة الذاتية (CV)' });
     }
     if (gender !== 'male' && gender !== 'female') {
       return res.status(400).json({
@@ -5936,6 +6174,18 @@ app.post('/api/register', registerLimiter, async (req, res) => {
       if (agent) referredBy = agent.id;
     }
     const code = String(Math.floor(100000 + Math.random() * 900000));
+    // Save CV file if provided (base64 data URL)
+    let cvFile = '';
+    if (cv_data && typeof cv_data === 'string' && cv_data.startsWith('data:')) {
+      try {
+        const m = cv_data.match(/^data:([^;]+);base64,(.+)$/);
+        if (m) {
+          const ext = m[1].includes('pdf') ? 'pdf' : m[1].includes('word') ? 'docx' : m[1].includes('image') ? 'jpg' : 'bin';
+          cvFile = Date.now() + '-cv.' + ext;
+          fs.writeFileSync(path.join(uploadsDir, cvFile), Buffer.from(m[2], 'base64'));
+        }
+      } catch (_) {}
+    }
     const tempData = JSON.stringify({
       name,
       email,
@@ -5951,10 +6201,12 @@ app.post('/api/register', registerLimiter, async (req, res) => {
       education_level,
       military_status: milStatus,
       call_center_experience,
-      gender
+      gender,
+      job_category: cat,
+      cv_file: cvFile
     });
     await db.prepare('DELETE FROM users WHERE email = ? AND email_verified = 0').run(email);
-    await db.prepare('INSERT INTO users (name, email, password, phone, referred_by, nationality, city, language_applied, age, national_id, college, education_level, military_status, call_center_experience, gender, verification_code, email_verified) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)').run(name, email, hash, phone, referredBy, nationality, city, language_applied, ageNum, nidVal, college, education_level, milStatus, call_center_experience, gender, code);
+    await db.prepare('INSERT INTO users (name, email, password, phone, referred_by, nationality, city, language_applied, age, national_id, college, education_level, military_status, call_center_experience, gender, job_category, cv_file, verification_code, email_verified) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)').run(name, email, hash, phone, referredBy, nationality, city, language_applied, ageNum, nidVal, college, education_level, milStatus, call_center_experience, gender, cat, cvFile, code);
     await sendEmail(email, 'كود التحقق من حسابك في وَظِيف', `
       
         
@@ -5994,23 +6246,49 @@ app.post('/api/verify-code', authLimiter, async (req, res) => {
       error: 'كود التحقق غير صحيح'
     });
     await db.prepare('UPDATE users SET email_verified = 1, verification_code = NULL WHERE id = ?').run(user.id);
+    // Category submit mode: CV categories skip voice (application auto-created, admin reviews CV);
+    // worker waits for ID-card upload; voice categories keep the recording flow.
+    const submitMode = catSubmitMode(user.job_category);
+    if (submitMode === 'cv') {
+      try {
+        const existing = await db.prepare("SELECT id FROM applications WHERE user_id = ? AND status = 'pending'").get(user.id);
+        if (!existing) {
+          const lang = user.language_applied || 'الإنجليزية';
+          const result = await db.prepare('INSERT INTO applications (user_id, audio_file, language) VALUES (?, ?, ?)').run(user.id, null, lang);
+          // round-robin assign to a qualty (same helper used by voice flow)
+          try {
+            const qualtys = await db.prepare("SELECT id FROM agents WHERE role IN ('qualty','super_qualty') AND is_active=1 AND IFNULL(agent_type,'normal') != 'labor' ORDER BY id").all();
+            if (qualtys.length) {
+              const last = await db.prepare('SELECT assigned_qualty_id FROM applications WHERE assigned_qualty_id IS NOT NULL ORDER BY id DESC LIMIT 1').get();
+              let qId = qualtys[0].id;
+              if (last && last.assigned_qualty_id) {
+                const idx = qualtys.findIndex(q => q.id === last.assigned_qualty_id);
+                qId = qualtys[(idx + 1) % qualtys.length].id;
+              }
+              await db.prepare('UPDATE applications SET assigned_qualty_id = ? WHERE id = ?').run(qId, result.lastInsertRowid);
+            }
+          } catch (_) {}
+        }
+      } catch (e) { console.log('CV auto-application:', e.message); }
+    }
     try {
-      await sendEmail(user.email, 'آخر خطوة: سجّل صوتك في وَظِيف', `
+      const modeLabel = submitMode === 'cv' ? 'سيرتك الذاتية' : submitMode === 'id_card' ? 'صور بطاقتك' : 'تسجيلك الصوتي';
+      const modeBody = submitMode === 'cv'
+        ? 'تم استلام سيرتك الذاتية. فريق المراجعة هيتواصل معك قريبًا.'
+        : submitMode === 'id_card'
+          ? 'حسابك جاهز — ارفع صور بطاقتك (وش و ظهر) من حسابك عشان نبدأ المراجعة.'
+          : 'حسابك في <strong style="color:#d4a853;">وَظِيف</strong> بقى جاهز، بس فاضل خطوة إلزامية واحدة: <strong style="color:#d4a853;">تسجيل صوتك</strong>.';
+      await sendEmail(user.email, 'آخر خطوة: أكمل ملفك في وَظِيف', `
         <h2 style="text-align:center;font-size:20px;color:#d4a853;margin:0 0 16px;">تم إنشاء حسابك بنجاح</h2>
         <p style="color:#888;font-size:15px;line-height:1.9;margin-bottom:12px;">مرحباً ${sanitize(user.name || '')},</p>
-        <p style="color:#888;font-size:15px;line-height:1.9;margin-bottom:18px;">حسابك في <strong style="color:#d4a853;">وَظِيف</strong> بقى جاهز، بس فاضل خطوة إلزامية واحدة: <strong style="color:#d4a853;">تسجيل صوتك</strong>.</p>
-        <div style="background:rgba(212,168,83,0.06);border:1px solid rgba(212,168,83,0.2);border-radius:14px;padding:16px 18px;margin-bottom:18px;">
-          <p style="color:#d4a853;font-size:14px;font-weight:700;margin:0 0 8px;">ليه التسجيل الصوتي مهم؟</p>
-          <p style="color:#aaa;font-size:14px;line-height:1.9;margin:0;">الفريق بيراجع تسجيلك الصوتي عشان يقدر يحكم على مستواك ويقدملك الوظائف المناسبة. لحد ما تسجّل، حسابك مش هيقدر يتقدم لأي وظيفة.</p>
-        </div>
-        <p style="color:#aaa;font-size:14px;line-height:1.9;margin-bottom:22px;">التسجيل بياخد دقيقتين بس — اختار اللغة واضغط على زر الميكروفون وابدأ الكلام.</p>
+        <p style="color:#888;font-size:15px;line-height:1.9;margin-bottom:18px;">${modeBody}</p>
         <div style="text-align:center;">
-          <a href="${BASE_URL}/dashboard" style="display:inline-block;padding:14px 34px;background:linear-gradient(135deg,#d4a853,#b8860b);border-radius:12px;color:#0a0a0a;font-family:'Tajawal',sans-serif;font-size:15px;font-weight:800;text-decoration:none;">سجّل صوتك دلوقتي</a>
+          <a href="${BASE_URL}/dashboard" style="display:inline-block;padding:14px 34px;background:linear-gradient(135deg,#d4a853,#b8860b);border-radius:12px;color:#0a0a0a;font-family:'Tajawal',sans-serif;font-size:15px;font-weight:800;text-decoration:none;">افتح حسابك</a>
         </div>
         <p style="color:#555;font-size:12px;text-align:center;margin-top:18px;">لو الرابط مش شغال: ${BASE_URL}/dashboard</p>
       `);
     } catch (e) {
-      console.log('Record audio email failed:', e.message);
+      console.log('Welcome email failed:', e.message);
     }
     const token = jwt.sign({
       id: user.id,
@@ -7649,8 +7927,15 @@ app.put('/api/company/profile', companyAuthMiddleware, async (req, res) => {
     const available_slots = body.available_slots ?? null;
     const deadline = body.deadline ?? null;
     const education_requirement = body.education_requirement === undefined ? null : normalizeEduReq(body.education_requirement);
+    // Categories: array of ids or comma string → stored as comma-separated
+    let categories = null;
+    if (body.categories !== undefined) {
+      const validCats = JOB_CATEGORIES.map(c => c.id);
+      const list = Array.isArray(body.categories) ? body.categories : String(body.categories || '').split(',');
+      categories = list.map(s => String(s).trim()).filter(s => validCats.includes(s)).join(',');
+    }
     const old = await db.prepare('SELECT name FROM companies WHERE id=?').get(req.user.company_id);
-    await db.prepare('UPDATE companies SET name=COALESCE(?,name), position=COALESCE(?,position), description=COALESCE(?,description), interview_time=COALESCE(?,interview_time), salary_min=COALESCE(?,salary_min), salary_max=COALESCE(?,salary_max), company_email=COALESCE(?,company_email), available_slots=COALESCE(?,available_slots), deadline=COALESCE(?,deadline), education_requirement=COALESCE(?,education_requirement) WHERE id=?').run(name, position, description, interview_time, salary_min, salary_max, company_email, available_slots, deadline, education_requirement, req.user.company_id);
+    await db.prepare('UPDATE companies SET name=COALESCE(?,name), position=COALESCE(?,position), description=COALESCE(?,description), interview_time=COALESCE(?,interview_time), salary_min=COALESCE(?,salary_min), salary_max=COALESCE(?,salary_max), company_email=COALESCE(?,company_email), available_slots=COALESCE(?,available_slots), deadline=COALESCE(?,deadline), education_requirement=COALESCE(?,education_requirement), categories=COALESCE(?,categories) WHERE id=?').run(name, position, description, interview_time, salary_min, salary_max, company_email, available_slots, deadline, education_requirement, categories, req.user.company_id);
     const newName = name || old && old.name || '';
     await db.prepare('UPDATE jobs SET company_id = ? WHERE company_id IS NULL AND TRIM(company_name) = TRIM(?)').run(req.user.company_id, newName);
     await db.prepare('UPDATE jobs SET company_name = ?, company_email = COALESCE(NULLIF(?, \'\'), company_email) WHERE company_id = ?').run(newName, company_email || '', req.user.company_id);
@@ -8154,14 +8439,20 @@ app.get('/api/admin/jobs-by-language/:language', authMiddleware, adminOrAgentMid
     let neededParams = [];
     if (level) {
       const rangeM = level.match(/^(A1|A2|B1|B2|C1|C2)-(A1|A2|B1|B2|C1|C2)$/);
-      if (rangeM) {
-        const from = rangeM[1],
-          to = rangeM[2];
-        const inRange = Object.keys(rank).filter(l => rank[l] >= rank[from] && rank[l] <= rank[to]);
-        const ph = inRange.map(() => '?').join(',');
-        levelClause = ` AND cl.level IN (${ph})`;
-        neededLevelClause = ` AND cl2.level IN (${ph})`;
-        neededParams = [...inRange];
+      const singleM = level.match(/^(A1|A2|B1|B2|C1|C2)$/);
+      const qFrom = rangeM ? rank[rangeM[1]] : (singleM ? rank[level] : null);
+      const qTo = rangeM ? rank[rangeM[2]] : (singleM ? rank[level] : null);
+      if (qFrom != null && qTo != null) {
+        // Expand BOTH sides: stored cl.level may itself be a range (e.g. 'A1-B1').
+        // Only LENGTH/SUBSTR/UPPER/REPLACE are used so the SQL runs on SQLite AND PostgreSQL.
+        const norm = c => `replace(replace(${c},' ',''),'–','-')`;
+        const rankOf = expr => `CASE upper(${expr}) WHEN 'A1' THEN 1 WHEN 'A2' THEN 2 WHEN 'B1' THEN 3 WHEN 'B2' THEN 4 WHEN 'C1' THEN 5 WHEN 'C2' THEN 6 END`;
+        const fromExpr = c => rankOf(`CASE WHEN LENGTH(${norm(c)}) > 2 THEN SUBSTR(${norm(c)},1,2) ELSE ${norm(c)} END`);
+        const toExpr = c => rankOf(`CASE WHEN LENGTH(${norm(c)}) > 2 THEN SUBSTR(${norm(c)},4,2) ELSE ${norm(c)} END`);
+        const overlap = c => `(${fromExpr(c)} <= ? AND ${toExpr(c)} >= ?)`;
+        levelClause = ` AND ${overlap('cl.level')}`;
+        neededLevelClause = ` AND ${overlap('cl2.level')}`;
+        neededParams = [qTo, qFrom];
       } else {
         levelClause = ' AND cl.level = ?';
         neededLevelClause = ' AND cl2.level = ?';
@@ -8246,14 +8537,180 @@ app.get('/api/admin/jobs-by-language/:language', authMiddleware, adminOrAgentMid
   }
 });
 
+// ===== Site settings API =====
+app.get('/api/settings', async (req, res) => {
+  try {
+    const rows = await db.prepare('SELECT key, value FROM site_settings').all();
+    const out = {};
+    for (const r of rows) out[r.key] = r.value;
+    res.json(out);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.get('/api/admin/settings', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const rows = await db.prepare('SELECT key, value, updated_at FROM site_settings ORDER BY key').all();
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.put('/api/admin/settings', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const body = req.body || {};
+    let n = 0;
+    for (const [k, v] of Object.entries(body)) {
+      if (!/^[a-z0-9_]+$/.test(k)) continue;
+      await db.prepare(`INSERT INTO site_settings (key, value, updated_at) VALUES (?, ?, datetime('now'))
+        ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')
+        RETURNING key`).run(k, String(v == null ? '' : v));
+      n++;
+    }
+    res.json({ success: true, updated: n });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ===== CV upload (for experience categories: sales, programming, etc.) =====
+const cvUpload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const ok = /\.(pdf|doc|docx|jpg|jpeg|png)$/i.test(file.originalname);
+    if (ok) cb(null, true); else cb(new Error('الملف يجب أن يكون PDF أو صورة أو Word'));
+  }
+});
+app.post('/api/user/cv', authMiddleware, (req, res) => {
+  cvUpload.single('cv')(req, res, async (err) => {
+    if (err) return res.status(400).json({ error: err.message || 'فشل رفع الملف' });
+    if (!req.file) return res.status(400).json({ error: 'لم يتم إرفاق ملف' });
+    try {
+      await db.prepare('UPDATE users SET cv_file = ? WHERE id = ?').run(req.file.filename, req.user.id);
+      res.json({ success: true, file: req.file.filename, url: '/uploads/' + req.file.filename });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+});
+
+// ===== Worker: upload ID card (front + back) then create application =====
+const idCardUpload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const ok = /\.(jpg|jpeg|png|webp)$/i.test(file.originalname);
+    if (ok) cb(null, true); else cb(new Error('الصورة يجب أن تكون JPG أو PNG'));
+  }
+});
+app.post('/api/user/id-card', authMiddleware, (req, res) => {
+  idCardUpload.fields([{ name: 'front', maxCount: 1 }, { name: 'back', maxCount: 1 }])(req, res, async (err) => {
+    if (err) return res.status(400).json({ error: err.message || 'فشل رفع الصور' });
+    try {
+      const front = req.files && req.files.front && req.files.front[0];
+      const back = req.files && req.files.back && req.files.back[0];
+      if (!front || !back) return res.status(400).json({ error: 'لازم ترفع صورة الوش والظهر' });
+      await db.prepare('UPDATE users SET id_card_front = ?, id_card_back = ? WHERE id = ?').run(front.filename, back.filename, req.user.id);
+      // Create application (pending) so admin can review — same as voice flow
+      const u = await db.prepare('SELECT job_category, language_applied FROM users WHERE id = ?').get(req.user.id);
+      const existing = await db.prepare("SELECT id FROM applications WHERE user_id = ? AND status = 'pending'").get(req.user.id);
+      if (!existing) {
+        const lang = (u && u.language_applied) || 'الإنجليزية';
+        const result = await db.prepare('INSERT INTO applications (user_id, audio_file, language) VALUES (?, ?, ?)').run(req.user.id, null, lang);
+        try {
+          const qualtys = await db.prepare("SELECT id FROM agents WHERE role IN ('qualty','super_qualty') AND is_active=1 AND IFNULL(agent_type,'normal') != 'labor' ORDER BY id").all();
+          if (qualtys.length) {
+            const last = await db.prepare('SELECT assigned_qualty_id FROM applications WHERE assigned_qualty_id IS NOT NULL ORDER BY id DESC LIMIT 1').get();
+            let qId = qualtys[0].id;
+            if (last && last.assigned_qualty_id) {
+              const idx = qualtys.findIndex(q => q.id === last.assigned_qualty_id);
+              qId = qualtys[(idx + 1) % qualtys.length].id;
+            }
+            await db.prepare('UPDATE applications SET assigned_qualty_id = ? WHERE id = ?').run(qId, result.lastInsertRowid);
+          }
+        } catch (_) {}
+      }
+      res.json({ success: true, front: front.filename, back: back.filename });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+});
+
+app.get('/api/categories', (req, res) => res.json(JOB_CATEGORIES));
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({
     error: 'الصفحة غير موجودة'
   });
 });
+
+// ===== Site settings + new feature migrations (ALWAYS run, safe on existing DBs) =====
+const SITE_DEFAULTS = {
+  contact_phone: '01000000000',
+  contact_email: 'info@wazef.example',
+  contact_whatsapp: '201000000000',
+  contact_hours: 'السبت - الخميس · 9 ص - 9 م',
+  hero_badge: 'فرص عمل جديدة تُضاف باستمرار',
+  hero_title: 'وظيفتك القادمة',
+  hero_title2: 'بتبدأ من هنا.',
+  hero_sub: 'وَظِيف — منصة توظيف مصرية مجانية تربطك مباشرة بالشركات. سجّل، اختار وظيفتك، حدّد موعد مقابلتك، وابدأ حياتك المهنية.',
+  footer_tagline: 'منصة توظيف مجانية تربط المتقدمين بالشركات مباشرة — بشفافية وبدون رسوم.',
+  seo_title: 'وَظِيف | فرص عمل ووظائف شاغرة في مصر — توظيف مباشر للشركات',
+  seo_description: 'وَظِيف — منصة توظيف مجانية تربطك مباشرة بالشركات في مصر. وظائف كول سنتر، مبيعات، برمجة، جودة، لوجستي وإداري. سجّل، اختار وظيفتك، واحضر مقابلتك بموعد يناسبك.'
+};
+
+async function runSiteMigrations() {
+  // 1) site_settings table (key-value store for editable landing content)
+  try {
+    await db.exec(`CREATE TABLE IF NOT EXISTS site_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL DEFAULT '',
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`);
+  } catch (e) { console.log('site_settings create:', (e.message || '').slice(0, 100)); }
+  // 2) new columns on existing tables (column-existence safe)
+  const cols = [];
+  try {
+    const rows = await db.prepare("SELECT table_name, column_name FROM information_schema.columns WHERE table_schema='public'").all();
+    for (const r of rows) cols.push(r.table_name + '.' + r.column_name);
+  } catch (_) {
+    // sqlite fallback — try each ALTER and ignore errors
+    const tries = [
+      'ALTER TABLE users ADD COLUMN job_category TEXT DEFAULT \'\'',
+      'ALTER TABLE users ADD COLUMN cv_file TEXT DEFAULT \'\'',
+      'ALTER TABLE jobs ADD COLUMN category TEXT DEFAULT \'\'',
+      'ALTER TABLE selections ADD COLUMN interview_slot TEXT DEFAULT \'\''
+    ];
+    for (const t of tries) { try { await db.exec(t); } catch (_) {} }
+  }
+  if (cols.length) {
+    const has = (k) => cols.includes(k);
+    if (!has('users.job_category')) { try { await db.exec("ALTER TABLE users ADD COLUMN job_category TEXT DEFAULT ''"); } catch (_) {} }
+    if (!has('users.cv_file')) { try { await db.exec("ALTER TABLE users ADD COLUMN cv_file TEXT DEFAULT ''"); } catch (_) {} }
+    if (!has('jobs.category')) { try { await db.exec("ALTER TABLE jobs ADD COLUMN category TEXT DEFAULT ''"); } catch (_) {} }
+    if (!has('selections.interview_slot')) { try { await db.exec("ALTER TABLE selections ADD COLUMN interview_slot TEXT DEFAULT ''"); } catch (_) {} }
+    if (!has('users.id_card_front')) { try { await db.exec("ALTER TABLE users ADD COLUMN id_card_front TEXT DEFAULT ''"); } catch (_) {} }
+    if (!has('users.id_card_back')) { try { await db.exec("ALTER TABLE users ADD COLUMN id_card_back TEXT DEFAULT ''"); } catch (_) {} }
+    if (!has('companies.categories')) { try { await db.exec("ALTER TABLE companies ADD COLUMN categories TEXT DEFAULT ''"); } catch (_) {} }
+    if (!has('agents.qualty_categories')) { try { await db.exec("ALTER TABLE agents ADD COLUMN qualty_categories TEXT DEFAULT ''"); } catch (_) {} }
+  }
+  // job_suggestions: admin suggests other jobs when finally rejecting a selection
+  try {
+    await db.exec(`CREATE TABLE IF NOT EXISTS job_suggestions (
+      id BIGSERIAL PRIMARY KEY,
+      user_id BIGINT NOT NULL,
+      job_id BIGINT NOT NULL,
+      suggested_by BIGINT,
+      reason TEXT DEFAULT '',
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    )`);
+  } catch (e) { console.log('job_suggestions create:', (e.message || '').slice(0, 100)); }
+  // 3) seed defaults (only missing keys)
+  for (const [k, v] of Object.entries(SITE_DEFAULTS)) {
+    try {
+      const exists = await db.prepare('SELECT key FROM site_settings WHERE key = ?').get(k);
+      if (!exists) await db.prepare('INSERT INTO site_settings (key, value) VALUES (?, ?) RETURNING key').run(k, v);
+    } catch (_) {}
+  }
+  console.log('Site migrations done');
+}
+
 async function start() {
   await initDatabase();
+  try { await runSiteMigrations(); } catch (e) { console.log('runSiteMigrations:', e.message); }
   try {
     await db.exec(`CREATE TABLE IF NOT EXISTS email_log (id BIGSERIAL PRIMARY KEY, recipient TEXT, subject TEXT, method TEXT, status TEXT, error TEXT, created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW())`);
   } catch (e) {

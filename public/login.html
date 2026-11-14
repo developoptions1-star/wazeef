@@ -245,8 +245,15 @@
         <div class="reg-step" id="step-3">
         <div class="section-label">التقديم</div>
         <div class="form-row">
+          <div class="form-group"><label>المجال المطلوب <span style="color:#e57373">*</span></label><select id="reg-job-category" class="sel" required><option value="">اختر المجال</option><option value="call-center">كول سنتر</option><option value="sales">مبيعات</option><option value="worker">عمالة وإنتاج</option><option value="programming">برمجة وتقنية</option><option value="quality">جودة ومراجعة</option><option value="logistics">لوجستي وتوصيل</option><option value="admin">إداري ومحاسبة</option><option value="marketing">تسويق رقمي</option><option value="all">كل المجالات</option></select></div>
           <div class="form-group"><label>اللغة المطلوبة <span style="color:#e57373">*</span></label><select id="reg-language-applied" class="sel" required><option value="">Select language</option><option value="ar">Arabic</option><option value="en">English</option><option value="de">German</option><option value="ja">Japanese</option><option value="pt">Portuguese</option><option value="fr">French</option><option value="es">Spanish</option><option value="tr">Turkish</option><option value="ko">Korean</option><option value="zh">Chinese</option><option value="ru">Russian</option><option value="it">Italian</option><option value="hi">Hindi</option><option value="nl">Dutch</option><option value="sv">Swedish</option></select></div>
+        </div>
+        <div class="form-row">
           <div class="form-group"><label>خبرة سنتر اتصالات <span style="color:#e57373">*</span></label><select id="reg-call-center" class="sel" required><option value="">Select</option><option value="yes">Yes</option><option value="no">No</option></select></div>
+          <div class="form-group" id="cv-group" style="display:none"><label>السيرة الذاتية (CV) <span style="color:#e57373">*</span></label><input type="file" id="reg-cv" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" style="font-size:13px"><div id="cv-hint" style="font-size:11px;color:#94a3b8;margin-top:4px;">PDF أو صورة أو Word — حجم أقصى 5MB</div></div>
+        </div>
+        <div class="form-row" id="idcard-group" style="display:none">
+          <div class="form-group full"><div style="font-size:12.5px;color:#fbbf24;background:rgba(251,191,36,0.07);border:1px solid rgba(251,191,36,0.22);border-radius:12px;padding:11px 14px;line-height:1.9;">مجال «عمالة وإنتاج» محتاج صور بطاقتك (الوش والضهر) — هترفعهم من حسابك مباشرة بعد التسجيل، وهيتبدأو المراجعة فورًا.</div></div>
         </div>
         <div class="form-row" id="military-row">
           <div class="form-group"><label>الوضع العسكري <span style="color:#e57373">*</span></label><select id="reg-military-status" class="sel" required><option value="">Select</option><option value="exempt">Exempt</option><option value="sole_provider">Exempt (sole provider)</option><option value="postponed">Postponed</option><option value="served">Served</option></select></div>
@@ -372,7 +379,22 @@
     }
     function prevStep(){if(regStep>1)showStep(regStep-1)}
     /* ---- filled/empty styling + disabled next button + auto-focus ---- */
-    const STEP_FIELDS={1:['reg-name','reg-email','reg-phone','reg-password','reg-gender'],2:['reg-nationality','reg-governorate','reg-city','reg-college','reg-education-level'],3:['reg-language-applied','reg-call-center','reg-military-status','reg-national-id','reg-age']};
+    const STEP_FIELDS={1:['reg-name','reg-email','reg-phone','reg-password','reg-gender'],2:['reg-nationality','reg-governorate','reg-city','reg-college','reg-education-level'],3:['reg-job-category','reg-language-applied','reg-call-center','reg-military-status','reg-national-id','reg-age']};
+    // CV-required categories
+    const CV_CATS=['sales','programming','marketing'];
+    const ID_CATS=['worker'];
+    const catSel=document.getElementById('reg-job-category');
+    const cvGroup=document.getElementById('cv-group');
+    const idcardGroup=document.getElementById('idcard-group');
+    function syncCvVisibility(){
+      const cat=catSel?catSel.value:'';
+      const needs=CV_CATS.includes(cat);
+      if(cvGroup)cvGroup.style.display=needs?'block':'none';
+      if(idcardGroup)idcardGroup.style.display=ID_CATS.includes(cat)?'grid':'none';
+      const hint=document.getElementById('cv-hint');
+      if(hint)hint.textContent=needs?'إجباري لهذا المجال — PDF أو صورة أو Word (5MB max)':'PDF أو صورة أو Word — حجم أقصى 5MB';
+    }
+    if(catSel){catSel.addEventListener('change',syncCvVisibility);syncCvVisibility()}
     function fieldFilled(id){const el=document.getElementById(id);if(!el)return false;const v=(el.value||'').trim();if(el.id==='reg-age')return !!v;if(el.id==='reg-military-status'){const g=val('reg-gender');if(g==='female')return true;}return !!v}
     function markField(el){if(!el||!el.id)return;const v=(el.value||'').trim();el.classList.toggle('filled',!!v);el.classList.toggle('empty',!v)}
     function refreshStepUI(n,focus){
@@ -531,7 +553,7 @@
     function updateAreas(){const g=val('reg-governorate');document.getElementById('reg-city').innerHTML='<option value="">Select area</option>'+((AREAS[g]||[]).map(a=>`<option>${a}</option>`).join(''))}
     async function register(){
       clearErr();
-      const name=val('reg-name'),email=val('reg-email'),phone=val('reg-phone'),password=val('reg-password'),nationality=val('reg-nationality'),gov=val('reg-governorate'),area=val('reg-city'),city=gov&&area?gov+' - '+area:'',language_applied=val('reg-language-applied'),age=val('reg-age'),national_id=val('reg-national-id'),college=val('reg-college'),education_level=val('reg-education-level'),gender=val('reg-gender');let military_status=val('reg-military-status');if(gender==='female')military_status='na';const call_center_experience=val('reg-call-center');
+      const name=val('reg-name'),email=val('reg-email'),phone=val('reg-phone'),password=val('reg-password'),nationality=val('reg-nationality'),gov=val('reg-governorate'),area=val('reg-city'),city=gov&&area?gov+' - '+area:'',language_applied=val('reg-language-applied'),age=val('reg-age'),national_id=val('reg-national-id'),college=val('reg-college'),education_level=val('reg-education-level'),gender=val('reg-gender');let military_status=val('reg-military-status');if(gender==='female')military_status='na';const call_center_experience=val('reg-call-center');const job_category=val('reg-job-category');
       const errs=[],ids=[];
       function push(m,id){errs.push(m);ids.push(id)}
       if(/[\u0600-\u06FF]/.test(name)){push('الاسم لازم يكتب بالإنجليزي','reg-name');regPopup('رجاءً اكتب المعلومات بالإنجليزي — الاسم بالعربي غير مسموح')}
@@ -555,6 +577,7 @@
       else if(hasNumber(college))push('الكلية حروف فقط بدون أرقام','reg-college');
       if(!education_level)push('اختر المرحلة الدراسية','reg-education-level');
       // Step 3
+      if(!job_category)push('اختر المجال المطلوب','reg-job-category');
       if(!language_applied)push('اختر اللغة المطلوبة','reg-language-applied');
       if(!gender)push('اختر النوع','reg-gender');
       else if(gender==='male'&&!military_status)push('اختر الوضع العسكري','reg-military-status');
@@ -574,9 +597,21 @@
         else if(parseInt(age)>80)push('العمر بين 18 و 80','reg-age');
       }
       if(!call_center_experience)push('اختر خبرة سنتر الاتصالات','reg-call-center');
+      // CV validation for experience categories
+      const CV_CATS=['sales','programming','marketing'];
+      const cvInput=document.getElementById('reg-cv');
+      let cv_data='';
+      if(CV_CATS.includes(job_category)){
+        if(!cvInput||!cvInput.files||!cvInput.files[0])push('السيرة الذاتية (CV) مطلوبة لهذا المجال','reg-cv');
+        else{
+          const f=cvInput.files[0];
+          if(f.size>5*1024*1024)push('حجم CV أكبر من 5MB','reg-cv');
+          else cv_data=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(f)});
+        }
+      }
       if(errs.length){ids.forEach(markErr);return showError('راجع الحقول التالية: '+errs.join(' — '))}
       const ref=new URLSearchParams(window.location.search).get('ref')||localStorage.getItem('wz_ref')||'';
-      try{const res=await fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,phone,password,nationality,city,language_applied,age:parseInt(age),national_id,college,education_level,gender,military_status,call_center_experience,ref})});const data=await res.json();if(data.error)return showError(data.error);if(data.needVerification){document.getElementById('verify-email-display').textContent=email;document.getElementById('verify-overlay').classList.add('show');setTimeout(()=>document.getElementById('code-1').focus(),300);return}localStorage.setItem('token',data.token);localStorage.setItem('user',JSON.stringify(data.user));window.location.href='/dashboard'}catch(e){showError('حدث خطأ في الاتصال')}
+      try{const res=await fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,phone,password,nationality,city,language_applied,age:parseInt(age),national_id,college,education_level,gender,military_status,call_center_experience,job_category,cv_data,ref})});const data=await res.json();if(data.error)return showError(data.error);if(data.needVerification){document.getElementById('verify-email-display').textContent=email;document.getElementById('verify-overlay').classList.add('show');setTimeout(()=>document.getElementById('code-1').focus(),300);return}localStorage.setItem('token',data.token);localStorage.setItem('user',JSON.stringify(data.user));window.location.href='/dashboard'}catch(e){showError('حدث خطأ في الاتصال')}
     }
     var _qs=new URLSearchParams(window.location.search);
     if(_qs.get('ref')||localStorage.getItem('wz_ref')){document.getElementById('ref-badge').style.display='block'}

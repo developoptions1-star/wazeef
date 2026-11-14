@@ -448,6 +448,19 @@
               <div class="form-group"><label>اسم الشركة</label><input type="text" id="p-name" placeholder="اسم الشركة" autocomplete="off"></div>
               <div class="form-group"><label>البريد الإلكتروني للشركة</label><input type="email" id="p-company_email" placeholder="hr@company.com" autocomplete="off" dir="ltr" style="text-align:left"></div>
               <div class="form-group full-width"><label>من تقبل من المتقدمين؟</label><select id="p-education" class="sel" style="width:100%;"><option value="both">خريجين و طلاب</option><option value="graduates">خريجين فقط</option><option value="students">طلاب فقط</option></select><div style="font-size:11px;color:#64748b;margin-top:6px;line-height:1.7;">لو اخترت «خريجين فقط» لن تظهر طلاب الجامعة في قائمة المتقدمين لديك، ولن تظهر شركتك للطلاب عند اختيارهم للوظائف.</div></div>
+              <div class="form-group full-width"><label>التخصصات المطلوبة</label>
+                <div id="p-categories" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:6px;">
+                  <label style="display:flex;align-items:center;gap:7px;font-size:13px;color:#a9a396;cursor:pointer;padding:7px 10px;border:1px solid rgba(212,168,83,0.1);border-radius:10px;"><input type="checkbox" class="p-cat-cb" value="call-center" style="accent-color:#d4a853;"> كول سنتر</label>
+                  <label style="display:flex;align-items:center;gap:7px;font-size:13px;color:#a9a396;cursor:pointer;padding:7px 10px;border:1px solid rgba(212,168,83,0.1);border-radius:10px;"><input type="checkbox" class="p-cat-cb" value="sales" style="accent-color:#d4a853;"> مبيعات</label>
+                  <label style="display:flex;align-items:center;gap:7px;font-size:13px;color:#a9a396;cursor:pointer;padding:7px 10px;border:1px solid rgba(212,168,83,0.1);border-radius:10px;"><input type="checkbox" class="p-cat-cb" value="worker" style="accent-color:#d4a853;"> عمالة وإنتاج</label>
+                  <label style="display:flex;align-items:center;gap:7px;font-size:13px;color:#a9a396;cursor:pointer;padding:7px 10px;border:1px solid rgba(212,168,83,0.1);border-radius:10px;"><input type="checkbox" class="p-cat-cb" value="programming" style="accent-color:#d4a853;"> برمجة وتقنية</label>
+                  <label style="display:flex;align-items:center;gap:7px;font-size:13px;color:#a9a396;cursor:pointer;padding:7px 10px;border:1px solid rgba(212,168,83,0.1);border-radius:10px;"><input type="checkbox" class="p-cat-cb" value="quality" style="accent-color:#d4a853;"> جودة ومراجعة</label>
+                  <label style="display:flex;align-items:center;gap:7px;font-size:13px;color:#a9a396;cursor:pointer;padding:7px 10px;border:1px solid rgba(212,168,83,0.1);border-radius:10px;"><input type="checkbox" class="p-cat-cb" value="logistics" style="accent-color:#d4a853;"> لوجستي وتوصيل</label>
+                  <label style="display:flex;align-items:center;gap:7px;font-size:13px;color:#a9a396;cursor:pointer;padding:7px 10px;border:1px solid rgba(212,168,83,0.1);border-radius:10px;"><input type="checkbox" class="p-cat-cb" value="admin" style="accent-color:#d4a853;"> إداري ومحاسبة</label>
+                  <label style="display:flex;align-items:center;gap:7px;font-size:13px;color:#a9a396;cursor:pointer;padding:7px 10px;border:1px solid rgba(212,168,83,0.1);border-radius:10px;"><input type="checkbox" class="p-cat-cb" value="marketing" style="accent-color:#d4a853;"> تسويق رقمي</label>
+                </div>
+                <div style="font-size:11px;color:#64748b;margin-top:6px;line-height:1.7;">اختر التخصصات اللي شركتك محتاجها — المتقدمين من التخصصات دي بس هيوصلوك.</div>
+              </div>
             </div>
             <button class="btn-save" onclick="saveProfile()">حفظ التعديلات</button>
 
@@ -1133,6 +1146,9 @@
         document.getElementById('p-name').value=c.name||'';
         document.getElementById('p-company_email').value=c.company_email||'';
         document.getElementById('p-education').value=c.education_requirement||'both';
+        // categories checkboxes
+        const cats=(c.categories||'').split(',').filter(Boolean);
+        document.querySelectorAll('.p-cat-cb').forEach(cb=>{cb.checked=cats.includes(cb.value)});
         const _labBtn=document.getElementById('lab-tab-btn');
         if(_labBtn)_labBtn.style.display=(c.type==='labor')?'':'none';
         const _payBtn=document.getElementById('pay-tab-btn');
@@ -1145,8 +1161,9 @@
 
     async function saveProfile(){
       try{
+        const cats=Array.from(document.querySelectorAll('.p-cat-cb:checked')).map(cb=>cb.value);
         await api('/api/company/profile',{method:'PUT',body:JSON.stringify({
-          name:val('p-name'),company_email:val('p-company_email'),education_requirement:val('p-education')
+          name:val('p-name'),company_email:val('p-company_email'),education_requirement:val('p-education'),categories:cats
         })});
         showToast('تم حفظ التعديلات بنجاح','success');
         const u=getUser();if(u){u.company_name=val('p-name');setUser(u);document.getElementById('company-title').textContent=val('p-name')}

@@ -109,6 +109,13 @@
     .tab-btn:hover:not(.active) { color: #94a3b8; border-color: rgba(212,168,83,0.1);background:rgba(212,168,83,0.04); }
 
     .section { display: none; }
+    .section.active { display: block; }
+    .setting-group{background:rgba(255,255,255,0.02);border:1px solid rgba(212,168,83,0.08);border-radius:16px;padding:20px;}
+    .setting-item{margin-bottom:14px;}
+    .setting-item label{display:block;color:#94a3b8;font-size:12px;font-weight:700;margin-bottom:6px;}
+    .setting-item input,.setting-item textarea{width:100%;padding:10px 14px;background:rgba(255,255,255,0.05);border:1.5px solid rgba(212,168,83,0.15);border-radius:10px;color:#f0d78c;font-family:'Tajawal',sans-serif;font-size:14px;outline:none;transition:.2s;box-sizing:border-box;}
+    .setting-item input:focus,.setting-item textarea:focus{border-color:#d4a853;box-shadow:0 0 0 3px rgba(212,168,83,0.1);}
+    .setting-item textarea{resize:vertical;min-height:70px;}
     .section.active { display: block; animation: fadeUp 0.4s ease; }
     @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -1769,6 +1776,7 @@
       <div class="tab-btn" onclick="switchSection('teamleaders', this)">تيم ليدر</div>
       <div class="tab-btn" onclick="switchSection('companies', this)">الشركات</div>
       <div class="tab-btn" onclick="switchSection('applicants', this)">المتقدمين</div>
+      <div class="tab-btn" onclick="switchSection('settings', this)">الإعدادات</div>
     </div>
 
     <div id="applications-section" class="section active">
@@ -1795,6 +1803,18 @@
               <select id="agent-filter" class="filter-input" onchange="applyFilters()">
                 <option value="">الكل - جميع المندوبين</option>
                 <option value="direct">التسجيل المباشر</option>
+              </select>
+              <select id="cat-filter" class="filter-input" onchange="applyFilters()">
+                <option value="">كل التخصصات</option>
+                <option value="call-center">كول سنتر</option>
+                <option value="sales">مبيعات</option>
+                <option value="worker">عمالة وإنتاج</option>
+                <option value="programming">برمجة وتقنية</option>
+                <option value="quality">جودة ومراجعة</option>
+                <option value="logistics">لوجستي وتوصيل</option>
+                <option value="admin">إداري ومحاسبة</option>
+                <option value="marketing">تسويق رقمي</option>
+                <option value="all">كل المجالات</option>
               </select>
             </div>
           </div>
@@ -2095,6 +2115,48 @@
           </div>
           <div id="companies-list"></div>
           <div id="admin-notifications" style="margin-top:16px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="settings-section" class="section">
+      <div class="table-container glass">
+        <div class="rk-header">
+          <div class="rk-header-badge"><span class="rk-live-dot"></span> إعدادات الموقع</div>
+          <h3>⚙️ تعديل محتوى اللاندينج والأرقام</h3>
+          <p>أي تعديل هنا بيظهر مباشرة في الصفحة الرئيسية واللاندينج</p>
+        </div>
+        <div style="padding:24px;">
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:18px;">
+            <div class="setting-group">
+              <h4 style="color:#d4a853;font-size:14px;margin:0 0 12px;padding-bottom:8px;border-bottom:1px solid rgba(212,168,83,0.1);">📞 بيانات التواصل</h4>
+              <div class="setting-item"><label>رقم الموبايل</label><input type="text" id="set-contact_phone" data-key="contact_phone" placeholder="01000000000"></div>
+              <div class="setting-item"><label>البريد الإلكتروني</label><input type="text" id="set-contact_email" data-key="contact_email" placeholder="info@example.com"></div>
+              <div class="setting-item"><label>رقم الواتساب (كود الدولة + الرقم)</label><input type="text" id="set-contact_whatsapp" data-key="contact_whatsapp" placeholder="201000000000"></div>
+              <div class="setting-item"><label>ساعات العمل</label><input type="text" id="set-contact_hours" data-key="contact_hours" placeholder="السبت - الخميس · 9 ص - 9 م"></div>
+            </div>
+            <div class="setting-group">
+              <h4 style="color:#d4a853;font-size:14px;margin:0 0 12px;padding-bottom:8px;border-bottom:1px solid rgba(212,168,83,0.1);">🏠 نصوص الهيرو</h4>
+              <div class="setting-item"><label>الشارة (Badge)</label><input type="text" id="set-hero_badge" data-key="hero_badge" placeholder="فرص عمل جديدة"></div>
+              <div class="setting-item"><label>العنوان السطر الأول</label><input type="text" id="set-hero_title" data-key="hero_title" placeholder="وظيفتك القادمة"></div>
+              <div class="setting-item"><label>العنوان السطر الثاني</label><input type="text" id="set-hero_title2" data-key="hero_title2" placeholder="بتبدأ من هنا."></div>
+              <div class="setting-item" style="grid-column:1/-1;"><label>النص التوضيحي</label><textarea id="set-hero_sub" data-key="hero_sub" rows="3" placeholder="وصف مختصر..."></textarea></div>
+            </div>
+            <div class="setting-group">
+              <h4 style="color:#d4a853;font-size:14px;margin:0 0 12px;padding-bottom:8px;border-bottom:1px solid rgba(212,168,83,0.1);">🔍 SEO (محركات البحث)</h4>
+              <div class="setting-item" style="grid-column:1/-1;"><label>عنوان الصفحة (يظهر في جوجل)</label><input type="text" id="set-seo_title" data-key="seo_title"></div>
+              <div class="setting-item" style="grid-column:1/-1;"><label>وصف الصفحة (يظهر في جوجل)</label><textarea id="set-seo_description" data-key="seo_description" rows="3"></textarea></div>
+            </div>
+            <div class="setting-group">
+              <h4 style="color:#d4a853;font-size:14px;margin:0 0 12px;padding-bottom:8px;border-bottom:1px solid rgba(212,168,83,0.1);">📝 نصوص إضافية</h4>
+              <div class="setting-item" style="grid-column:1/-1;"><label>عبارة الفوتر</label><textarea id="set-footer_tagline" data-key="footer_tagline" rows="2"></textarea></div>
+            </div>
+          </div>
+          <div style="margin-top:24px;display:flex;gap:12px;justify-content:flex-end;">
+            <button onclick="loadSettings()" style="padding:12px 28px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:#94a3b8;font-family:'Tajawal',sans-serif;font-size:14px;cursor:pointer;">إعادة تعيين</button>
+            <button onclick="saveSettings()" id="save-settings-btn" style="padding:12px 36px;background:linear-gradient(135deg,#b8860b,#d4a853);border:none;border-radius:12px;color:#0a0a0a;font-family:'Tajawal',sans-serif;font-size:14px;font-weight:800;cursor:pointer;">💾 حفظ الإعدادات</button>
+          </div>
+          <div id="settings-msg" style="margin-top:12px;text-align:center;font-size:13px;display:none;"></div>
         </div>
       </div>
     </div>
@@ -2674,6 +2736,27 @@
     </div>
   </div>
 
+  <div class="modal-overlay" id="reject-final-modal" onclick="if(event.target===this)closeRejectFinalModal()">
+    <div class="modal" style="width:520px;max-height:85vh;overflow-y:auto;">
+      <h2 style="color:#e57373;">رفض نهائي + اقتراح وظائف</h2>
+      <p id="reject-final-info" style="color:#94a3b8;font-size:13px;margin-bottom:16px;"></p>
+      <div class="form-group">
+        <label>سبب الرفض</label>
+        <textarea id="reject-final-reason" placeholder="مثال: مستوى الخبرة غير مناسب لهذه الوظيفة..." style="width:100%;padding:14px 18px;background:rgba(212,168,83,0.04);border:1.5px solid rgba(212,168,83,0.12);border-radius:14px;color:#e2e8f0;font-family:'Tajawal',sans-serif;font-size:14px;min-height:80px;resize:vertical;outline:none;"></textarea>
+      </div>
+      <div class="form-group">
+        <label>وظائف مقترحة (اختياري — تظهر للشخص في حسابه)</label>
+        <div id="reject-final-jobs" style="max-height:240px;overflow-y:auto;border:1px solid rgba(212,168,83,0.12);border-radius:12px;padding:10px;background:rgba(0,0,0,0.2);">
+          <p style="color:#64748b;font-size:13px;text-align:center;padding:16px;">جاري تحميل الوظائف...</p>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn-cancel" onclick="closeRejectFinalModal()">إلغاء</button>
+        <button class="btn-submit" id="reject-final-btn" style="background:linear-gradient(135deg,#dc3545,#c62828);" onclick="confirmRejectFinal()">تأكيد الرفض النهائي</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const canvas = document.getElementById('bg-canvas');
     const ctx = canvas.getContext('2d');
@@ -2760,6 +2843,7 @@
         else if (name === 'teamleaders') loadTeamLeaders();
         else if (name === 'applications') loadApplications();
         else if (name === 'applicants') { /* manual search only */ }
+        else if (name === 'settings') loadSettings();
       } catch (e) {}
     }
     /* /api/admin/stats is asked for by 3 loaders — share one request for a few seconds */
@@ -2864,10 +2948,12 @@
       const statusVal = document.getElementById('status-filter').value;
       const sortVal = document.getElementById('sort-filter').value;
       const searchVal = document.getElementById('search-input').value.trim().toLowerCase();
+      const catVal = (document.getElementById('cat-filter')||{}).value || '';
 
       if (agentVal === 'direct') filtered = filtered.filter(a => !a.referred_by);
       else if (agentVal) filtered = filtered.filter(a => String(a.referred_by) === agentVal);
       if (statusVal) filtered = filtered.filter(a => a.status === statusVal);
+      if (catVal) filtered = filtered.filter(a => (a.job_category || '') === catVal);
       if (searchVal) filtered = filtered.filter(a => (a.user_name || '').toLowerCase().includes(searchVal) || (a.user_email || '').toLowerCase().includes(searchVal));
 
       if (sortVal === 'newest') filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -2892,10 +2978,16 @@
             <div class="app-meta" data-label="التاريخ والهاتف">
               <div class="app-date">${new Date(a.created_at).toLocaleDateString('en-US')}</div>
               <div class="app-phone">${a.user_phone || 'لا يوجد هاتف'}</div>
+              ${a.job_category ? `<div style="font-size:10px;color:#d4a853;margin-top:3px;font-weight:700;">📂 ${esc(catLabel(a.job_category))}</div>` : ''}
+              ${a.cv_file ? `<div style="font-size:10px;margin-top:2px;"><a href="/uploads/${esc(a.cv_file)}" target="_blank" style="color:#22c55e;text-decoration:underline;">📎 CV</a></div>` : ''}
+              ${a.interview_slot ? `<div style="font-size:10px;color:#fbbf24;margin-top:3px;font-weight:700;">🕐 ${esc(a.interview_slot)}</div>` : ''}
             </div>
             <div data-label="اللغة"><span class="app-lang">${getLangName(a.language)}</span>${a.qualty_languages ? `<div style="font-size:10.5px;color:#64748b;margin-top:3px;line-height:1.5;">لغاته: ${esc(qlLangNames(a.qualty_languages))}</div>` : ''}</div>
             <div data-label="الحالة"><span class="app-status ${a.status}"><span class="status-dot"></span>${statusText}</span></div>
             <div data-label="التسجيل">
+              ${(!a.audio_file && !a.audio_url) && (a.job_category && !['call-center','sales'].includes(a.job_category)) ? `
+                ${a.cv_file ? `<a href="/uploads/${esc(a.cv_file)}" target="_blank" class="app-link-btn" style="text-decoration:none;"><svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;vertical-align:-2px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> معاينة CV</a>` : '<span class="app-jobs-badge" style="color:#64748b;">طلب ' + esc(catLabel(a.job_category)) + '</span>'}
+              ` : ''}
               ${(a.audio_file || a.audio_url) ? `
                 <div class="app-audio-stack">
                   <button class="app-audio-btn" data-audio="${esc(a.audio_file||'')}" data-audio-url="${esc(a.audio_url||'')}" data-username="${esc(a.user_name||'')}" onclick="openAudioModal(this.dataset.audio,this.dataset.username,this.dataset.audioUrl)">
@@ -2904,7 +2996,7 @@
                   </button>
                   ${a.audio_url ? `<button class="app-link-btn" data-url="${esc(a.audio_url)}" data-user="${esc(a.user_name||'')}" onclick="openAudioPopup(this.dataset.url, this.dataset.user, this)" title="فتح التسجيل في نافذة منفصلة ونسخ الرابط"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> الرابط</button>` : ''}
                 </div>
-              ` : '<button class="app-audio-btn no-audio" disabled>بدون صوت</button>'}
+              ` : ((!a.job_category || ['call-center','sales'].includes(a.job_category)) ? '<button class="app-audio-btn no-audio" disabled>بدون صوت</button>' : '')}
             </div>
             <div class="app-agent" data-label="المندوب">
               ${a.agent_name ? `
@@ -3034,6 +3126,11 @@ const langs = {
       const list = String(csv || '').split(',').map(function (s) { return s.trim().toLowerCase(); }).filter(Boolean);
       return list.length ? list.map(qlLangName).join('، ') : '';
     }
+    const QL_CATS = { 'call-center': 'كول سنتر', sales: 'مبيعات', worker: 'عمالة وإنتاج', programming: 'برمجة وتقنية', quality: 'جودة ومراجعة', logistics: 'لوجستي وتوصيل', admin: 'إداري ومحاسبة', marketing: 'تسويق رقمي', all: 'كل المجالات' };
+    function qlCatNames(csv) {
+      const list = String(csv || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+      return list.length ? list.map(function (c) { return QL_CATS[c] || c; }).join('، ') : '';
+    }
     function openQualtyLangModal(ds) {
       document.getElementById('ql-app-id').value = ds.app;
       document.getElementById('ql-user-id').value = ds.user;
@@ -3128,6 +3225,49 @@ const langs = {
       await fetch(`/api/admin/selections/${id}/apologize`, { method:'PUT', headers:{'Authorization':`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({reason}) });
       cachedEarnings = null;
       loadSelections(); loadStats(); loadFinance();
+    }
+    /* ====== رفض نهائي + اقتراح وظائف ====== */
+    let rejectFinalSelId = null;
+    let _rfJobsCache = null;
+    async function openRejectFinalModal(id, userName, companyName) {
+      rejectFinalSelId = id;
+      document.getElementById('reject-final-info').textContent = (userName ? userName + ' — ' : '') + (companyName || '');
+      document.getElementById('reject-final-reason').value = '';
+      document.getElementById('reject-final-modal').classList.add('show');
+      const box = document.getElementById('reject-final-jobs');
+      if (!_rfJobsCache) {
+        try {
+          const r = await fetch('/api/admin/jobs-for-suggest', { headers: { 'Authorization': `Bearer ${token}` } });
+          _rfJobsCache = await r.json();
+        } catch (e) { _rfJobsCache = []; }
+      }
+      if (!Array.isArray(_rfJobsCache) || _rfJobsCache.length === 0) {
+        box.innerHTML = '<p style="color:#64748b;font-size:13px;text-align:center;padding:16px;">لا توجد وظائف متاحة للاقتراح حاليًا</p>';
+      } else {
+        box.innerHTML = _rfJobsCache.map(j =>
+          '<label style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;cursor:pointer;transition:background .2s;" onmouseover="this.style.background=\'rgba(212,168,83,0.06)\'" onmouseout="this.style.background=\'\'">' +
+          '<input type="checkbox" class="rf-job-cb" value="' + j.id + '" style="accent-color:#d4a853;width:16px;height:16px;flex-shrink:0;">' +
+          '<div style="flex:1;min-width:0;"><div style="color:#e2e8f0;font-size:13px;font-weight:700;">' + esc(j.company_name || '') + '</div><div style="color:#94a3b8;font-size:12px;">' + esc(j.position || '') + '</div></div>' +
+          '</label>'
+        ).join('');
+      }
+    }
+    function closeRejectFinalModal() { document.getElementById('reject-final-modal').classList.remove('show'); rejectFinalSelId = null; }
+    async function confirmRejectFinal() {
+      if (!rejectFinalSelId) return;
+      const reason = document.getElementById('reject-final-reason').value || 'لم يحدد سبب';
+      const ids = Array.from(document.querySelectorAll('.rf-job-cb:checked')).map(cb => parseInt(cb.value));
+      const btn = document.getElementById('reject-final-btn');
+      btn.disabled = true; btn.textContent = 'جاري الرفض...';
+      try {
+        const r = await fetch(`/api/admin/selections/${rejectFinalSelId}/reject-final`, { method: 'PUT', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ reason, suggested_job_ids: ids }) });
+        const d = await r.json();
+        if (d.error) { alert(d.error); return; }
+        closeRejectFinalModal();
+        cachedEarnings = null;
+        loadSelections(); loadStats(); loadFinance();
+      } catch (e) { alert('حدث خطأ في الاتصال'); }
+      btn.disabled = false; btn.textContent = 'تأكيد الرفض النهائي';
     }
     function updateCountdowns() {
       document.querySelectorAll('.countdown-text[data-deadline]').forEach(el => {
@@ -3300,15 +3440,23 @@ syncJobLangSelect();
           const d = await r.json();
           const rank = {A1:1,A2:2,B1:3,B2:4,C1:5,C2:6};
           let companies = d.companies || [];
-          const rangeM = level && level.match(/^(A1|A2|B1|B2|C1|C2)-(A1|A2|B1|B2|C1|C2)$/i);
-          if (rangeM) {
-            const from = rank[rangeM[1].toUpperCase()], to = rank[rangeM[2].toUpperCase()];
-            companies = companies.filter(c => String(c.levels||'').split(',').some(lv => {
-              const r = rank[String(lv).trim().toUpperCase()];
-              return r >= from && r <= to;
-            }));
-          } else if (level) {
-            companies = companies.filter(c => String(c.levels||'').split(',').some(lv => String(lv).trim().toUpperCase() === level.toUpperCase()));
+          if (level) {
+            // Expand BOTH sides: a stored row level may itself be a range (e.g. 'A1-B2')
+            const qm = level.match(/^(A1|A2|B1|B2|C1|C2)\s*[-–]\s*(A1|A2|B1|B2|C1|C2)$/i);
+            const qFrom = qm ? rank[qm[1].toUpperCase()] : rank[String(level).trim().toUpperCase()];
+            const qTo = qm ? rank[qm[2].toUpperCase()] : qFrom;
+            const rowRange = lv => {
+              const s = String(lv || '').trim().toUpperCase();
+              const m = s.match(/^(A1|A2|B1|B2|C1|C2)\s*[-–]\s*(A1|A2|B1|B2|C1|C2)$/);
+              if (m) return [rank[m[1]], rank[m[2]]];
+              return rank[s] ? [rank[s], rank[s]] : null;
+            };
+            if (qFrom && qTo) {
+              companies = companies.filter(c => String(c.levels || '').split(',').some(lv => {
+                const rr = rowRange(lv);
+                return rr && rr[0] <= qTo && rr[1] >= qFrom;
+              }));
+            }
           }
           const available = companies.filter(c => !assignedCompanyNames.includes(c.name));
           const levelHint = document.getElementById('job-level-hint');
@@ -3722,7 +3870,7 @@ syncJobLangSelect();
       if (status==='no_selection') {
         actions = '<div class="popup-item" style="opacity:0.5;cursor:default;"><div class="popup-item-icon gold"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div class="popup-item-text"><span>لم يختار وظيفة بعد</span><small>في انتظار اختيار المستخدم</small></div></div>';
       } else if (status==='selected') {
-        actions = '<div class="popup-item" onclick="event.stopPropagation();closeActionsPopup();openConfirmModal('+id+', '+(amount||0)+', '+(agentAmount||0)+')"><div class="popup-item-icon green"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div><div class="popup-item-text"><span>تثبيت التوظيف</span><small>تأكيد و تحديد المبالغ</small></div></div><div class="popup-divider"></div><div class="popup-item" onclick="event.stopPropagation();closeActionsPopup();cancelSelection('+id+')"><div class="popup-item-icon red"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div><div class="popup-item-text"><span>إلغاء التوظيف</span><small>رفض طلب التوظيف</small></div></div>';
+        actions = '<div class="popup-item" onclick="event.stopPropagation();closeActionsPopup();openConfirmModal('+id+', '+(amount||0)+', '+(agentAmount||0)+')"><div class="popup-item-icon green"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div><div class="popup-item-text"><span>تثبيت التوظيف</span><small>تأكيد و تحديد المبالغ</small></div></div><div class="popup-divider"></div><div class="popup-item" onclick="event.stopPropagation();closeActionsPopup();openRejectFinalModal('+id+', \''+(userName||'').replace(/'/g,"\\'")+'\', \''+(companyName||'').replace(/'/g,"\\'")+'\')"><div class="popup-item-icon red"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div><div class="popup-item-text"><span>رفض نهائي + اقتراح وظائف</span><small>رفض هذه الوظيفة واقتراح بدائل</small></div></div>';
       } else if (status==='confirmed') {
         if (isFrozen===1) {
           actions = '<div class="popup-item" onclick="event.stopPropagation();closeActionsPopup();unfreezeAmount('+id+')"><div class="popup-item-icon blue"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><polyline points="20 6 9 17 4 12"/></svg></div><div class="popup-item-text"><span>فك التجميد</span><small>إرجاع المبلغ المجمد</small></div></div><div class="popup-divider"></div><div class="popup-item" onclick="event.stopPropagation();closeActionsPopup();openApologizeModal('+id+')"><div class="popup-item-icon gold"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><div class="popup-item-text"><span>إرسال اعتذار</span><small>رسالة للمستخدم</small></div></div>';
@@ -4101,7 +4249,7 @@ function toggleAgentsSection(forceOpen) {
                 <div style="overflow:hidden">
                   <div class="agent-name">${a.name}${a.agent_type==='labor'?' <span style="font-size:10px;background:rgba(56,189,248,0.12);color:#38bdf8;border:1px solid rgba(56,189,248,0.28);border-radius:4px;padding:1px 5px;font-weight:600;vertical-align:middle;">عمالة</span>':''}${roleChip(a.role || 'agent')}</div>
                   <div class="agent-email">${a.email}</div>
-                  ${(a.role === 'qualty' || a.role === 'super_qualty') ? `<div class="agent-email" style="color:#38bdf8;font-size:9.5px;margin-top:2px;">${a.qualty_languages ? 'لغاته: ' + qlLangNames(a.qualty_languages) : 'كل اللغات'}</div>` : ''}
+                  ${(a.role === 'qualty' || a.role === 'super_qualty') ? `<div class="agent-email" style="color:#38bdf8;font-size:9.5px;margin-top:2px;">${a.qualty_languages ? 'لغاته: ' + qlLangNames(a.qualty_languages) : 'كل اللغات'}${a.qualty_categories ? ' • تخصصاته: ' + qlCatNames(a.qualty_categories) : ''}</div>` : ''}
                   ${agentPayChip(a)}
                 </div>
               </div>
@@ -4855,6 +5003,43 @@ function toggleAgentsSection(forceOpen) {
       aaStatus(codes.length ? 'تم حفظ اللغات: ' + codes.map(qlLangName).join('، ') : 'تم المسح — بيشوف كل اللغات');
     }
 
+    /* ===== تخصصات القولتي: الأدمن يحدد التخصصات اللي القولتي يُراجع بيها ===== */
+    const AA_CATS = [
+      ['call-center', 'كول سنتر'], ['sales', 'مبيعات'], ['worker', 'عمالة وإنتاج'],
+      ['programming', 'برمجة وتقنية'], ['quality', 'جودة ومراجعة'], ['logistics', 'لوجستي وتوصيل'],
+      ['admin', 'إداري ومحاسبة'], ['marketing', 'تسويق رقمي']
+    ];
+    function aaCatsPanel() {
+      const d = _openAgentData; if (!d) return;
+      const cur = String(d.cats || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+      aaPanel(
+        '<label style="display:block;color:#94a3b8;font-size:13px;font-weight:600;margin-bottom:8px;">التخصصات اللي ' + (d.name || 'القولتي') + ' يُراجع بيها</label>' +
+        '<div id="aa-cats" style="display:flex;flex-wrap:wrap;gap:8px;">' +
+          AA_CATS.map(function (c) {
+            return '<button type="button" class="ql-chip' + (cur.indexOf(c[0]) >= 0 ? ' active' : '') + '" data-code="' + c[0] + '" onclick="this.classList.toggle(\'active\')">' + c[1] + '</button>';
+          }).join('') +
+        '</div>' +
+        '<div style="display:flex;gap:8px;margin-top:14px;">' +
+          '<button onclick="aaSaveCats(true)" style="flex:none;padding:11px 14px;background:transparent;border:1px solid rgba(244,63,94,0.25);color:#fda4af;border-radius:11px;font-family:Tajawal,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">مسح (كل التخصصات)</button>' +
+          '<button onclick="aaSaveCats(false)" style="flex:1;padding:11px;background:linear-gradient(135deg,#6d28d9,#a78bfa);border:none;border-radius:11px;color:#fff;font-family:Tajawal,sans-serif;font-size:13.5px;font-weight:800;cursor:pointer;">حفظ التخصصات</button>' +
+        '</div>' +
+        '<p style="font-size:11.5px;color:#64748b;line-height:1.95;margin-top:10px;">القولتي هيشوف بس طلبات المتقدمين اللي تخصصهم من المحدد فوق. لو مسحت التخصصات: هيشوف كل التخصصات.</p>'
+      );
+      aaStatus('');
+    }
+    async function aaSaveCats(clearCats) {
+      const d = _openAgentData; if (!d) return;
+      const codes = clearCats ? [] : Array.prototype.map.call(document.querySelectorAll('#aa-cats .ql-chip.active'), function (b) { return b.dataset.code; });
+      const data = await aaFetch('/api/admin/agents/' + d.id + '/qualty', { method: 'PUT', body: JSON.stringify({ categories: codes }) });
+      if (!data) return;
+      d.cats = codes.join(',');
+      try { const rec = _findAgentRow(d.id); if (rec) rec.qualty_categories = d.cats; } catch (e) {}
+      loadAgents();
+      aaHidePanel();
+      const names = AA_CATS.filter(c => codes.indexOf(c[0]) >= 0).map(c => c[1]);
+      aaStatus(codes.length ? 'تم حفظ التخصصات: ' + names.join('، ') : 'تم المسح — بيشوف كل التخصصات');
+    }
+
     async function loadTeamLeaders() {
       try {
         const res = await fetch('/api/admin/team-leaders', { headers: { 'Authorization': 'Bearer ' + token } });
@@ -5237,6 +5422,7 @@ function toggleAgentsSection(forceOpen) {
       _openAgentData = { id, name, code, isActive: !!isActive, usersCount: Number(usersCount) || 0, role: role || 'agent',
         agentType: rec ? (rec.agent_type || 'normal') : 'normal',
         langs: rec ? (rec.qualty_languages || '') : '',
+        cats: rec ? (rec.qualty_categories || '') : '',
         phone: rec ? (rec.phone || '') : '', payMethod: rec ? (rec.payment_method || '') : '', payOperator: rec ? (rec.payment_operator || '') : '' };
       aaHidePanel();
       aaStatus('');
@@ -5270,13 +5456,14 @@ function toggleAgentsSection(forceOpen) {
       const items = [
         { fn: 'aaRolePanel()', label: 'تغيير الرول', color: '#d4a853', icon: icons.star },
         { fn: 'aaLangsPanel()', label: 'اللغات اللي يراجع بيها', color: '#38bdf8', icon: icons.globe },
+        { fn: 'aaCatsPanel()', label: 'التخصصات اللي يراجع بيها', color: '#a78bfa', icon: icons.star },
         { fn: "aaForm('edit')", label: 'تعديل البيانات', color: '#3b82f6', icon: icons.edit },
         { fn: "aaForm('pass')", label: 'تغيير كلمة المرور', color: '#a855f7', icon: icons.lock },
         { fn: 'aaToggle()', label: d.isActive ? 'تعطيل المندوب' : 'تفعيل المندوب', color: d.isActive ? '#fb7185' : '#34d399', icon: icons.toggle },
         { fn: 'aaCopyLink()', label: 'نسخ رابط الإحالة', color: '#d4a853', icon: icons.copy },
         { fn: "aaForm('delete')", label: 'حذف المندوب', color: '#e57373', icon: icons.trash }
-      ].filter(it => d.agentType !== 'labor' || (it.fn !== 'aaRolePanel()' && it.fn !== 'aaLangsPanel()'))
-       .filter(it => it.fn !== 'aaLangsPanel()' || (['qualty', 'super_qualty'].indexOf(d.role) >= 0 && d.agentType !== 'labor'));
+      ].filter(it => d.agentType !== 'labor' || (it.fn !== 'aaRolePanel()' && it.fn !== 'aaLangsPanel()' && it.fn !== 'aaCatsPanel()'))
+       .filter(it => (it.fn !== 'aaLangsPanel()' && it.fn !== 'aaCatsPanel()') || (['qualty', 'super_qualty'].indexOf(d.role) >= 0 && d.agentType !== 'labor'));
       document.getElementById('aa-menu').innerHTML = items.map(it => `
         <button class="aa-btn" onclick="${it.fn}" style="display:flex;align-items:center;gap:10px;padding:11px 14px;background:${aaRgba(it.color, 0.06)};border:1px solid ${aaRgba(it.color, 0.12)};border-radius:10px;color:${it.color};cursor:pointer;font-family:'Tajawal',sans-serif;font-size:13px;font-weight:600;text-align:right;">
           <svg viewBox="0 0 24 24" style="width:16px;height:16px;flex-shrink:0;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke:${it.color}">${it.icon}</svg>
@@ -5596,6 +5783,7 @@ function toggleAgentsSection(forceOpen) {
     }
 
     function esc(v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+    function catLabel(id){const m={'call-center':'كول سنتر','sales':'مبيعات','worker':'عمالة وإنتاج','programming':'برمجة وتقنية','quality':'جودة ومراجعة','logistics':'لوجستي وتوصيل','admin':'إداري ومحاسبة','marketing':'تسويق رقمي','all':'كل المجالات'};return m[id]||id||''}
 
     function renderCoJobs(cid, data) {
       const box = document.getElementById('cjobs-' + cid);
@@ -7034,6 +7222,34 @@ const maxApproved = Math.max(...rankings.map(a => a.approved), 1);
         if(d.error){s.textContent='❌ '+d.error;s.style.color='#ef4444';return}
         s.textContent='✅ '+d.message;s.style.color='#22c55e';
       }catch(e){s.textContent='❌ '+e.message;s.style.color='#ef4444'}
+    }
+
+    // ===== Site Settings =====
+    async function loadSettings(){
+      try{
+        const r=await fetch('/api/admin/settings',{headers:{'Authorization':'Bearer '+localStorage.getItem('token')}});
+        const rows=await r.json();
+        if(Array.isArray(rows)){
+          rows.forEach(row=>{
+            const el=document.getElementById('set-'+row.key);
+            if(el)el.value=row.value||'';
+          });
+        }
+      }catch(e){console.log('loadSettings error:',e)}
+    }
+    async function saveSettings(){
+      const btn=document.getElementById('save-settings-btn');
+      const msg=document.getElementById('settings-msg');
+      btn.disabled=true;btn.textContent='جاري الحفظ...';
+      const payload={};
+      document.querySelectorAll('[data-key]').forEach(el=>{payload[el.dataset.key]=el.value});
+      try{
+        const r=await fetch('/api/admin/settings',{method:'PUT',headers:{'Content-Type':'application/json','Authorization':'Bearer '+localStorage.getItem('token')},body:JSON.stringify(payload)});
+        const d=await r.json();
+        if(d.error){msg.textContent='❌ '+d.error;msg.style.color='#ef4444';msg.style.display='block'}
+        else{msg.textContent='✅ تم حفظ '+d.updated+' إعداد بنجاح — التغييرات ظاهرة في الصفحة الرئيسية فورًا';msg.style.color='#22c55e';msg.style.display='block';setTimeout(()=>msg.style.display='none',4000)}
+      }catch(e){msg.textContent='❌ خطأ في الاتصال';msg.style.color='#ef4444';msg.style.display='block'}
+      btn.disabled=false;btn.textContent='💾 حفظ الإعدادات';
     }
   </script>
 </body>

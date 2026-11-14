@@ -295,6 +295,66 @@
     .sec-head h2{transition:letter-spacing .5s}
     .reveal.in .sec-head-inner{letter-spacing:0}
 
+    /* ====== 3D ENHANCEMENTS ====== */
+    /* Deep glassmorphism cards */
+    .cat{background:linear-gradient(145deg,rgba(255,255,255,.04),rgba(255,255,255,.01));backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(212,168,83,.12);transition:all .5s cubic-bezier(.16,.84,.3,1);transform-style:preserve-3d;will-change:transform}
+    .cat:hover{border-color:rgba(212,168,83,.35);box-shadow:0 20px 60px rgba(212,168,83,.12),0 0 40px rgba(212,168,83,.06),inset 0 1px 0 rgba(255,255,255,.08);transform:translateY(-8px) scale(1.02)}
+    .cat .ico{transition:all .5s cubic-bezier(.16,.84,.3,1);box-shadow:0 8px 32px rgba(212,168,83,.15)}
+    .cat:hover .ico{transform:translateZ(30px) scale(1.1) rotateY(8deg);box-shadow:0 16px 48px rgba(212,168,83,.3)}
+    .cat .cnt{transition:all .4s}
+    .cat:hover .cnt{color:var(--gold3);transform:translateX(-4px)}
+
+    /* Feature cards glass + hover glow */
+    .feat{background:linear-gradient(160deg,rgba(255,255,255,.03),rgba(255,255,255,.008));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.06);transition:all .5s cubic-bezier(.16,.84,.3,1);position:relative;overflow:hidden}
+    .feat::before{content:"";position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(212,168,83,.06),transparent);transition:left .7s}
+    .feat:hover::before{left:100%}
+    .feat:hover{border-color:rgba(212,168,83,.25);transform:translateY(-6px);box-shadow:0 16px 48px rgba(0,0,0,.3),0 0 32px rgba(212,168,83,.08)}
+    .feat:hover .ico{transform:scale(1.08);box-shadow:0 12px 36px rgba(212,168,83,.25)}
+
+    /* Step cards depth */
+    .step{transition:all .5s cubic-bezier(.16,.84,.3,1);transform-style:preserve-3d}
+    .step:hover{transform:translateY(-6px);box-shadow:0 16px 48px rgba(0,0,0,.25)}
+    .step .num{transition:all .5s}
+    .step:hover .num{transform:scale(1.1) translateZ(20px);box-shadow:0 0 40px rgba(212,168,83,.3)}
+
+    /* Section headings gradient */
+    .sec-head h2{background:linear-gradient(135deg,var(--txt),var(--gold3) 80%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+
+    /* Hero stage deeper shadow */
+    .stage{filter:drop-shadow(0 40px 80px rgba(0,0,0,.4))}
+    .jcard{backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(212,168,83,.2);box-shadow:0 24px 64px rgba(0,0,0,.45),0 0 48px rgba(212,168,83,.08),inset 0 1px 0 rgba(255,255,255,.1);transition:box-shadow .5s}
+    .jcard:hover{box-shadow:0 32px 80px rgba(0,0,0,.55),0 0 64px rgba(212,168,83,.18),inset 0 1px 0 rgba(255,255,255,.15)}
+
+    /* CTA button enhanced shine */
+    .btn-gold{position:relative;overflow:hidden}
+    .btn-gold::after{content:"";position:absolute;top:-50%;left:-60%;width:40%;height:200%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent);transform:skewX(-25deg);transition:left .6s}
+    .btn-gold:hover::after{left:130%}
+
+    /* Schedule band glass */
+    .schedule-band{background:linear-gradient(145deg,rgba(212,168,83,.06),rgba(212,168,83,.02));backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(212,168,83,.15);box-shadow:0 24px 64px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.06)}
+
+    /* FAQ glass */
+    details{background:linear-gradient(145deg,rgba(255,255,255,.03),rgba(255,255,255,.01));backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.06);transition:all .4s}
+    details[open]{border-color:rgba(212,168,83,.25);box-shadow:0 12px 40px rgba(0,0,0,.25)}
+    details:hover{border-color:rgba(212,168,83,.18)}
+
+    /* Final CTA glow */
+    .final-cta{position:relative;overflow:hidden}
+    .final-cta::before{content:"";position:absolute;inset:-2px;background:linear-gradient(135deg,var(--gold3),transparent 40%,transparent 60%,var(--gold2));border-radius:inherit;z-index:-1;opacity:.5;animation:ctaGlow 4s ease-in-out infinite alternate}
+    @keyframes ctaGlow{to{opacity:.8}}
+
+    /* Orb enhanced */
+    .orb{will-change:transform}
+
+    /* Smooth section transitions */
+    section{position:relative}
+    section::after{content:"";position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:60%;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,83,.12),transparent)}
+    section:last-of-type::after{display:none}
+
+    /* Footer contact glass */
+    .fcontact{background:linear-gradient(145deg,rgba(255,255,255,.03),rgba(255,255,255,.01));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.06);transition:all .4s}
+    .fcontact:hover{border-color:rgba(212,168,83,.2);transform:translateY(-3px)}
+
     @media (prefers-reduced-motion:reduce){
       *,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
       html{scroll-behavior:auto}
@@ -345,8 +405,8 @@
 <section class="hero" id="top">
   <div class="wrap grid2">
     <div>
-      <div class="badge"><span class="dot"></span> فرص عمل جديدة تُضاف باستمرار</div>
-      <h1>وظيفتك القادمة<br><span class="grad">بتبدأ من هنا.</span></h1>
+      <div class="badge"><span class="dot"></span><span id="badge-text">فرص عمل جديدة تُضاف باستمرار</span></div>
+      <h1><span id="hero-title-1">وظيفتك القادمة</span><br><span class="grad" id="hero-title-2">بتبدأ من هنا.</span></h1>
       <p class="sub">وَظِيف — منصة توظيف مصرية مجانية تربطك مباشرة بالشركات. سجّل، اختار وظيفتك، حدّد موعد مقابلتك، وابدأ حياتك المهنية.</p>
       <div class="cta">
         <a class="btn btn-gold" href="/login.html?src=landing">سجّل مجانًا الآن
@@ -531,7 +591,7 @@
           <span class="gem"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 L20 8 L12 22 L4 8 Z"/></svg></span>
           <b>وَظِيف</b>
         </a>
-        <p style="max-width:320px">منصة توظيف مجانية تربط المتقدمين بالشركات مباشرة — بشفافية وبدون رسوم.</p>
+        <p style="max-width:320px" id="footer-tagline">منصة توظيف مجانية تربط المتقدمين بالشركات مباشرة — بشفافية وبدون رسوم.</p>
       </div>
       <div>
         <h4>روابط سريعة</h4>
@@ -545,7 +605,7 @@
         <h4>تواصل معنا</h4>
         <div><span class="ic"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span><span id="f-phone">—</span></div>
         <div><span class="ic"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22 6 12 13 2 6"/></svg></span><span id="f-email">—</span></div>
-        <div><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span><span>السبت - الخميس · 9 ص - 9 م</span></div>
+        <div><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span><span id="f-hours">السبت - الخميس · 9 ص - 9 م</span></div>
       </div>
     </div>
     <div class="copy">© <span id="yr"></span> وَظِيف — جميع الحقوق محفوظة · صُنع بحب في مصر 🇪🇬</div>
@@ -557,19 +617,56 @@
 </a>
 
 <script>
-/* ====== site config (Phase 2: admin-editable) ====== */
+/* ====== site config — loads live from /api/settings (admin-editable) ====== */
 var SITE = {
   phone: '01000000000',
   email: 'info@wazef.example',
-  whatsapp: '201000000000'
+  whatsapp: '201000000000',
+  hours: 'السبت - الخميس · 9 ص - 9 م',
+  hero_badge: '',
+  hero_title: '',
+  hero_title2: '',
+  hero_sub: '',
+  seo_title: '',
+  seo_description: '',
+  footer_tagline: ''
 };
 
-try {
-  document.getElementById('f-phone').textContent = SITE.phone;
-  document.getElementById('f-email').textContent = SITE.email;
-  document.getElementById('wa-btn').href = 'https://wa.me/' + SITE.whatsapp;
-  document.getElementById('yr').textContent = new Date().getFullYear();
-} catch(e){}
+function applySettings(s) {
+  try {
+    if (s.contact_phone) SITE.phone = s.contact_phone;
+    if (s.contact_email) SITE.email = s.contact_email;
+    if (s.contact_whatsapp) SITE.whatsapp = s.contact_whatsapp;
+    if (s.contact_hours) SITE.hours = s.contact_hours;
+    if (s.hero_badge) SITE.hero_badge = s.hero_badge;
+    if (s.hero_title) SITE.hero_title = s.hero_title;
+    if (s.hero_title2) SITE.hero_title2 = s.hero_title2;
+    if (s.hero_sub) SITE.hero_sub = s.hero_sub;
+    if (s.seo_title) SITE.seo_title = s.seo_title;
+    if (s.seo_description) SITE.seo_description = s.seo_description;
+    if (s.footer_tagline) SITE.footer_tagline = s.footer_tagline;
+
+    // Apply to DOM
+    var el;
+    el = document.getElementById('f-phone'); if (el && s.contact_phone) el.textContent = SITE.phone;
+    el = document.getElementById('f-email'); if (el && s.contact_email) el.textContent = SITE.email;
+    el = document.getElementById('f-hours'); if (el && s.contact_hours) el.textContent = SITE.hours;
+    el = document.getElementById('wa-btn'); if (el && s.contact_whatsapp) el.href = 'https://wa.me/' + SITE.whatsapp;
+    // Hero texts
+    if (s.hero_badge) { el = document.getElementById('badge-text'); if (el) el.textContent = SITE.hero_badge; }
+    if (s.hero_title) { el = document.getElementById('hero-title-1'); if (el) el.textContent = SITE.hero_title; }
+    if (s.hero_title2) { el = document.getElementById('hero-title-2'); if (el) el.textContent = SITE.hero_title2; }
+    if (s.hero_sub) { el = document.querySelector('.hero p.sub'); if (el) el.textContent = SITE.hero_sub; }
+    // SEO
+    if (s.seo_title) { document.title = SITE.seo_title; el = document.querySelector('meta[property="og:title"]'); if (el) el.content = SITE.seo_title; }
+    if (s.seo_description) { el = document.querySelector('meta[name="description"]'); if (el) el.content = SITE.seo_description; el = document.querySelector('meta[property="og:description"]'); if (el) el.content = SITE.seo_description; }
+    // Footer tagline
+    if (s.footer_tagline) { el = document.getElementById('footer-tagline'); if (el) el.textContent = SITE.footer_tagline; }
+  } catch(e){}
+}
+
+fetch('/api/settings').then(function(r){return r.json()}).then(function(s){ if(s && typeof s==='object') applySettings(s); }).catch(function(){});
+try { document.getElementById('yr').textContent = new Date().getFullYear(); } catch(e){}
 
 /* ====== header + menu ====== */
 var hdr = document.getElementById('hdr');
@@ -624,14 +721,30 @@ if(stage && matchMedia('(pointer:fine)').matches){
   stage.addEventListener('mouseleave', function(){ float.style.transform = 'rotateY(0) rotateX(0)'; });
 }
 
-/* ====== category card glow follows cursor ====== */
+/* ====== category card 3D tilt + glow follows cursor ====== */
 document.querySelectorAll('.cat').forEach(function(c){
   c.addEventListener('mousemove', function(e){
+    var r = c.getBoundingClientRect();
+    var x = (e.clientX - r.left) / r.width - .5;
+    var y = (e.clientY - r.top) / r.height - .5;
+    c.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+    c.style.setProperty('--my', (e.clientY - r.top) + 'px');
+    if(matchMedia('(pointer:fine)').matches){
+      c.style.transform = 'translateY(-8px) scale(1.02) rotateY(' + (x * 10) + 'deg) rotateX(' + (-y * 8) + 'deg)';
+    }
+  });
+  c.addEventListener('mouseleave', function(){ c.style.transform = ''; });
+  c.addEventListener('click', function(){ window.location.href = '/login.html?src=landing'; });
+});
+
+/* ====== feature cards hover lift (overflow:hidden clips 3D) ====== */
+document.querySelectorAll('.feat').forEach(function(c){
+  c.addEventListener('mousemove', function(e){
+    if(!matchMedia('(pointer:fine)').matches) return;
     var r = c.getBoundingClientRect();
     c.style.setProperty('--mx', (e.clientX - r.left) + 'px');
     c.style.setProperty('--my', (e.clientY - r.top) + 'px');
   });
-  c.addEventListener('click', function(){ window.location.href = '/login.html?src=landing'; });
 });
 
 /* ====== particles ====== */

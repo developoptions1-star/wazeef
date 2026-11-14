@@ -78,7 +78,7 @@
       background-size:56px 56px;
       -webkit-mask-image:radial-gradient(ellipse 90% 60% at 50% 0%,#000 15%,transparent 75%);
       mask-image:radial-gradient(ellipse 90% 60% at 50% 0%,#000 15%,transparent 75%)}
-    #particles{position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.55}
+    #particles{position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.3}
 
     /* ====== nav ====== */
     header{position:fixed;top:0;left:0;right:0;z-index:60;transition:.35s}
@@ -877,7 +877,7 @@ document.querySelectorAll('.feat').forEach(function(c){
     road.setAttribute('height', H);
     road.style.height = H + 'px';
 
-    var amp = Math.min(160, Math.max(80, W * 0.13));
+    var amp = Math.min(230, Math.max(120, W * 0.19));
     var pts = [{ x: W * 0.5, y: -140 }];
     SECTION_IDS.forEach(function(sel, i){
       var el = document.querySelector(sel);
@@ -898,23 +898,25 @@ document.querySelectorAll('.feat').forEach(function(c){
         '</linearGradient>' +
         '<filter id="roadSoft" x="-40%" y="-5%" width="180%" height="110%"><feGaussianBlur stdDeviation="7"/></filter>' +
       '</defs>' +
-      '<path d="' + d + '" stroke="#23232c" stroke-width="46" fill="none" stroke-linecap="round" opacity=".92"/>' +
-      '<path d="' + d + '" stroke="#121219" stroke-width="36" fill="none" stroke-linecap="round"/>' +
-      '<path d="' + d + '" stroke="rgba(212,168,83,.17)" stroke-width="15" fill="none" stroke-linecap="round" filter="url(#roadSoft)"/>' +
-      '<path class="page-road-center" d="' + d + '" stroke="url(#pageGold)" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-dasharray="12 15" opacity=".8"/>' +
-      '<path id="pageRoadDone" d="' + d + '" stroke="#f6e3a8" stroke-width="3" fill="none" stroke-linecap="round" stroke-dasharray="0 1000000" opacity=".9"/>' +
+      '<path d="' + d + '" stroke="#2b2b36" stroke-width="58" fill="none" stroke-linecap="round" opacity=".96"/>' +
+      '<path d="' + d + '" stroke="#17171f" stroke-width="44" fill="none" stroke-linecap="round"/>' +
+      '<path d="' + d + '" stroke="#22222b" stroke-width="44" fill="none" stroke-linecap="round" opacity=".5" stroke-dasharray="2.5 21"/>' +
+      '<path d="' + d + '" stroke="rgba(212,168,83,.34)" stroke-width="24" fill="none" stroke-linecap="round" filter="url(#roadSoft)"/>' +
+      '<path class="page-road-center" d="' + d + '" stroke="url(#pageGold)" stroke-width="3.3" fill="none" stroke-linecap="round" stroke-dasharray="15 17" opacity=".95"/>' +
+      '<path id="pageRoadDone" d="' + d + '" stroke="#ffe9ad" stroke-width="4.4" fill="none" stroke-linecap="round" stroke-dasharray="0 1000000" opacity="1" style="filter:drop-shadow(0 0 8px rgba(240,215,140,.6))"/>' +
       milestones.map(function(p, i){
         var label = LABELS[Math.min(i, LABELS.length - 1)];
         var side = i % 2 === 0 ? 1 : -1;
         var anchor = side === 1 ? 'start' : 'end';
         return '<g class="page-ms" transform="translate(' + p.x.toFixed(1) + ' ' + p.y.toFixed(1) + ')">' +
-          '<circle r="10" fill="#0d0d13" stroke="url(#pageGold)" stroke-width="1.5" opacity=".9"/>' +
-          '<circle r="3.2" fill="#f0d78c" opacity=".95"/>' +
-          '<text x="' + (side * 25) + '" y="4" text-anchor="' + anchor + '" font-family="Tajawal,sans-serif" font-size="11.5" font-weight="700" fill="rgba(240,215,140,.8)" paint-order="stroke" stroke="#0b0b10" stroke-width="3.2" stroke-linejoin="round">' + label + '</text>' +
+          '<circle r="15" fill="url(#pageGold)" opacity=".28"/>' +
+          '<circle r="11.5" fill="#0d0d13" stroke="url(#pageGold)" stroke-width="2.2"/>' +
+          '<circle r="4.2" fill="#f6e3a8"/>' +
+          '<text x="' + (side * 30) + '" y="4.5" text-anchor="' + anchor + '" font-family="Tajawal,sans-serif" font-size="12.5" font-weight="800" fill="#fbeec3" paint-order="stroke" stroke="#08080c" stroke-width="4" stroke-linejoin="round">' + label + '</text>' +
         '</g>';
       }).join('') +
       '<g id="pageRoadCarG">' +
-        '<g transform="translate(-23,-9) rotate(0)">' +
+        '<g transform="translate(-31,-12) scale(1.38)">' +
           '<path d="M 0 6 L 3.5 0.5 Q 9 -3.6 19 -3.6 L 35 -2.8 L 45 4.2 L 47.5 5 L 47 9.6 L 2 10 Z" fill="url(#pageGold)" stroke="#0a0a0a" stroke-width="1.3" stroke-linejoin="round"/>' +
           '<path d="M 8 1 L 11.5 -3 L 28 -2.2 L 39 4 Z" fill="#14120c" opacity=".95"/>' +
           '<circle cx="13" cy="10" r="4.7" fill="#0a0a0f" stroke="#d4a853" stroke-width="1.6"/>' +

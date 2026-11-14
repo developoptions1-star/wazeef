@@ -93,8 +93,8 @@
     nav.links a:hover{color:var(--txt)} nav.links a:hover:after{width:100%}
     .nav-cta{display:flex;gap:10px;align-items:center}
     .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:inherit;font-weight:700;font-size:15px;border:0;cursor:pointer;border-radius:14px;padding:12px 24px;transition:.3s;position:relative;overflow:hidden}
-    .btn-gold{background:linear-gradient(135deg,var(--gold3),var(--gold),var(--gold2));color:#0a0a0a;box-shadow:0 8px 26px rgba(212,168,83,.32)}
-    .btn-gold:hover{transform:translateY(-3px);box-shadow:0 14px 34px rgba(212,168,83,.45)}
+    .btn-gold{background:rgba(212,168,83,.05);color:var(--gold3);border:1.5px solid rgba(212,168,83,.72);box-shadow:inset 0 0 18px rgba(212,168,83,.16),0 0 26px rgba(212,168,83,.12),0 8px 22px rgba(0,0,0,.4);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+    .btn-gold:hover{transform:translateY(-3px);background:rgba(212,168,83,.13);border-color:var(--gold3);color:#fbeec3;box-shadow:inset 0 0 26px rgba(212,168,83,.26),0 0 34px rgba(212,168,83,.3),0 14px 30px rgba(0,0,0,.35)}
     .btn-gold:before{content:"";position:absolute;top:0;left:-80%;width:50%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);transform:skewX(-20deg);transition:.6s}
     .btn-gold:hover:before{left:130%}
     .btn-ghost{background:rgba(255,255,255,.05);color:var(--txt);border:1px solid var(--line2);backdrop-filter:blur(8px)}
